@@ -61,10 +61,18 @@ export class Chunk {
     }
 
     getBlock(x, y, z) {
-        if (x < 0 || x >= 16 || y < 0 || y >= 256 || z < 0 || z >= 16) {
+        // Allow negative Y coordinates
+        if (x < 0 || x >= 16 || z < 0 || z >= 16) {
             return null;
         }
-        return this.blocks[this.getIndex(x, y, z)];
+        
+        // Convert negative Y coordinates to array index
+        const yIndex = y + 1024; // Offset to handle negative values
+        if (yIndex < 0 || yIndex >= this.blocks.length) {
+            return null;
+        }
+        
+        return this.blocks[x][yIndex][z];
     }
 
     setBlock(x, y, z, type) {

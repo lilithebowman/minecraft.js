@@ -48,22 +48,57 @@
     import { Engine, World, Player, Renderer, BlockManager } from './js/modules.js';
     
     async function initGame() {
-        // Initialize your game here
-        const blockManager = new BlockManager();
-        const engine = new Engine();
-        const world = new World();
-        const player = new Player();
-        const renderer = new Renderer();
+        try {
+            console.log('Starting game initialization...');
+            
+            // Create components
+            const engine = new Engine();
+            const world = new World();
+            const player = new Player();
+            const renderer = new Renderer();
 
-        // Initialize engine with dependencies
-        await engine.init(world, player, renderer);
-        
-        // Start the game loop
-        engine.start();
+            // Initialize engine with dependencies
+            await engine.init(world, player, renderer);
+            
+            // Start the game loop only after successful initialization
+            console.log('Starting game loop...');
+            engine.start();
+            
+        } catch (error) {
+            console.error('Game initialization failed:', error);
+        }
     }
 
     // Start the game
-    initGame().catch(console.error);
+    initGame();
+</script>
+<script>
+// Example of using a Set
+class DisplayList {
+    constructor() {
+        this.objects = new Set();
+    }
+
+    add(object) {
+        this.objects.add(object);
+    }
+
+    remove(object) {
+        this.objects.delete(object);
+    }
+
+    get(object) {
+        return this.objects.has(object) ? object : undefined;
+    }
+
+    clear() {
+        this.objects.clear();
+    }
+
+    getAll() {
+        return this.objects.values();
+    }
+}
 </script>
 </body>
 </html>

@@ -43,6 +43,7 @@ export class Renderer {
 
         this.world = null;
         this.player = null;
+		this.engine = null;
     }
 
     setWorld(world) {
@@ -112,7 +113,17 @@ export class Renderer {
         this.renderer.setSize(window.innerWidth, window.innerHeight);
     }
 
-    render() {
+	init(engine) {
+		this.engine = engine;
+		this.engine.getEventEmitter().on('render', (deltaTime) => {
+			this.render(deltaTime);
+		});
+		this.engine.getEventEmitter().on('reset', () => {
+			this.clearDisplayList();
+		});
+	}
+
+    render(deltaTime) {
         if (!this.world) {
             console.warn('Cannot render: world not set');
             return;

@@ -1,44 +1,38 @@
 import * as THREE from 'three';
-import { Force } from './modules.js';
+import { Force } from './physics/force.js';
+import { Position } from './physics/position.js';
+import { Velocity } from './physics/velocity.js';
 
 export class Player {
-    constructor(name, health = 100, position = { x: 0, y: 0, z: 0 }) {
+    constructor(name, health = 100, position) {
         this.name = name;
         this.health = health;
-        
-        // Convert position to Vector3
-        this.position = new THREE.Vector3(position.x, position.y, position.z);
-        
-        // Use Vector3 for velocity
-        this.velocity = new THREE.Vector3(0, 0, 0);
-        this.moveSpeed = 5;
-        this.jumpForce = 10;
-        
-        // Add forces array
-        this.forces = [];
-        
-        // Add gravity force
-        this.gravity = new Force(new THREE.Vector3(0, -1, 0), 20);
-
-        // Initialize directional vectors
-        this.forward = new THREE.Vector3(0, 0, -1);
+        this.position = new Position(0, 5, 0);
+        this.velocity = new Velocity();
+        this.acceleration = { x: 0, y: 0, z: 0 };
+        this.rotation = { x: 0, y: 0 };
+        this.forward = new THREE.Vector3(0, 0, 1);
         this.right = new THREE.Vector3(1, 0, 0);
-        this.rotation = 0; // Rotation around Y axis in radians
-        
-        // Update vectors initially
-        this.updateVectors();
+        this.up = new THREE.Vector3(0, 1, 0);
+        // Fix gravity force initialization
+        this.gravity = new Force(new THREE.Vector3(0, -1, 0), 9.81);
+        this.forces = [];
 
-        // Create position display
+        const boxSizeX = 1;
+        const boxSizeY = 2;
+        const boxSizeZ = 1;
+        this.boundingBox = new THREE.Box3(
+            new THREE.Vector3(-boxSizeX / 2, -boxSizeY / 2, -boxSizeZ / 2),
+            new THREE.Vector3(boxSizeX / 2, boxSizeY / 2, boxSizeZ / 2)
+        );
+
+        this.element = null;
+        this.jumpForce = 7;
+        this.isGrounded = false;
+
         this.createPositionDisplay();
-
-        // Add collision properties
-        this.boundingBox = new THREE.Box3();
-        this.playerHeight = 1.8;
-        this.playerWidth = 0.6;
+        this.updateVectors();
         this.updateBoundingBox();
-
-        // Add frozen state
-        this.isFrozen = true;
     }
 
     createPositionDisplay() {
@@ -94,6 +88,22 @@ export class Player {
         this.velocity.set(0, 0, 0);
     }
 
+    // Add position limits as static properties
+    static MAX_POSITION = Number.MAX_SAFE_INTEGER;  // About 9 quadrillion
+    static MIN_POSITION = Number.MIN_SAFE_INTEGER;
+
+    clampPosition() {
+        // Clamp each coordinate to safe integer range
+        this.position.x = Math.min(Math.max(this.position.x, Player.MIN_POSITION), Player.MAX_POSITION);
+        this.position.y = Math.min(Math.max(this.position.y, Player.MIN_POSITION), Player.MAX_POSITION);
+        this.position.z = Math.min(Math.max(this.position.z, Player.MIN_POSITION), Player.MAX_POSITION);
+
+        // Check for NaN values
+        if (isNaN(this.position.x)) this.position.x = 0;
+        if (isNaN(this.position.y)) this.position.y = 0;
+        if (isNaN(this.position.z)) this.position.z = 0;
+    }
+
     update(deltaTime) {
         // If frozen, only update display and return
         if (this.isFrozen) {
@@ -109,7 +119,7 @@ export class Player {
 
         // Apply all active forces
         const totalForce = new THREE.Vector3();
-        
+
         // Always apply gravity if not grounded
         if (!this.isGrounded) {
             totalForce.add(this.gravity.update(dt));
@@ -123,14 +133,18 @@ export class Player {
         });
 
         // Update velocity based on forces
-        this.velocity.add(totalForce.multiplyScalar(dt));
+        this.velocity.add(totalForce);
 
         // Update position based on velocity
-        this.position.add(this.velocity.clone().multiplyScalar(dt));
+        const movement = this.velocity.vector.clone().multiplyScalar(dt);
+        this.position.add(movement);
+        
+        // Clamp position to safe values
+        this.clampPosition();
 
         // Apply friction
-        this.velocity.x *= 0.9;
-        this.velocity.z *= 0.9;
+        this.velocity.vector.x *= 0.9;
+        this.velocity.vector.z *= 0.9;
 
         // Reset grounded state each frame
         this.isGrounded = false;
@@ -140,12 +154,36 @@ export class Player {
 
         // Update position display
         this.updatePositionDisplay();
+
+        // Debug movement
+        if (this.velocity.vector.length() > 0) {
+            console.log('Velocity:', this.velocity.vector);
+            console.log('Position:', this.position);
+        }
+
+        // Debug logging for vertical position
+        if (this.position.y < -1000) {
+            console.log(`Player at Y=${this.position.y}, near bedrock level`);
+        }
     }
 
     updateBoundingBox() {
-        this.boundingBox.setFromCenterAndSize(
-            this.position,
-            new THREE.Vector3(this.playerWidth, this.playerHeight, this.playerWidth)
+        const halfWidth = 0.5;  // Half of boxSizeX
+        const halfHeight = 1.0; // Half of boxSizeY
+        const halfDepth = 0.5;  // Half of boxSizeZ
+
+        // Update bounding box to match current position
+        this.boundingBox.set(
+            new THREE.Vector3(
+                this.position.x - halfWidth,
+                this.position.y - halfHeight,
+                this.position.z - halfDepth
+            ),
+            new THREE.Vector3(
+                this.position.x + halfWidth,
+                this.position.y + halfHeight,
+                this.position.z + halfDepth
+            )
         );
     }
 }

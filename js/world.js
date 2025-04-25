@@ -9,6 +9,7 @@ export class World {
 		this.noiseGen = new NoiseGenerator();
 		this.blockManager = new BlockManager();  // Add BlockManager
 		this.frustum = new Frustum();
+		this.engine = null;
 		
 		// Initialize physics worker
 		this.physicsWorker = new Worker('./js/workers/physicsWorker.js');
@@ -18,22 +19,32 @@ export class World {
 		this.generateWorld();
 	}
 
+	init(engine) {
+		this.engine = engine;
+		this.engine.getEventEmitter().on('update', (deltaTime) => {
+			this.update(deltaTime);
+		});
+		this.engine.getEventEmitter().on('reset', () => {
+			this.generateWorld(); // Or whatever reset logic is needed
+		});
+	}
+
 	generateWorld() {
-		console.log('Generating world...'); // Debug log
+		console.log('Generating world...'); 
 		const scale = 50;
 		const amplitude = 32;
 		const baseHeight = 64;
-		const bedrockLevel = -1024;
-
-		// Generate bedrock layer first
-		console.log('Generating bedrock layer...'); // Debug log
-		for (let x = -8; x < 8; x++) {
-			for (let z = -8; z < 8; z++) {
-				// Place bedrock at y = -1024
-				this.setBlock(x, bedrockLevel, z, 'bedrock');
+		
+		// Generate bedrock layer at y = -1024
+		for (let x = -16; x < 16; x++) {
+			for (let z = -16; z < 16; z++) {
+				// Add bedrock block
+				const chunk = this.getOrCreateChunk(Math.floor(x/16), Math.floor(z/16));
+				chunk.setBlock(x % 16, -1024, z % 16, 'bedrock');
+				console.log(`Placed bedrock at ${x}, -1024, ${z}`);
 			}
 		}
-
+		
 		// Generate terrain
 		for (let x = -8; x < 8; x++) {
 			for (let z = -8; z < 8; z++) {
@@ -101,6 +112,22 @@ export class World {
 		}
 		return this._meshData;
 	}
+
+	/**
+     * Finds the highest solid block at a given x, z coordinate.
+     * @param {number} x - The x-coordinate.
+     * @param {number} z - The z-coordinate.
+     * @returns {number} The y-coordinate of the highest solid block, or -1 if no solid block is found.
+     */
+    getHighestBlockY(x, z) {
+        for (let y = 255; y >= 0; y--) {  // Iterate from top to bottom
+            const block = this.getBlock(x, y, z);
+            if (block !== 0) { // Assuming 0 represents an empty block
+                return y;
+            }
+        }
+        return -1; // No solid block found
+    }
 
 	generateMeshData() {
 		const vertices = [];

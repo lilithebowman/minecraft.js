@@ -105,26 +105,31 @@ export class Input {
         const player = this.engine.player;
         if (!player || this.isFrozen) return;
 
-        // Handle keyboard input and apply forces
+        // Debug active keys
+        if (this.keys.size > 0) {
+            console.log('Active keys:', Array.from(this.keys));
+        }
+
+        // Handle keyboard input and apply forces with higher magnitude
         if (this.keys.has('KeyW')) {
-            const force = this.movementForces.forward.clone();
-            force.setDirection(player.forward);
+            const force = new Force(player.forward, 20);
             player.addForce(force);
+            console.log('Adding forward force');
         }
         if (this.keys.has('KeyS')) {
-            const force = this.movementForces.backward.clone();
-            force.setDirection(player.forward.clone().multiplyScalar(-1));
+            const force = new Force(player.forward.clone().multiplyScalar(-1), 20);
             player.addForce(force);
-        }
-        if (this.keys.has('KeyD')) {
-            const force = this.movementForces.right.clone();
-            force.setDirection(player.right);
-            player.addForce(force);
+            console.log('Adding backward force');
         }
         if (this.keys.has('KeyA')) {
-            const force = this.movementForces.left.clone();
-            force.setDirection(player.right.clone().multiplyScalar(-1));
+            const force = new Force(player.right.clone().multiplyScalar(-1), 20);
             player.addForce(force);
+            console.log('Adding left force');
+        }
+        if (this.keys.has('KeyD')) {
+            const force = new Force(player.right, 20);
+            player.addForce(force);
+            console.log('Adding right force');
         }
 
         // Handle flying

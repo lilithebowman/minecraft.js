@@ -4,7 +4,7 @@ import { NoiseGenerator } from './utils/noise.js';
 export class TextureManager {
     constructor() {
         this.textureSize = 256;
-        this.tileSize = 16;
+        this.tileSize = 64;
         this.textures = {};
         this.noiseGen = new NoiseGenerator();
         this.initialized = false;
@@ -36,7 +36,7 @@ export class TextureManager {
         const material = new THREE.MeshStandardMaterial({
             map: this.textures.atlas,
             roughness: 1.0,
-            metalness: 0.0
+            metalness: 0.3
         });
 
         // Calculate UV coordinates based on texture position in atlas
@@ -56,7 +56,7 @@ export class TextureManager {
         const textureCount = 4; // Total number of textures in atlas
         const tileSize = this.tileSize;
         const atlasWidth = this.textureSize;
-        const atlasHeight = 64;
+        const atlasHeight = 256;
 
         // Calculate UV offset based on texture position
         const startX = (atlasWidth - (textureCount * tileSize)) / 2;
@@ -125,12 +125,12 @@ export class TextureManager {
     }
 
     createGrassTop(ctx) {
-        const tile = ctx.createImageData(16, 16);
+        const tile = ctx.createImageData(64, 64);
         const data = tile.data;
         
-        for (let y = 0; y < 16; y++) {
-            for (let x = 0; x < 16; x++) {
-                const i = (y * 16 + x) * 4;
+        for (let y = 0; y < 64; y++) {
+            for (let x = 0; x < 64; x++) {
+                const i = (y * 64 + x) * 4;
                 const noise = this.noiseGen.noise(x/8, y/8, 0) * 0.5 + 0.5;
                 // Minecraft grass green colors
                 data[i] = 89 + noise * 35;     // R (darker green)
@@ -143,12 +143,12 @@ export class TextureManager {
     }
 
     createDirt(ctx) {
-        const tile = ctx.createImageData(16, 16);
+        const tile = ctx.createImageData(64, 64);
         const data = tile.data;
         
-        for (let y = 0; y < 16; y++) {
-            for (let x = 0; x < 16; x++) {
-                const i = (y * 16 + x) * 4;
+        for (let y = 0; y < 64; y++) {
+            for (let x = 0; x < 64; x++) {
+                const i = (y * 64 + x) * 4;
                 const noise = this.noiseGen.noise(x/6, y/6, 0) * 0.5 + 0.5;
                 // Minecraft dirt brown colors
                 data[i] = 134 + noise * 25;     // R
@@ -161,12 +161,12 @@ export class TextureManager {
     }
 
     createStone(ctx) {
-        const tile = ctx.createImageData(16, 16);
+        const tile = ctx.createImageData(64, 64);
         const data = tile.data;
         
-        for (let y = 0; y < 16; y++) {
-            for (let x = 0; x < 16; x++) {
-                const i = (y * 16 + x) * 4;
+        for (let y = 0; y < 64; y++) {
+            for (let x = 0; x < 64; x++) {
+                const i = (y * 64 + x) * 4;
                 const noise = this.noiseGen.noise(x/4, y/4, 0) * 0.5 + 0.5;
                 // Minecraft stone grey colors
                 const shade = 128 + noise * 25;
@@ -180,12 +180,12 @@ export class TextureManager {
     }
 
     createBedrock(ctx) {
-        const tile = ctx.createImageData(16, 16);
+        const tile = ctx.createImageData(64, 64);
         const data = tile.data;
         
-        for (let y = 0; y < 16; y++) {
-            for (let x = 0; x < 16; x++) {
-                const i = (y * 16 + x) * 4;
+        for (let y = 0; y < 64; y++) {
+            for (let x = 0; x < 64; x++) {
+                const i = (y * 64 + x) * 4;
                 const noise = this.noiseGen.noise(x/3, y/3, 0) * 0.5 + 0.5;
                 // Minecraft bedrock dark colors
                 const shade = 35 + noise * 20;

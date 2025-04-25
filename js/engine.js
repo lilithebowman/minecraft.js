@@ -23,24 +23,30 @@ export class Engine {
     async init(world, player, renderer) {
         console.log('Initializing engine...');
         
-        // Initialize block manager first
-        await this.blockManager.initialize();
-        
-        // Set up dependencies after initialization
-        this.world = world;
-        this.player = player;
-        this.renderer = renderer;
+        try {
+            // Initialize texture manager first (through block manager)
+            console.log('Initializing block manager and textures...');
+            await this.blockManager.initialize();
+            
+            // Set up dependencies after textures are loaded
+            this.world = world;
+            this.player = player;
+            this.renderer = renderer;
 
-        // Set up dependencies
-        this.world.blockManager = this.blockManager;
-        this.renderer.blockManager = this.blockManager;
-        this.renderer.setWorld(world); // Add this line
-        this.renderer.setPlayer(player); // Add this line
-        
-        // Initialize input system
-        this.input = new Input(this);
-        
-        console.log('Engine initialized');
+            // Set up dependencies
+            this.world.blockManager = this.blockManager;
+            this.renderer.blockManager = this.blockManager;
+            this.renderer.setWorld(world);
+            this.renderer.setPlayer(player);
+            
+            // Initialize input system
+            this.input = new Input(this);
+            
+            console.log('Engine initialized successfully');
+        } catch (error) {
+            console.error('Failed to initialize engine:', error);
+            throw error;
+        }
     }
 
     start() {

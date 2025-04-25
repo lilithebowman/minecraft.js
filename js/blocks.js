@@ -4,13 +4,11 @@ import * as THREE from 'three';
 
 export class BlockManager {
     constructor() {
-        this.blocks = new Map();
-        this.textureManager = new TextureManager();
         this.blockTypes = {
             'grass': { texture: 'grass_top' },
             'dirt': { texture: 'dirt' },
             'stone': { texture: 'stone' },
-            'bedrock': { texture: 'bedrock' }
+            'bedrock': { texture: 'bedrock', unbreakable: true } // Add unbreakable property
         };
         this.createDisplay();
     }
