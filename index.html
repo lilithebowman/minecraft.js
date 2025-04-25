@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JavaScript Minecraft Client</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #333;
+        }
+        #gameCanvas {
+            width: 100vw;
+            height: 100vh;
+            display: block;
+        }
+        .controls {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            color: white;
+            font-family: monospace;
+            pointer-events: none;
+            z-index: 100;
+        }
+    </style>
+    <!-- Three.js and dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    <div class="controls">
+        <div>WASD: Move</div>
+        <div>Mouse: Look</div>
+        <div>Space: Jump</div>
+        <div>Click: Break block</div>
+        <div>Right click: Place block</div>
+    </div>
+    <script type="module">
+        import { Engine, World, Player, Renderer } from './js/modules.js';
+        
+        // Initialize your game here
+        const engine = new Engine();
+        const world = new World();
+        const player = new Player();
+        const renderer = new Renderer();
+
+        // Initialize engine with dependencies
+        engine.init(world, player, renderer);
+        
+        // Start the game loop
+        engine.start();
+    </script>
+</body>
+</html>
