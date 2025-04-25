@@ -1,6 +1,15 @@
+import { TextureManager } from './modules.js';
+
 export class BlockManager {
     constructor() {
         this.blocks = new Map();
+        this.textureManager = new TextureManager();
+        this.blockTypes = {
+            'grass': { texture: 'grass_top' },
+            'dirt': { texture: 'dirt' },
+            'stone': { texture: 'stone' },
+            'bedrock': { texture: 'bedrock' }
+        };
         this.createDisplay();
     }
 
@@ -21,12 +30,35 @@ export class BlockManager {
         this.display.textContent = `Blocks: ${this.getBlockCount()}`;
     }
 
-    addBlock(id, blockData) {
+    async addBlock(id, blockData) {
         if (this.blocks.has(id)) {
             throw new Error(`Block with ID ${id} already exists.`);
         }
-        this.blocks.set(id, blockData);
+
+        // Get the block type and its corresponding texture
+        const blockType = blockData.type;
+        if (!this.blockTypes[blockType]) {
+            throw new Error(`Invalid block type: ${blockType}`);
+        }
+
+        // Get material for the block type
+        const material = this.textureManager.getMaterial(this.blockTypes[blockType].texture);
+        
+        // Add material to block data
+        const enrichedBlockData = {
+            ...blockData,
+            material
+        };
+
+        this.blocks.set(id, enrichedBlockData);
         this.updateDisplay();
+    }
+
+    getMaterial(blockType) {
+        if (!this.blockTypes[blockType]) {
+            throw new Error(`Invalid block type: ${blockType}`);
+        }
+        return this.textureManager.getMaterial(this.blockTypes[blockType].texture);
     }
 
     removeBlock(id) {

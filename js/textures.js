@@ -1,109 +1,58 @@
+import * as THREE from 'three';
+import { NoiseGenerator } from './utils/noise.js';
+
 export class TextureManager {
     constructor() {
         this.textureSize = 256;
         this.tileSize = 16;
         this.textures = {};
+        this.noiseGen = new NoiseGenerator();
         this.createAtlas();
     }
 
-    createAtlas() {
-        // Create canvas for texture atlas
+    async loadOrCreateTexture(name, createFunc) {
+        // Try to load from localStorage first
+        const stored = localStorage.getItem(`texture_${name}`);
+        if (stored) {
+            const img = new Image();
+            img.src = stored;
+            return new Promise((resolve) => {
+                img.onload = () => resolve(img);
+            });
+        }
+
+        // Create new texture
         const canvas = document.createElement('canvas');
-        canvas.width = this.textureSize;
-        canvas.height = this.textureSize;
+        canvas.width = this.tileSize;
+        canvas.height = this.tileSize;
         const ctx = canvas.getContext('2d');
+        const imageData = createFunc(ctx);
+        ctx.putImageData(imageData, 0, 0);
 
-        // Create and position all textures in the atlas
-        const texturePositions = {
-            grass_top:  { x: 0,  y: 0 },
-            grass_side: { x: 16, y: 0 },
-            dirt:       { x: 32, y: 0 },
-            stone:      { x: 48, y: 0 },
-            bedrock:    { x: 64, y: 0 }
-        };
-
-        // Draw each texture to its position in the atlas
-        for (const [name, pos] of Object.entries(texturePositions)) {
-            const texture = this[`create${name.split('_').map(word => 
-                word.charAt(0).toUpperCase() + word.slice(1)).join('')}`](ctx);
-            ctx.putImageData(texture, pos.x, pos.y);
+        // Save to localStorage
+        try {
+            const dataURL = canvas.toDataURL('image/png');
+            localStorage.setItem(`texture_${name}`, dataURL);
+        } catch (err) {
+            console.warn('Unable to cache texture:', err);
         }
 
-        // Create Three.js texture from the atlas
-        const atlasTexture = new THREE.CanvasTexture(canvas);
-        atlasTexture.magFilter = THREE.NearestFilter;
-        atlasTexture.minFilter = THREE.NearestFilter;
-
-        // Create materials for each block type
-        const uvSize = this.tileSize / this.textureSize;
-        this.materials = {
-            grass: new THREE.MeshLambertMaterial({
-                map: atlasTexture,
-                side: THREE.FrontSide
-            }),
-            dirt: new THREE.MeshLambertMaterial({
-                map: atlasTexture.clone(),
-                side: THREE.FrontSide
-            }),
-            stone: new THREE.MeshLambertMaterial({
-                map: atlasTexture.clone(),
-                side: THREE.FrontSide
-            }),
-            bedrock: new THREE.MeshLambertMaterial({
-                map: atlasTexture.clone(),
-                side: THREE.FrontSide
-            })
-        };
-
-        // Set UV coordinates for each material
-        this.materials.grass.map.offset.set(0, 0);
-        this.materials.grass.map.repeat.set(uvSize, uvSize);
-        this.materials.dirt.map.offset.set(2 * uvSize, 0);
-        this.materials.dirt.map.repeat.set(uvSize, uvSize);
-        this.materials.stone.map.offset.set(3 * uvSize, 0);
-        this.materials.stone.map.repeat.set(uvSize, uvSize);
-        this.materials.bedrock.map.offset.set(4 * uvSize, 0);
-        this.materials.bedrock.map.repeat.set(uvSize, uvSize);
+        return canvas;
     }
 
-    getMaterial(blockType) {
-        return this.materials[blockType];
-    }
-
-    // Keep existing texture creation methods
     createGrassTop(ctx) {
-        const tile = ctx.createImageData(16, 16);
-        const data = tile.data;
-        
-        for (let i = 0; i < data.length; i += 4) {
-            // Base green color with noise
-            data[i] = 100 + Math.random() * 30;     // R
-            data[i + 1] = 167 + Math.random() * 30; // G
-            data[i + 2] = 40 + Math.random() * 30;  // B
-            data[i + 3] = 255;                      // A
-        }
-        return tile;
-    }
-
-    createGrassSide(ctx) {
         const tile = ctx.createImageData(16, 16);
         const data = tile.data;
         
         for (let y = 0; y < 16; y++) {
             for (let x = 0; x < 16; x++) {
                 const i = (y * 16 + x) * 4;
-                if (y < 4) {
-                    // Top grass part
-                    data[i] = 100 + Math.random() * 30;
-                    data[i + 1] = 167 + Math.random() * 30;
-                    data[i + 2] = 40 + Math.random() * 30;
-                } else {
-                    // Dirt part
-                    data[i] = 150 + Math.random() * 20;
-                    data[i + 1] = 106 + Math.random() * 20;
-                    data[i + 2] = 47 + Math.random() * 20;
-                }
-                data[i + 3] = 255;
+                const noise = this.noiseGen.noise(x/8, y/8, 0) * 0.5 + 0.5;
+                // Minecraft grass green colors
+                data[i] = 89 + noise * 35;     // R (darker green)
+                data[i + 1] = 145 + noise * 45; // G (brighter green)
+                data[i + 2] = 50 + noise * 25;  // B (slight blue tint)
+                data[i + 3] = 255;              // A
             }
         }
         return tile;
@@ -113,11 +62,16 @@ export class TextureManager {
         const tile = ctx.createImageData(16, 16);
         const data = tile.data;
         
-        for (let i = 0; i < data.length; i += 4) {
-            data[i] = 150 + Math.random() * 20;     // R
-            data[i + 1] = 106 + Math.random() * 20; // G
-            data[i + 2] = 47 + Math.random() * 20;  // B
-            data[i + 3] = 255;                      // A
+        for (let y = 0; y < 16; y++) {
+            for (let x = 0; x < 16; x++) {
+                const i = (y * 16 + x) * 4;
+                const noise = this.noiseGen.noise(x/6, y/6, 0) * 0.5 + 0.5;
+                // Minecraft dirt brown colors
+                data[i] = 134 + noise * 25;     // R
+                data[i + 1] = 96 + noise * 20;  // G
+                data[i + 2] = 67 + noise * 15;  // B
+                data[i + 3] = 255;              // A
+            }
         }
         return tile;
     }
@@ -126,12 +80,17 @@ export class TextureManager {
         const tile = ctx.createImageData(16, 16);
         const data = tile.data;
         
-        for (let i = 0; i < data.length; i += 4) {
-            const shade = 128 + Math.random() * 30;
-            data[i] = shade;     // R
-            data[i + 1] = shade; // G
-            data[i + 2] = shade; // B
-            data[i + 3] = 255;   // A
+        for (let y = 0; y < 16; y++) {
+            for (let x = 0; x < 16; x++) {
+                const i = (y * 16 + x) * 4;
+                const noise = this.noiseGen.noise(x/4, y/4, 0) * 0.5 + 0.5;
+                // Minecraft stone grey colors
+                const shade = 128 + noise * 25;
+                data[i] = shade;     // R
+                data[i + 1] = shade; // G
+                data[i + 2] = shade; // B
+                data[i + 3] = 255;   // A
+            }
         }
         return tile;
     }
@@ -140,13 +99,112 @@ export class TextureManager {
         const tile = ctx.createImageData(16, 16);
         const data = tile.data;
         
-        for (let i = 0; i < data.length; i += 4) {
-            const shade = 50 + Math.random() * 20;
-            data[i] = shade;     // R
-            data[i + 1] = shade; // G
-            data[i + 2] = shade; // B
-            data[i + 3] = 255;   // A
+        for (let y = 0; y < 16; y++) {
+            for (let x = 0; x < 16; x++) {
+                const i = (y * 16 + x) * 4;
+                const noise = this.noiseGen.noise(x/3, y/3, 0) * 0.5 + 0.5;
+                // Minecraft bedrock dark colors
+                const shade = 35 + noise * 20;
+                data[i] = shade;     // R
+                data[i + 1] = shade; // G
+                data[i + 2] = shade; // B
+                data[i + 3] = 255;   // A
+            }
         }
         return tile;
+    }
+
+    async createAtlas() {
+        // Create canvas for the texture atlas
+        const canvas = document.createElement('canvas');
+        canvas.width = this.textureSize;
+        canvas.height = 64;
+        const ctx = canvas.getContext('2d');
+
+        // Define textures to create
+        const textures = [
+            { name: 'grass_top', func: this.createGrassTop.bind(this) },
+            { name: 'dirt', func: this.createDirt.bind(this) },
+            { name: 'stone', func: this.createStone.bind(this) },
+            { name: 'bedrock', func: this.createBedrock.bind(this) }
+        ];
+
+        // Calculate starting x position to center textures
+        const totalWidth = textures.length * this.tileSize;
+        const startX = (this.textureSize - totalWidth) / 2;
+
+        // Create and position each texture
+        for (let i = 0; i < textures.length; i++) {
+            const texture = textures[i];
+            const tileCanvas = await this.loadOrCreateTexture(texture.name, texture.func);
+            ctx.drawImage(
+                tileCanvas,
+                startX + (i * this.tileSize),
+                (64 - this.tileSize) / 2,
+                this.tileSize,
+                this.tileSize
+            );
+        }
+
+        // Create Three.js texture
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.minFilter = THREE.NearestFilter;
+        texture.magFilter = THREE.NearestFilter;
+        this.textures.atlas = texture;
+
+        // Debug view
+        canvas.style.position = 'fixed';
+        canvas.style.bottom = '0';
+        canvas.style.left = '50%';
+        canvas.style.transform = 'translateX(-50%)';
+        canvas.style.border = '1px solid white';
+        document.body.appendChild(canvas);
+
+        return texture;
+    }
+
+    getMaterial(textureName) {
+        if (!this.textures.atlas) {
+            console.error('Texture atlas not loaded');
+            return new THREE.MeshBasicMaterial({ color: 0xff00ff }); // Purple fallback
+        }
+
+        // Create a new material using the texture atlas
+        const material = new THREE.MeshStandardMaterial({
+            map: this.textures.atlas,
+            roughness: 1.0,
+            metalness: 0.0
+        });
+
+        // Calculate UV coordinates based on texture position in atlas
+        const textureIndex = {
+            'grass_top': 0,
+            'dirt': 1,
+            'stone': 2,
+            'bedrock': 3
+        }[textureName];
+
+        if (textureIndex === undefined) {
+            console.error('Unknown texture:', textureName);
+            return material;
+        }
+
+        // Calculate UV coordinates
+        const textureCount = 4; // Total number of textures in atlas
+        const tileSize = this.tileSize;
+        const atlasWidth = this.textureSize;
+        const atlasHeight = 64;
+
+        // Calculate UV offset based on texture position
+        const startX = (atlasWidth - (textureCount * tileSize)) / 2;
+        const x = (startX + (textureIndex * tileSize)) / atlasWidth;
+        const y = (atlasHeight - tileSize) / (2 * atlasHeight);
+
+        // Set UV transformation
+        material.map.offset.set(x, y);
+        material.map.repeat.set(tileSize / atlasWidth, tileSize / atlasHeight);
+        material.needsUpdate = true;
+
+        return material;
     }
 }

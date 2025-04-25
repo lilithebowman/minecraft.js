@@ -1,13 +1,18 @@
+import * as THREE from 'three';
 import { TextureManager, DisplayList } from './modules.js';
 
 export class Renderer {
     constructor() {
-        // Initialize THREE.js scene
-        this.scene = new THREE.Scene();
+        // Initialize display list
+        this.displayList = new Set();
 
+        // Create the scene
+        this.scene = new THREE.Scene();
+        this.scene.background = new THREE.Color(0x87CEEB); // Sky blue background
+        
         // Initialize camera
         this.camera = new THREE.PerspectiveCamera(
-            70,
+            75, 
             window.innerWidth / window.innerHeight,
             0.1,
             1000
@@ -16,14 +21,6 @@ export class Renderer {
         // Update camera position and rotation
         this.camera.position.set(0, 100, 100); // Move camera back and up
         this.camera.lookAt(0, 0, 0); // Look at center
-
-        // Add controls
-        this.controls = new THREE.PointerLockControls(this.camera, document.body);
-        
-        // Handle click to start
-        document.addEventListener('click', () => {
-            this.controls.lock();
-        });
 
         // Add fog to scene for depth
         this.scene.fog = new THREE.Fog(0x87ceeb, 0, 500);
@@ -39,44 +36,18 @@ export class Renderer {
         // Initialize texture manager
         this.textureManager = new TextureManager();
 
-        // Create block geometry
+        // Create block geometry once
         this.blockGeometry = new THREE.BoxGeometry(1, 1, 1);
-
-        // Update block materials to use texture manager
-        this.blockMaterials = {
-            grass: this.textureManager.getMaterial('grass'),
-            dirt: this.textureManager.getMaterial('dirt'),
-            stone: this.textureManager.getMaterial('stone'),
-            bedrock: this.textureManager.getMaterial('bedrock')
-        };
-
-        // Add lighting
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        directionalLight.position.set(10, 100, 10);
-        this.scene.add(ambientLight, directionalLight);
-
-        // Add display list
-        this.displayList = new DisplayList();
-
-        // Handle window resize
-        window.addEventListener('resize', () => this.onWindowResize(), false);
-    }
-
-    onWindowResize() {
-        this.camera.aspect = window.innerWidth / window.innerHeight;
-        this.camera.updateProjectionMatrix();
-        this.renderer.setSize(window.innerWidth, window.innerHeight);
     }
 
     addBlock(x, y, z, type) {
         const block = new THREE.Mesh(
             this.blockGeometry,
-            this.blockMaterials[type]
+            this.blockManager.getMaterial(type)
         );
         block.position.set(x, y, z);
         this.scene.add(block);
-        return this.displayList.add(block); // Return the ID instead of the block
+        return this.displayList.add(block);
     }
 
     removeBlock(id) {
@@ -90,6 +61,10 @@ export class Renderer {
     }
 
     clearDisplayList() {
+        // Remove all objects from scene and clear the display list
+        for (const object of this.displayList) {
+            this.scene.remove(object);
+        }
         this.displayList.clear();
     }
 
@@ -117,48 +92,37 @@ export class Renderer {
     }
 
     render() {
-        // Keep static objects (like lights) in a separate list
-        const staticObjects = [
-            new THREE.AmbientLight(0xffffff, 0.6),
-            (() => {
-                const light = new THREE.DirectionalLight(0xffffff, 0.8);
-                light.position.set(10, 100, 10);
-                return light;
-            })()
-        ];
-
-        // Clear scene
-        while(this.scene.children.length > 0){ 
+        // Clear the scene
+        while (this.scene.children.length > 0) {
             this.scene.remove(this.scene.children[0]);
         }
 
-        // Add static objects
-        for (const object of staticObjects) {
-            this.scene.add(object);
-        }
+        // Add lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(10, 100, 10);
+        this.scene.add(ambientLight, directionalLight);
 
-        // Add only blocks from visible chunks
-        for (const object of this.displayList.getAll()) {
-            if (this.isChunkInRange(object.position.x, object.position.z)) {
-                this.scene.add(object);
+        // Add blocks from visible chunks
+        const visibleChunks = this.world.getVisibleChunks(this.camera);
+        for (const chunk of visibleChunks) {
+            for (let x = 0; x < 16; x++) {
+                for (let y = 0; y < 256; y++) {
+                    for (let z = 0; z < 16; z++) {
+                        const blockType = chunk.getBlock(x, y, z);
+                        if (blockType) {
+                            const worldX = chunk.x * 16 + x;
+                            const worldZ = chunk.z * 16 + z;
+                            this.addBlock(worldX, y, worldZ, blockType);
+                        }
+                    }
+                }
             }
         }
 
         // Add debug axes
         const axesHelper = new THREE.AxesHelper(50);
         this.scene.add(axesHelper);
-
-        // Add ground plane for reference
-        if (!this.groundPlane) {
-            const geometry = new THREE.PlaneGeometry(1000, 1000);
-            const material = new THREE.MeshBasicMaterial({ 
-                color: 0x404040,
-                side: THREE.DoubleSide 
-            });
-            this.groundPlane = new THREE.Mesh(geometry, material);
-            this.groundPlane.rotation.x = Math.PI / 2;
-        }
-        this.scene.add(this.groundPlane);
 
         // Render the scene
         this.renderer.render(this.scene, this.camera);

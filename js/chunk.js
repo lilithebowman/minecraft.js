@@ -1,3 +1,5 @@
+import * as THREE from 'three';
+
 export class Chunk {
     constructor(x, z) {
         this.x = x;

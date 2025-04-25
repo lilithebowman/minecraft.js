@@ -1,6 +1,7 @@
 import { Time } from './time.js';
 import { Framerate } from './framerate.js';
 import { BlockManager } from './blocks.js';
+import { Input } from './input.js';
 
 export class Engine {
     constructor() {
@@ -14,6 +15,7 @@ export class Engine {
         this.world = null;
         this.player = null;
         this.renderer = null;
+        this.input = null;
         console.log('Engine initialized'); // Debug log
     }
 
@@ -23,11 +25,15 @@ export class Engine {
         this.renderer = renderer;
         this.world.blockManager = this.blockManager;
         this.renderer.setPlayer(player);
+        this.player.createPositionDisplay();
 
         // Debug logs
         console.log('World chunks:', this.world.chunks.size);
         console.log('Player position:', this.player.position);
         console.log('Renderer initialized:', !!this.renderer);
+
+        // Initialize input system
+        this.input = new Input(this);
     }
 
     start() {
@@ -43,6 +49,10 @@ export class Engine {
             this.isRunning = false;
             this.time = null;
             this.framerate.destroy();
+            if (this.input) {
+                this.input.destroy();
+                this.input = null;
+            }
         }
     }
 
@@ -70,12 +80,22 @@ export class Engine {
     }
 
     update(deltaTime) {
+        // Update input first
+        if (this.input) {
+            this.input.update();
+        }
+
         if (this.world) {
             this.world.update(deltaTime);
             // Update block count after world update
             this.blockManager.updateDisplay();
         }
-        if (this.player) this.player.update(deltaTime);
+        
+        if (this.player) {
+            this.player.update(deltaTime);
+            // Update position display after player update
+            this.player.updatePositionDisplay();
+        }
     }
 
     render() {
