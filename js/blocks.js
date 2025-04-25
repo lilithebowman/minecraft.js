@@ -1,4 +1,6 @@
 import { TextureManager } from './modules.js';
+import { BoxCollider } from './physics/boxCollider.js';
+import * as THREE from 'three';
 
 export class BlockManager {
     constructor() {
@@ -11,6 +13,19 @@ export class BlockManager {
             'bedrock': { texture: 'bedrock' }
         };
         this.createDisplay();
+    }
+
+    async initialize() {
+        console.log('Initializing block manager...');
+        try {
+            // Wait for texture manager to initialize
+            await this.textureManager.initialize();
+            console.log('Block manager initialized');
+            return this;
+        } catch (error) {
+            console.error('Failed to initialize block manager:', error);
+            throw error;
+        }
     }
 
     createDisplay() {
@@ -44,10 +59,17 @@ export class BlockManager {
         // Get material for the block type
         const material = this.textureManager.getMaterial(this.blockTypes[blockType].texture);
         
-        // Add material to block data
+        // Create collider for the block
+        const collider = new BoxCollider(
+            new THREE.Vector3(blockData.position.x + 0.5, blockData.position.y + 0.5, blockData.position.z + 0.5),
+            new THREE.Vector3(1, 1, 1)
+        );
+
+        // Add material and collider to block data
         const enrichedBlockData = {
             ...blockData,
-            material
+            material,
+            collider
         };
 
         this.blocks.set(id, enrichedBlockData);

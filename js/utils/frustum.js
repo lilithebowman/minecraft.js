@@ -7,7 +7,13 @@ export class Frustum {
     }
 
     update(camera) {
-        this.projScreenMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+        // Get the actual THREE.Camera object if we're passed our Camera wrapper
+        const threeCamera = camera.getCamera ? camera.getCamera() : camera;
+        
+        this.projScreenMatrix.multiplyMatrices(
+            threeCamera.projectionMatrix,
+            threeCamera.matrixWorldInverse
+        );
         this.frustum.setFromProjectionMatrix(this.projScreenMatrix);
     }
 

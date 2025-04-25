@@ -7,18 +7,84 @@ export class TextureManager {
         this.tileSize = 16;
         this.textures = {};
         this.noiseGen = new NoiseGenerator();
-        this.createAtlas();
+        this.initialized = false;
+    }
+
+    async initialize() {
+        if (this.initialized) return this;
+        
+        console.log('Initializing texture manager...');
+        try {
+            const atlas = await this.createAtlas();
+            this.textures.atlas = atlas;
+            this.initialized = true;
+            console.log('Texture atlas created successfully');
+        } catch (error) {
+            console.error('Failed to initialize texture manager:', error);
+            throw error;
+        }
+        return this;
+    }
+
+    getMaterial(textureName) {
+        if (!this.initialized || !this.textures.atlas) {
+            console.error('Texture atlas not loaded - call initialize() first');
+            return new THREE.MeshBasicMaterial({ color: 0xff00ff }); // Purple fallback
+        }
+
+        // Create a new material using the texture atlas
+        const material = new THREE.MeshStandardMaterial({
+            map: this.textures.atlas,
+            roughness: 1.0,
+            metalness: 0.0
+        });
+
+        // Calculate UV coordinates based on texture position in atlas
+        const textureIndex = {
+            'grass_top': 0,
+            'dirt': 1,
+            'stone': 2,
+            'bedrock': 3
+        }[textureName];
+
+        if (textureIndex === undefined) {
+            console.error('Unknown texture:', textureName);
+            return material;
+        }
+
+        // Calculate UV coordinates
+        const textureCount = 4; // Total number of textures in atlas
+        const tileSize = this.tileSize;
+        const atlasWidth = this.textureSize;
+        const atlasHeight = 64;
+
+        // Calculate UV offset based on texture position
+        const startX = (atlasWidth - (textureCount * tileSize)) / 2;
+        const x = (startX + (textureIndex * tileSize)) / atlasWidth;
+        const y = (atlasHeight - tileSize) / (2 * atlasHeight);
+
+        // Set UV transformation
+        material.map.offset.set(x, y);
+        material.map.repeat.set(tileSize / atlasWidth, tileSize / atlasHeight);
+        material.needsUpdate = true;
+
+        return material;
     }
 
     async loadOrCreateTexture(name, createFunc) {
-        // Try to load from localStorage first
-        const stored = localStorage.getItem(`texture_${name}`);
-        if (stored) {
-            const img = new Image();
-            img.src = stored;
-            return new Promise((resolve) => {
-                img.onload = () => resolve(img);
-            });
+        // Try to load from server first
+        try {
+            const response = await fetch(`textures/${name}.png`);
+            if (response.ok) {
+                const blob = await response.blob();
+                const img = new Image();
+                img.src = URL.createObjectURL(blob);
+                return new Promise((resolve) => {
+                    img.onload = () => resolve(img);
+                });
+            }
+        } catch (err) {
+            console.warn('Failed to load texture from server:', err);
         }
 
         // Create new texture
@@ -29,12 +95,30 @@ export class TextureManager {
         const imageData = createFunc(ctx);
         ctx.putImageData(imageData, 0, 0);
 
-        // Save to localStorage
+        // Save to server
         try {
             const dataURL = canvas.toDataURL('image/png');
-            localStorage.setItem(`texture_${name}`, dataURL);
+            const response = await fetch('saveTexture.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name: name,
+                    data: dataURL
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            
+            const result = await response.json();
+            if (!result.success) {
+                throw new Error(result.error || 'Failed to save texture');
+            }
         } catch (err) {
-            console.warn('Unable to cache texture:', err);
+            console.warn('Unable to save texture to server:', err);
         }
 
         return canvas;
@@ -161,50 +245,5 @@ export class TextureManager {
         document.body.appendChild(canvas);
 
         return texture;
-    }
-
-    getMaterial(textureName) {
-        if (!this.textures.atlas) {
-            console.error('Texture atlas not loaded');
-            return new THREE.MeshBasicMaterial({ color: 0xff00ff }); // Purple fallback
-        }
-
-        // Create a new material using the texture atlas
-        const material = new THREE.MeshStandardMaterial({
-            map: this.textures.atlas,
-            roughness: 1.0,
-            metalness: 0.0
-        });
-
-        // Calculate UV coordinates based on texture position in atlas
-        const textureIndex = {
-            'grass_top': 0,
-            'dirt': 1,
-            'stone': 2,
-            'bedrock': 3
-        }[textureName];
-
-        if (textureIndex === undefined) {
-            console.error('Unknown texture:', textureName);
-            return material;
-        }
-
-        // Calculate UV coordinates
-        const textureCount = 4; // Total number of textures in atlas
-        const tileSize = this.tileSize;
-        const atlasWidth = this.textureSize;
-        const atlasHeight = 64;
-
-        // Calculate UV offset based on texture position
-        const startX = (atlasWidth - (textureCount * tileSize)) / 2;
-        const x = (startX + (textureIndex * tileSize)) / atlasWidth;
-        const y = (atlasHeight - tileSize) / (2 * atlasHeight);
-
-        // Set UV transformation
-        material.map.offset.set(x, y);
-        material.map.repeat.set(tileSize / atlasWidth, tileSize / atlasHeight);
-        material.needsUpdate = true;
-
-        return material;
     }
 }

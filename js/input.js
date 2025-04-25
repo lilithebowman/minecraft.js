@@ -1,3 +1,6 @@
+import { Force } from './modules.js';
+import * as THREE from 'three';
+
 export class Input {
     constructor(engine) {
         this.engine = engine;
@@ -5,6 +8,20 @@ export class Input {
         this.mouseMovement = { x: 0, y: 0 };
         this.mouseSensitivity = 0.002;
         this.isPointerLocked = false;
+
+        // Add flying and freezing states
+        this.isFlying = false;
+        this.isFrozen = false;
+
+        // Add flying force
+        this.movementForces = {
+            forward: new Force(new THREE.Vector3(0, 0, -1), 5),
+            backward: new Force(new THREE.Vector3(0, 0, 1), 5),
+            left: new Force(new THREE.Vector3(-1, 0, 0), 5),
+            right: new Force(new THREE.Vector3(1, 0, 0), 5),
+            jump: new Force(new THREE.Vector3(0, 1, 0), 10, 0.2),
+            fly: new Force(new THREE.Vector3(0, 1, 0), 5) // Continuous upward force
+        };
 
         // Bind methods to maintain context
         this.onKeyDown = this.onKeyDown.bind(this);
@@ -29,10 +46,35 @@ export class Input {
 
     onKeyDown(event) {
         this.keys.add(event.code);
+        console.log(`Key pressed: ${event.code}`);
+        
+        // Handle flying toggle
+        if (event.code === 'Space') {
+            this.isFlying = true;
+            console.log('Flying enabled');
+        }
+
+        // Handle freeze toggle
+        if (event.code === 'KeyF') {
+            this.isFrozen = !this.isFrozen;
+            console.log(`Player ${this.isFrozen ? 'frozen' : 'unfrozen'}`);
+            if (this.isFrozen) {
+                // Clear all forces when frozen
+                this.engine.player.clearForces();
+                this.engine.player.velocity.set(0, 0, 0);
+            }
+        }
     }
 
     onKeyUp(event) {
         this.keys.delete(event.code);
+        console.log(`Key released: ${event.code}`);
+        
+        // Stop flying when space is released
+        if (event.code === 'Space') {
+            this.isFlying = false;
+            console.log('Flying disabled');
+        }
     }
 
     onMouseMove(event) {
@@ -61,29 +103,44 @@ export class Input {
 
     update() {
         const player = this.engine.player;
-        if (!player) return;
+        if (!player || this.isFrozen) return;
 
-        // Handle keyboard input
-        const moveDirections = [];
-        if (this.keys.has('KeyW')) moveDirections.push('forward');
-        if (this.keys.has('KeyS')) moveDirections.push('backward');
-        if (this.keys.has('KeyD')) moveDirections.push('right');
-        if (this.keys.has('KeyA')) moveDirections.push('left');
-
-        // Apply movement for each pressed direction
-        for (const direction of moveDirections) {
-            player.moveInDirection(direction);
+        // Handle keyboard input and apply forces
+        if (this.keys.has('KeyW')) {
+            const force = this.movementForces.forward.clone();
+            force.setDirection(player.forward);
+            player.addForce(force);
+        }
+        if (this.keys.has('KeyS')) {
+            const force = this.movementForces.backward.clone();
+            force.setDirection(player.forward.clone().multiplyScalar(-1));
+            player.addForce(force);
+        }
+        if (this.keys.has('KeyD')) {
+            const force = this.movementForces.right.clone();
+            force.setDirection(player.right);
+            player.addForce(force);
+        }
+        if (this.keys.has('KeyA')) {
+            const force = this.movementForces.left.clone();
+            force.setDirection(player.right.clone().multiplyScalar(-1));
+            player.addForce(force);
         }
 
-        // Handle mouse movement for rotation
-        if (this.mouseMovement.x !== 0) {
-            player.rotate(this.mouseMovement.x * this.mouseSensitivity);
-            this.mouseMovement.x = 0;
+        // Handle flying
+        if (this.isFlying && !player.isGrounded) {
+            player.addForce(this.movementForces.fly.clone());
         }
 
         // Handle jump
-        if (this.keys.has('Space')) {
-            player.jump();
+        if (this.keys.has('Space') && player.isGrounded) {
+            player.addForce(this.movementForces.jump.clone());
+        }
+
+        // Handle mouse movement for rotation
+        if (Math.abs(this.mouseMovement.x) > 0.01) {
+            player.rotate(this.mouseMovement.x * this.mouseSensitivity);
+            this.mouseMovement.x = 0;
         }
 
         // Reset mouse movement

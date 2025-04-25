@@ -1,8 +1,12 @@
 export { BlockManager } from './blocks.js';
+export { BoxCollider } from './physics/boxCollider.js';
+export { Camera } from './camera.js';
 export { Chunk } from './chunk.js';
+export { Collider } from './physics/collider.js';
 export { DisplayList } from './displayList.js';
 export { Engine } from './engine.js';
 export { Framerate } from './framerate.js';
+export { Force } from './physics/force.js';
 export { NoiseGenerator } from './utils/noise.js';
 export { Player } from './player.js';
 export { Renderer } from './renderer.js';

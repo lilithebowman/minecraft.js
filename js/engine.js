@@ -2,6 +2,7 @@ import { Time } from './time.js';
 import { Framerate } from './framerate.js';
 import { BlockManager } from './blocks.js';
 import { Input } from './input.js';
+import { DebugLog } from './debug.js';
 
 export class Engine {
     constructor() {
@@ -9,31 +10,37 @@ export class Engine {
         this.time = new Time();
         this.framerate = new Framerate();
         this.blockManager = new BlockManager();
-        this.maxBlocks = 1000; // Maximum blocks to render
+        this.maxBlocks = 10000; // Maximum blocks to render
         
         // Store game objects
         this.world = null;
         this.player = null;
         this.renderer = null;
         this.input = null;
-        console.log('Engine initialized'); // Debug log
+        this.debugLog = new DebugLog();
     }
 
-    init(world, player, renderer) {
+    async init(world, player, renderer) {
+        console.log('Initializing engine...');
+        
+        // Initialize block manager first
+        await this.blockManager.initialize();
+        
+        // Set up dependencies after initialization
         this.world = world;
         this.player = player;
         this.renderer = renderer;
+
+        // Set up dependencies
         this.world.blockManager = this.blockManager;
-        this.renderer.setPlayer(player);
-        this.player.createPositionDisplay();
-
-        // Debug logs
-        console.log('World chunks:', this.world.chunks.size);
-        console.log('Player position:', this.player.position);
-        console.log('Renderer initialized:', !!this.renderer);
-
+        this.renderer.blockManager = this.blockManager;
+        this.renderer.setWorld(world); // Add this line
+        this.renderer.setPlayer(player); // Add this line
+        
         // Initialize input system
         this.input = new Input(this);
+        
+        console.log('Engine initialized');
     }
 
     start() {
@@ -96,6 +103,13 @@ export class Engine {
             // Update position display after player update
             this.player.updatePositionDisplay();
         }
+
+        // Update debug stats
+        this.debugLog.updateStats({
+            fps: Math.round(this.framerate.getFPS()),
+            position: this.player.position,
+            blocks: this.blockManager.getBlockCount()
+        });
     }
 
     render() {

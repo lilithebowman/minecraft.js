@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { TextureManager, DisplayList } from './modules.js';
+import { TextureManager, DisplayList, Camera } from './modules.js';
+import { Frustum } from './utils/frustum.js';
 
 export class Renderer {
     constructor() {
@@ -11,20 +12,11 @@ export class Renderer {
         this.scene.background = new THREE.Color(0x87CEEB); // Sky blue background
         
         // Initialize camera
-        this.camera = new THREE.PerspectiveCamera(
-            75, 
-            window.innerWidth / window.innerHeight,
-            0.1,
-            1000
-        );
-
-        // Update camera position and rotation
-        this.camera.position.set(0, 100, 100); // Move camera back and up
-        this.camera.lookAt(0, 0, 0); // Look at center
+        this.camera = new Camera();
 
         // Add fog to scene for depth
         this.scene.fog = new THREE.Fog(0x87ceeb, 0, 500);
-        this.scene.background = new THREE.Color(0x87ceeb); // Sky blue
+        this.scene.background = new THREE.Color(0x87ceeb);
 
         this.renderer = new THREE.WebGLRenderer({
             canvas: document.getElementById('gameCanvas'),
@@ -33,11 +25,41 @@ export class Renderer {
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.setPixelRatio(window.devicePixelRatio);
 
+        // Handle window resizing
+        window.addEventListener('resize', () => this.handleResize());
+
         // Initialize texture manager
         this.textureManager = new TextureManager();
 
         // Create block geometry once
         this.blockGeometry = new THREE.BoxGeometry(1, 1, 1);
+
+        // Initialize frustum
+        this.frustum = new Frustum();
+        
+        // Create world rotation group
+        this.worldGroup = new THREE.Group();
+        this.scene.add(this.worldGroup);
+
+        this.world = null;
+        this.player = null;
+    }
+
+    setWorld(world) {
+        if (!world) {
+            console.error('Attempted to set null world in renderer');
+            return;
+        }
+        this.world = world;
+    }
+
+    setPlayer(player) {
+        if (!player) {
+            console.error('Attempted to set null player in renderer');
+            return;
+        }
+        this.player = player;
+        this.camera.attachToPlayer(player);
     }
 
     addBlock(x, y, z, type) {
@@ -46,7 +68,7 @@ export class Renderer {
             this.blockManager.getMaterial(type)
         );
         block.position.set(x, y, z);
-        this.scene.add(block);
+        this.worldGroup.add(block);
         return this.displayList.add(block);
     }
 
@@ -61,15 +83,10 @@ export class Renderer {
     }
 
     clearDisplayList() {
-        // Remove all objects from scene and clear the display list
         for (const object of this.displayList) {
-            this.scene.remove(object);
+            this.worldGroup.remove(object);
         }
         this.displayList.clear();
-    }
-
-    setPlayer(player) {
-        this.player = player;
     }
 
     getPlayerChunk() {
@@ -91,29 +108,51 @@ export class Renderer {
                Math.abs(blockChunkZ - playerChunk.z) <= renderDistance;
     }
 
+    handleResize() {
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
     render() {
-        // Clear the scene
-        while (this.scene.children.length > 0) {
-            this.scene.remove(this.scene.children[0]);
+        if (!this.world) {
+            console.warn('Cannot render: world not set');
+            return;
+        }
+
+        // Update camera position before rendering
+        this.camera.updatePosition();
+
+        // Update frustum with current camera
+        this.frustum.update(this.camera.getCamera());
+
+        // Clear the world group
+        while (this.worldGroup.children.length > 0) {
+            this.worldGroup.remove(this.worldGroup.children[0]);
         }
 
         // Add lighting
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
         const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
         directionalLight.position.set(10, 100, 10);
-        this.scene.add(ambientLight, directionalLight);
+        this.worldGroup.add(ambientLight, directionalLight);
 
         // Add blocks from visible chunks
         const visibleChunks = this.world.getVisibleChunks(this.camera);
         for (const chunk of visibleChunks) {
-            for (let x = 0; x < 16; x++) {
-                for (let y = 0; y < 256; y++) {
-                    for (let z = 0; z < 16; z++) {
-                        const blockType = chunk.getBlock(x, y, z);
-                        if (blockType) {
-                            const worldX = chunk.x * 16 + x;
-                            const worldZ = chunk.z * 16 + z;
-                            this.addBlock(worldX, y, worldZ, blockType);
+            if (this.frustum.isChunkVisible(chunk)) {
+                for (let x = 0; x < 16; x++) {
+                    for (let y = 0; y < 256; y++) {
+                        for (let z = 0; z < 16; z++) {
+                            const blockType = chunk.getBlock(x, y, z);
+                            if (blockType) {
+                                const worldX = chunk.x * 16 + x;
+                                const worldZ = chunk.z * 16 + z;
+                                const block = new THREE.Mesh(
+                                    this.blockGeometry,
+                                    this.blockManager.getMaterial(blockType)
+                                );
+                                block.position.set(worldX, y, worldZ);
+                                this.worldGroup.add(block);
+                            }
                         }
                     }
                 }
@@ -122,9 +161,14 @@ export class Renderer {
 
         // Add debug axes
         const axesHelper = new THREE.AxesHelper(50);
-        this.scene.add(axesHelper);
+        this.worldGroup.add(axesHelper);
 
-        // Render the scene
-        this.renderer.render(this.scene, this.camera);
+        // Update world group rotation based on player rotation
+        if (this.player) {
+            this.worldGroup.rotation.y = -this.player.rotation;
+        }
+
+        // Render the scene with camera
+        this.renderer.render(this.scene, this.camera.getCamera());
     }
 }

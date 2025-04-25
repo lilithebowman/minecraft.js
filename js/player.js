@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { Force } from './modules.js';
 
 export class Player {
     constructor(name, health = 100, position = { x: 0, y: 0, z: 0 }) {
@@ -12,19 +13,32 @@ export class Player {
         this.velocity = new THREE.Vector3(0, 0, 0);
         this.moveSpeed = 5;
         this.jumpForce = 10;
-        this.gravity = -20;
-        this.isGrounded = false;
+        
+        // Add forces array
+        this.forces = [];
+        
+        // Add gravity force
+        this.gravity = new Force(new THREE.Vector3(0, -1, 0), 20);
 
-        // Initialize directional vectors properly
+        // Initialize directional vectors
         this.forward = new THREE.Vector3(0, 0, -1);
         this.right = new THREE.Vector3(1, 0, 0);
-        this.rotation = 0;
+        this.rotation = 0; // Rotation around Y axis in radians
         
-        // Initialize vectors
+        // Update vectors initially
         this.updateVectors();
 
         // Create position display
         this.createPositionDisplay();
+
+        // Add collision properties
+        this.boundingBox = new THREE.Box3();
+        this.playerHeight = 1.8;
+        this.playerWidth = 0.6;
+        this.updateBoundingBox();
+
+        // Add frozen state
+        this.isFrozen = true;
     }
 
     createPositionDisplay() {
@@ -42,7 +56,9 @@ export class Player {
 
     updatePositionDisplay() {
         if (this.positionDisplay) {
-            this.positionDisplay.textContent = `Position: (${Math.round(this.position.x)}, ${Math.round(this.position.y)}, ${Math.round(this.position.z)})`;
+            const pos = this.position;
+            this.positionDisplay.textContent = 
+                `Position: (${Math.round(pos.x)}, ${Math.round(pos.y)}, ${Math.round(pos.z)})`;
         }
     }
 
@@ -67,55 +83,70 @@ export class Player {
         this.updateVectors();
     }
 
-    // Update the movement method
-    moveInDirection(direction) {
-        const speed = this.moveSpeed;
-        const movement = new THREE.Vector3();
-        
-        switch(direction) {
-            case 'forward':
-                movement.copy(this.forward).multiplyScalar(speed);
-                break;
-            case 'backward':
-                movement.copy(this.forward).multiplyScalar(-speed);
-                break;
-            case 'right':
-                movement.copy(this.right).multiplyScalar(speed);
-                break;
-            case 'left':
-                movement.copy(this.right).multiplyScalar(-speed);
-                break;
-        }
+    addForce(force) {
+        this.forces.push(force);
+        console.log('Player is moving');
+    }
 
-        // Add movement to velocity
-        this.velocity.add(movement);
+    clearForces() {
+        this.forces = [];
+        console.log('Player is frozen');
+        this.velocity.set(0, 0, 0);
     }
 
     update(deltaTime) {
+        // If frozen, only update display and return
+        if (this.isFrozen) {
+            this.updatePositionDisplay();
+            return;
+        }
+
         // Convert deltaTime to seconds
         const dt = deltaTime / 1000;
 
-        // Apply gravity
+        // Store original position for collision response
+        const originalPosition = this.position.clone();
+
+        // Apply all active forces
+        const totalForce = new THREE.Vector3();
+        
+        // Always apply gravity if not grounded
         if (!this.isGrounded) {
-            this.velocity.y += this.gravity * dt;
+            totalForce.add(this.gravity.update(dt));
         }
+
+        // Apply other forces and remove expired ones
+        this.forces = this.forces.filter(force => {
+            const forceVector = force.update(dt);
+            totalForce.add(forceVector);
+            return !force.isExpired;
+        });
+
+        // Update velocity based on forces
+        this.velocity.add(totalForce.multiplyScalar(dt));
 
         // Update position based on velocity
         this.position.add(this.velocity.clone().multiplyScalar(dt));
-
-        // Basic ground collision
-        if (this.position.y < 0) {
-            this.position.y = 0;
-            this.velocity.y = 0;
-            this.isGrounded = true;
-        }
 
         // Apply friction
         this.velocity.x *= 0.9;
         this.velocity.z *= 0.9;
 
+        // Reset grounded state each frame
+        this.isGrounded = false;
+
+        // Update bounding box
+        this.updateBoundingBox();
+
         // Update position display
         this.updatePositionDisplay();
+    }
+
+    updateBoundingBox() {
+        this.boundingBox.setFromCenterAndSize(
+            this.position,
+            new THREE.Vector3(this.playerWidth, this.playerHeight, this.playerWidth)
+        );
     }
 }
 

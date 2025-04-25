@@ -23,8 +23,18 @@ export class World {
 		const scale = 50;
 		const amplitude = 32;
 		const baseHeight = 64;
+		const bedrockLevel = -1024;
 
-		// Generate a smaller test area first
+		// Generate bedrock layer first
+		console.log('Generating bedrock layer...'); // Debug log
+		for (let x = -8; x < 8; x++) {
+			for (let z = -8; z < 8; z++) {
+				// Place bedrock at y = -1024
+				this.setBlock(x, bedrockLevel, z, 'bedrock');
+			}
+		}
+
+		// Generate terrain
 		for (let x = -8; x < 8; x++) {
 			for (let z = -8; z < 8; z++) {
 				let height = baseHeight;

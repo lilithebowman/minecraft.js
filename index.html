@@ -38,6 +38,7 @@
 	<canvas id="gameCanvas"></canvas>
 	<div class="controls">
 		<div>WASD: Move</div>
+		<div>F: Freeze in Space</div>
 		<div>Mouse: Look</div>
 		<div>Space: Jump</div>
 		<div>Click: Break block</div>
@@ -46,23 +47,23 @@
 	<script type="module">
     import { Engine, World, Player, Renderer, BlockManager } from './js/modules.js';
     
-    // Initialize your game here
-    const blockManager = new BlockManager();
-    const engine = new Engine();
-    const world = new World();
-    const player = new Player();
-    const renderer = new Renderer();
+    async function initGame() {
+        // Initialize your game here
+        const blockManager = new BlockManager();
+        const engine = new Engine();
+        const world = new World();
+        const player = new Player();
+        const renderer = new Renderer();
 
-    // Set up dependencies
-    renderer.blockManager = blockManager;
-    renderer.world = world;
-    world.blockManager = blockManager;
+        // Initialize engine with dependencies
+        await engine.init(world, player, renderer);
+        
+        // Start the game loop
+        engine.start();
+    }
 
-    // Initialize engine with dependencies
-    engine.init(world, player, renderer);
-    
-    // Start the game loop
-    engine.start();
+    // Start the game
+    initGame().catch(console.error);
 </script>
 </body>
 </html>
