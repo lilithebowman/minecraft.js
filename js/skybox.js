@@ -20,17 +20,22 @@ export class Skybox {
                 console.log('No existing texture found, generating new one...');
                 const canvas = this.createCloudTexture();
                 texture = new THREE.CanvasTexture(canvas);
-                
-                // Save the newly generated texture
                 await this.saveTexture(canvas);
             }
 
+            // Set up texture properties
             texture.needsUpdate = true;
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+            texture.repeat.set(2, 2);
             
-            // Create the background material using the texture
+            // Set material properties for proper sky rendering
             this.material = new THREE.MeshBasicMaterial({
                 map: texture,
-                side: THREE.BackSide
+                side: THREE.BackSide,
+                transparent: true,
+                fog: false,
+                depthWrite: false
             });
 
         } catch (error) {
@@ -40,8 +45,8 @@ export class Skybox {
     }
 
     update(scene) {
-        if (!scene.background) {
-            scene.background = this.material;
+        if (!scene.background || scene.background !== this.material.map) {
+            scene.background = this.material.map;
         }
     }
 
