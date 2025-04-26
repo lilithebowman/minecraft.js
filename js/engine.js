@@ -1,6 +1,6 @@
 import { Time } from './time.js';
 import { Framerate } from './framerate.js';
-import { BlockManager } from './blocks.js';
+import { Block } from './blocks.js';
 import { Input } from './input.js';
 import { debug } from './debug.js';
 import { EventEmitter } from './utils/event_emitter.js';
@@ -10,7 +10,7 @@ export class Engine {
         this.isRunning = false;
         this.time = new Time();
         this.framerate = new Framerate();
-        this.blockManager = new BlockManager();
+        this.block = new Block();
         this.maxBlocks = 10000;
         this.eventEmitter = new EventEmitter();
         
@@ -36,7 +36,7 @@ export class Engine {
 
             // Initialize block manager first
             console.log('Initializing block manager and textures...');
-            await this.blockManager.initialize();
+            await this.block.initialize();
             
             // Set up components
             this.world = world;
@@ -45,7 +45,7 @@ export class Engine {
 
             // Initialize world with block manager
             console.log('Initializing world...');
-            await this.world.initialize(this.blockManager);
+            await this.world.initialize(this.block);
             console.log('World initialized');
 
             // Initialize renderer

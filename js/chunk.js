@@ -31,7 +31,7 @@ export class Chunk {
         }
 
         this.isDirty = false;
-        this.blockManager = null;  // Will be set by World
+        this.block = null;  // Will be set by World
         this.mesh = null;
         this.visibleBlocks = [];
         this.needsVisibilityUpdate = true;
@@ -114,7 +114,7 @@ export class Chunk {
     }
 
     rebuildMesh() {
-        if (!this.blockManager) {
+        if (!this.block) {
             return;
         }
 

@@ -100,88 +100,72 @@ export class Renderer {
 
     // Render the scene
     render(deltaTime) {
-        // Update debug axes with current camera
-        if (this.player) debug.updateAxes(this.player?.camera.camera);
+        if (this.lastRenderTime + this.fpsInterval < Date.now()) {
+            this.lastRenderTime = Date.now();
 
-        // Check if last render time is less than fps interval
-        if (this.lastRenderTime && (deltaTime - this.lastRenderTime) < this.fpsInterval) {
-            return; // Skip rendering to maintain FPS limit
-        }
-        this.lastRenderTime = deltaTime;
-        
-        // Check if world is set
-        if (!this.world) {
-            console.warn('Cannot render: world not set');
-            return;
-        }
+            // Update camera
+            if (this.camera) {
+                this.camera.updatePosition();
+                this.frustum.update(this.camera);
+            }
 
-        // Update skybox with camera reference
-        this.skybox.update(this.scene, this.camera.camera);
+            // Update skybox
+            if (this.skybox) {
+                this.skybox.update(this.camera);
+            }
 
-        // Update camera position before rendering
-        this.camera.updatePosition();
-
-        // Update frustum with current camera
-        this.frustum.update(this.camera.getCamera());
-
-        // Clear the world group but keep instanced meshes
-        const instancedMeshes = new Map(this.instancedMeshes);
-        while (this.worldGroup.children.length > 0) {
-            this.worldGroup.remove(this.worldGroup.children[0]);
-        }
-        this.instancedMeshes = instancedMeshes;
-
-        // Add lighting
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        directionalLight.position.set(10, 100, 10);
-        this.worldGroup.add(ambientLight, directionalLight);
-
-        // Re-add instanced meshes to world group
-        for (const mesh of this.instancedMeshes.values()) {
-            this.worldGroup.add(mesh);
+            // Render the scene
+            this.renderer.render(this.scene, this.camera.getCamera());
         }
 
-        if (!this.player || !this.player.camera) {
-            console.warn('Cannot render: player not set');
-            return;
+        // Update block instances
+        if (this.blockWorker && this.block) {
+            const visibleChunks = this.world.getVisibleChunks(this.camera);
+            const instanceData = this.getInstanceData(visibleChunks);
+            this.blockWorker.postMessage({ instanceData });
         }
+    }
 
-        // Get visible chunks within player's view
-        const allChunks = this.world.getVisibleChunks(this.player.camera);
-        debug.log(`Total chunks: ${allChunks.length}`);
-        
-        const visibleChunks = allChunks.filter(chunk => this.frustum.isChunkVisible(chunk));
-        debug.log(`Visible chunks after frustum culling: ${visibleChunks.length}`);
+    getInstanceData(visibleChunks) {
+        const instanceData = new Map();
+        const blockTypes = ['grass', 'dirt', 'stone', 'bedrock'];
 
-        // If no chunks are visible, warn the user
-        if (visibleChunks.length < this.minChunks) {
-            console.warn('No visible chunks to render');
-            debug.log('Camera position:', this.player.camera.position);
-            debug.log('Player position:', this.player.position);
-        }
+        // Initialize data structure for each block type
+        blockTypes.forEach(type => {
+            instanceData.set(type, {
+                count: 0,
+                positions: []
+            });
+        });
 
-        // Process visible blocks directly
+        // Process each visible chunk
         for (const chunk of visibleChunks) {
-            const blocks = chunk.getLocalBlocks(this.player.camera);
+            // Get blocks from chunk
+            const blocks = chunk.getLocalBlocks(this.camera);
+            
+            // Process each block
             for (const block of blocks) {
-                const mesh = this.instancedMeshes.get(block.type);
-                if (mesh && mesh.count < this.INSTANCES_PER_TYPE) {
+                const data = instanceData.get(block.type);
+                if (data && data.count < this.INSTANCES_PER_TYPE) {
+                    // Create transformation matrix
                     const matrix = new THREE.Matrix4();
-                    matrix.setPosition(block.position.x, block.position.y, block.position.z);
-                    mesh.setMatrixAt(mesh.count++, matrix);
-                    mesh.instanceMatrix.needsUpdate = true;
+                    matrix.setPosition(
+                        block.position.x,
+                        block.position.y,
+                        block.position.z
+                    );
+                    
+                    // Store matrix elements
+                    data.positions.push(Array.from(matrix.elements));
+                    data.count++;
                 }
             }
         }
 
-        // Add world group to scene if not already added
-        if (!this.scene.children.includes(this.worldGroup)) {
-            this.scene.add(this.worldGroup);
-        }
+        debug.log(`Processing ${visibleChunks.length} chunks`);
+        debug.log(`Total instances: ${Array.from(instanceData.values()).reduce((sum, data) => sum + data.count, 0)}`);
 
-        // Render the scene with camera
-        this.renderer.render(this.scene, this.camera.getCamera());
+        return instanceData;
     }
 
     setWorld(world) {
@@ -221,7 +205,7 @@ export class Renderer {
             this.setPlayer(player);
             
             // Create block manager reference
-            this.blockManager = world.blockManager;
+            this.block = world.block;
             
             console.log('Renderer initialized successfully');
             return this;

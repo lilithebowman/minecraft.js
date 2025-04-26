@@ -3,7 +3,7 @@ import { BoxCollider } from './physics/boxCollider.js';
 import * as THREE from 'three';
 import { debug } from './debug.js';
 
-export class BlockManager {
+export class Block {
     constructor() {
         // Initialize blocks Map
         this.blocks = new Map();
@@ -28,7 +28,7 @@ export class BlockManager {
             console.error('Failed to initialize block manager:', error);
             throw error;
         }
-        debug.log('BlockManager initialized');
+        debug.log('Block initialized');
     }
 
     async addBlock(id, blockData) {

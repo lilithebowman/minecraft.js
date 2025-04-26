@@ -1,4 +1,4 @@
-export { BlockManager } from './blocks.js';
+export { Block } from './blocks.js';
 export { BoxCollider } from './physics/boxCollider.js';
 export { Camera } from './camera.js';
 export { Chunk } from './chunk.js';

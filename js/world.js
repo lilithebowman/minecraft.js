@@ -1,4 +1,4 @@
-import { BlockManager } from './blocks.js';
+import { Block } from './blocks.js';
 import { Chunk } from './chunk.js';
 import { NoiseGenerator } from './utils/noise.js';
 import { Frustum } from './utils/frustum.js';
@@ -72,7 +72,7 @@ export class World {
                         
                         // Register with block manager
                         const blockId = `${block.worldX},${block.y},${block.worldZ}`;
-                        this.blockManager.addBlock(blockId, {
+                        this.block.addBlock(blockId, {
                             type: block.type,
                             position: { 
                                 x: block.worldX, 
@@ -121,12 +121,12 @@ export class World {
         
         // Update block manager
         if (type) {
-            this.blockManager.addBlock(blockId, {
+            this.block.addBlock(blockId, {
                 type,
                 position: { x, y, z }
             });
         } else {
-            this.blockManager.removeBlock(blockId);
+            this.block.removeBlock(blockId);
         }
 
         // Update chunk
@@ -138,7 +138,7 @@ export class World {
         const key = `${chunkX},${chunkZ}`;
         if (!this.chunks.has(key)) {
             const chunk = new Chunk(chunkX, chunkZ);
-            chunk.blockManager = this.blockManager;
+            chunk.block = this.block;
             
             // Try to load from cache first
             const loaded = await chunk.loadFromCache();
@@ -188,7 +188,7 @@ export class World {
                         
                         // Register block with block manager
                         const blockId = `${worldX},${y},${worldZ}`;
-                        this.blockManager.addBlock(blockId, {
+                        this.block.addBlock(blockId, {
                             type: blockType,
                             position: { x: worldX, y, z: worldZ }
                         });
@@ -355,7 +355,7 @@ export class World {
             chunk.dispose(); // Add dispose method to Chunk class
         });
         this.chunks.clear();
-        this.blockManager = null;
+        this.block = null;
         this.noiseGen = null;
         if (this.loadingDiv) {
             this.loadingDiv.remove();
@@ -363,9 +363,9 @@ export class World {
         }
     }
 
-    async initialize(blockManager) {
+    async initialize(block) {
         try {
-            this.blockManager = blockManager;
+            this.block = block;
             await this.generateWorld();
             return true;
         } catch (error) {
