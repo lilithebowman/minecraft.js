@@ -100,7 +100,7 @@ export class Renderer {
     // Render the scene
     render(deltaTime) {
         // Update debug axes with current camera
-        debug.updateAxes(this.camera.camera);
+        if (this.player) debug.updateAxes(this.player?.camera.camera);
 
         // Check if last render time is less than fps interval
         if (this.lastRenderTime && (deltaTime - this.lastRenderTime) < this.fpsInterval) {

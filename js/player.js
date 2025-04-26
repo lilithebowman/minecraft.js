@@ -65,7 +65,7 @@ export class Player {
         this.position.z = Math.max(-1024, Math.min(1024, this.position.z));
         this.position.y = Math.max(-1024, Math.min(1024, this.position.y));
 
-        debug.updateStats({position: this.position});
+        debug.updateStats({position: this.position, rotation: this.camera.camera.rotation});
     }
 
     /**

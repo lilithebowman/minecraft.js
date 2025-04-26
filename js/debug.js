@@ -10,6 +10,7 @@ export class DebugLog {
         this.stats = {  
             fps: 0,
             position: { x: 0, y: 0, z: 0 },
+            rotation: { x: 0, y: 0, z: 0 },
             blocks: 0
         };
 
@@ -95,11 +96,13 @@ export class DebugLog {
         this.stats = { 
             fps: stats.fps || this.stats.fps,
             position: stats.position || this.stats.position,
-            blocks: stats.blocks || this.stats.blocks
+            blocks: stats.blocks || this.stats.blocks,
+            rotation: stats.rotation || this.stats.rotation
         };
         this.statsPanel.innerHTML = `
             FPS: ${this.stats.fps}<br>
             Position: (${Math.round(this.stats.position.x)}, ${Math.round(this.stats.position.y)}, ${Math.round(this.stats.position.z)})<br>
+            Rotation: (${Math.round(this.stats.rotation.x*100)}, ${Math.round(this.stats.rotation.y*100)}, ${Math.round(this.stats.rotation.z*100)})<br>
             Blocks: ${this.stats.blocks}
         `;
     }
@@ -130,11 +133,17 @@ export class DebugLog {
     updateAxes(playerCamera) {
         if (!playerCamera) return;
 
-        // Position axes camera
-        this.axesCamera.position.set(0, 0, 100);
+        // Position axes camera in a circle around the origin
+        const radius = 100;
+        const cameraX = radius * Math.sin(playerCamera.rotation.y);
+        const cameraZ = radius * Math.cos(playerCamera.rotation.y);
+        this.axesCamera.position.set(cameraX, 30, cameraZ);
         
-        // Copy rotation from player camera
-        this.axesCamera.rotation.copy(playerCamera.rotation);
+        // Make camera look at origin (where axes intersect)
+        this.axesCamera.lookAt(0, 0, 0);
+        
+        // Match Y-rotation with player camera for proper orientation
+        this.axesCamera.rotation.y = playerCamera.rotation.y;
         
         // Render axes
         this.axesRenderer.render(this.axesScene, this.axesCamera);

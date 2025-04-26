@@ -155,8 +155,7 @@ export class Input {
     }
 
     update() {
-        const player = this.engine.player;
-        if (!player || this.isFrozen) return;
+        if (!this.engine.player || this.isFrozen) return;
 
         // Update key display
         if (this.keys.size > 0) {
@@ -191,7 +190,7 @@ export class Input {
 
         // Handle mouse movement for rotation
         if (Math.abs(this.mouseMovement.x) > 0.01) {
-            player.rotate(this.mouseMovement.x * this.mouseSensitivity);
+            this.engine.player.rotate(this.mouseMovement.x * this.mouseSensitivity);
             this.mouseMovement.x = 0;
         }
 
@@ -202,8 +201,8 @@ export class Input {
             this.pitch = Math.max(this.minPitch, Math.min(this.maxPitch, this.pitch));
             
             // Update player's camera pitch
-            if (player.camera) {
-                player.camera.setPitch(this.pitch);
+            if (this.engine.player.camera) {
+                this.engine.player.camera.setPitch(this.pitch);
             }
             this.mouseMovement.y = 0;
         }
