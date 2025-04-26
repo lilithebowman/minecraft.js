@@ -152,50 +152,66 @@ export class World {
         return this.chunks.get(key);
     }
 
-    generateChunkTerrain(chunk) {
-        const scale = 50;
-        const amplitude = 32;
-        const baseHeight = 64;
+    async generateChunkTerrain(chunk) {
+        try {
+            const scale = 50;
+            const amplitude = 32;
+            const baseHeight = 64;
 
-        // Generate terrain for this chunk
-        for (let x = 0; x < 16; x++) {
-            for (let z = 0; z < 16; z++) {
-                const worldX = (chunk.x * 16) + x;
-                const worldZ = (chunk.z * 16) + z;
-                
-                // Generate height using noise
-                let height = baseHeight;
-                height += this.noiseGen.noise(worldX/scale, 0, worldZ/scale) * amplitude;
-                height = Math.floor(height);
-
-                // Generate column
-                for (let y = 0; y < height; y++) {
-                    let blockType;
-                    if (y === 0) {
-                        blockType = 'bedrock';
-                    } else if (y < height - 4) {
-                        blockType = 'stone';
-                    } else if (y < height - 1) {
-                        blockType = 'dirt';
-                    } else {
-                        blockType = 'grass';
-                    }
-
-                    // Add block to chunk
-                    chunk.setBlock(x, y, z, blockType);
+            // Generate terrain for this chunk
+            for (let x = 0; x < 16; x++) {
+                for (let z = 0; z < 16; z++) {
+                    const worldX = (chunk.x * 16) + x;
+                    const worldZ = (chunk.z * 16) + z;
                     
-                    // Register block with block manager
-                    const blockId = `${worldX},${y},${worldZ}`;
-                    this.blockManager.addBlock(blockId, {
-                        type: blockType,
-                        position: { x: worldX, y, z: worldZ }
-                    });
+                    // Generate height using noise
+                    let height = baseHeight;
+                    height += this.noiseGen.noise(worldX/scale, 0, worldZ/scale) * amplitude;
+                    height = Math.floor(height);
+
+                    // Generate column
+                    for (let y = 0; y < height; y++) {
+                        let blockType;
+                        if (y === 0) {
+                            blockType = 'bedrock';
+                        } else if (y < height - 4) {
+                            blockType = 'stone';
+                        } else if (y < height - 1) {
+                            blockType = 'dirt';
+                        } else {
+                            blockType = 'grass';
+                        }
+
+                        // Add block to chunk
+                        chunk.setBlock(x, y, z, blockType);
+                        
+                        // Register block with block manager
+                        const blockId = `${worldX},${y},${worldZ}`;
+                        this.blockManager.addBlock(blockId, {
+                            type: blockType,
+                            position: { x: worldX, y, z: worldZ }
+                        });
+                    }
                 }
             }
-        }
 
-        // Mark chunk as dirty to update mesh
-        chunk.isDirty = true;
+            // Mark chunk as dirty to update mesh
+            chunk.isDirty = true;
+        } catch (error) {
+            console.error(`Failed to generate chunk at ${chunk.x},${chunk.z}:`, error);
+            // Add fallback terrain generation
+            this.generateFallbackTerrain(chunk);
+        }
+    }
+
+    generateFallbackTerrain(chunk) {
+        // Simple flat terrain as fallback
+        for (let x = 0; x < 16; x++) {
+            for (let z = 0; z < 16; z++) {
+                chunk.setBlock(x, 0, z, 'bedrock');
+                chunk.setBlock(x, 1, z, 'dirt');
+            }
+        }
     }
 
     getChunk(chunkX, chunkZ) {
@@ -248,16 +264,14 @@ export class World {
     getVisibleChunks(camera) {
         if (!camera || !camera.position) return [];
         
-        this.frustum.update(camera);
+        // Add chunk culling by distance first before frustum check
         const chunks = Array.from(this.chunks.values())
-            .filter(chunk => this.frustum.isChunkVisible(chunk))
-            .sort((a, b) => {
-                // Sort by distance to camera
-                const distA = this.getChunkDistanceToCamera(a, camera);
-                const distB = this.getChunkDistanceToCamera(b, camera);
-                return distA - distB;
+            .filter(chunk => {
+                const dist = this.getChunkDistanceToCamera(chunk, camera);
+                return dist <= (this.renderDistance * 16) * (this.renderDistance * 16);
             })
-            .slice(0, 32); // Limit max visible chunks
+            .filter(chunk => this.frustum.isChunkVisible(chunk))
+            .slice(0, 32);
             
         return chunks;
     }
@@ -317,9 +331,19 @@ export class World {
     }
 
     dispose() {
-        // Clean up workers when done
+        // Improve cleanup
         this.workers.forEach(worker => worker.terminate());
         this.workers = [];
+        this.chunks.forEach(chunk => {
+            chunk.dispose(); // Add dispose method to Chunk class
+        });
+        this.chunks.clear();
+        this.blockManager = null;
+        this.noiseGen = null;
+        if (this.loadingDiv) {
+            this.loadingDiv.remove();
+            this.loadingDiv = null;
+        }
     }
 
     async initialize(blockManager) {
@@ -332,5 +356,23 @@ export class World {
             this.dispose(); // Clean up workers on error
             throw error;
         }
+    }
+
+    enableDebug() {
+        this.debugMode = true;
+        this.debugStats = {
+            loadedChunks: 0,
+            totalBlocks: 0,
+            lastUpdateTime: 0,
+            chunkLoadTimes: []
+        };
+    }
+
+    updateDebugStats() {
+        if (!this.debugMode) return;
+        
+        this.debugStats.loadedChunks = this.chunks.size;
+        this.debugStats.totalBlocks = this.totalBlocks;
+        debug.updateStats(this.debugStats);
     }
 }
