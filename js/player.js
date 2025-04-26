@@ -9,14 +9,19 @@ export class Player {
     constructor(position = new Position(0, 100, 0)) {
         this.position = position;
         this.velocity = new Velocity();
-        this.size = { x: 0.6, y: 1.8, z: 0.6 }; // Player's bounding box size
-        this.rotation = 0; // yaw
-        this.pitch = 0;    // looking up/down
+        this.size = { x: 0.6, y: 1.8, z: 0.6 };
+        this.rotation = 0;
+        this.pitch = 0;
         this.forward = new THREE.Vector3(0, 0, -1);
         this.right = new THREE.Vector3(1, 0, 0);
         this.isGrounded = false;
+        
+        // Initialize camera
         this.camera = new Camera();
         this.camera.attachToPlayer(this);
+        
+        // Set initial camera position
+        this.camera.updatePosition();
     }
 
     /**
@@ -61,12 +66,27 @@ export class Player {
         // Apply drag to slow down movement
         this.velocity.multiply(0.95);
 
-        // Clamp player position to prevent going out of bounds
+        // Update position
+        this.position.add(this.velocity.vector.clone().multiplyScalar(deltaTime));
+
+        // Clamp player position
         this.position.x = Math.max(-1024, Math.min(1024, this.position.x));
         this.position.z = Math.max(-1024, Math.min(1024, this.position.z));
         this.position.y = Math.max(-1024, Math.min(1024, this.position.y));
 
-        debug.updateStats({position: this.position, rotation: this.camera.camera.rotation});
+        // Update camera position and rotation
+        if (this.camera) {
+            this.camera.updatePosition();
+        }
+
+        debug.updateStats({
+            position: this.position,
+            rotation: {
+                x: this.pitch,
+                y: this.rotation,
+                z: 0
+            }
+        });
     }
 
     /**

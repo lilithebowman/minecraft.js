@@ -27,25 +27,25 @@ export class Camera {
     updatePosition() {
         if (!this.player) return;
 
-        // Position camera at player eye level
-        const playerPos = this.player.position;
-        
-        // Calculate camera position based on rotation and pitch
-        const distance = 100; // Distance from player
-        const heightOffset = Math.sin(this.pitch) * distance;
-        const horizontalDistance = Math.cos(this.pitch) * distance;
-        
-        const x = playerPos.x - horizontalDistance * Math.sin(this.rotation);
-        const z = playerPos.z - horizontalDistance * Math.cos(this.rotation);
-        const y = playerPos.y + heightOffset;
-        
-        this.camera.position.set(x, y, z);
-        this.camera.lookAt(playerPos);
-        
-        // Rotate the background to match camera rotation
-        if (this.camera.parent && this.camera.parent.background) {
-            this.camera.parent.background.rotation.y = -this.rotation;
-        }
+        // Update camera position to player position plus eye height
+        const eyeHeight = 1.6;
+        this.camera.position.set(
+            this.player.position.x,
+            this.player.position.y + eyeHeight,
+            this.player.position.z
+        );
+
+        // Calculate look direction based on rotation and pitch
+        const lookDirection = new THREE.Vector3(
+            Math.sin(this.rotation) * Math.cos(this.pitch),
+            Math.sin(this.pitch),
+            -Math.cos(this.rotation) * Math.cos(this.pitch)
+        );
+
+        // Set look target
+        const target = new THREE.Vector3();
+        target.addVectors(this.camera.position, lookDirection);
+        this.camera.lookAt(target);
     }
 
     /**
