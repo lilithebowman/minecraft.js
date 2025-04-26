@@ -30,11 +30,6 @@ export class BlockManager {
         }
         debug.log('BlockManager initialized');
     }
-    
-    update(deltaTime) {
-        // Update the status display
-        debug.updateStats({ blocks: this.getBlockCount() });
-    }
 
     async addBlock(id, blockData) {
         if (this.blocks.has(id)) {

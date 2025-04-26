@@ -2,6 +2,7 @@ import { BlockManager } from './blocks.js';
 import { Chunk } from './chunk.js';
 import { NoiseGenerator } from './utils/noise.js';
 import { Frustum } from './utils/frustum.js';
+import { debug } from './debug.js';
 
 export class World {
     constructor() {
@@ -13,6 +14,7 @@ export class World {
         this.chunkLoadQueue = [];
         this.maxConcurrentLoads = 4;
         this.loadingDiv = null;
+        this.totalBlocks = 0;
     }
 
     async initialize(blockManager) {
@@ -78,6 +80,9 @@ export class World {
 
                             // Add block to chunk
                             chunk.setBlock(x, y, z, blockType);
+
+                            // Add to total blocks
+                            this.totalBlocks++;
                             
                             // Register block with block manager
                             const blockId = `${worldX},${y},${worldZ}`;
@@ -239,6 +244,11 @@ export class World {
         if (loadedChunks === totalChunks) {
             this.loadingDiv.innerText = 'Chunks loaded!';
         }
+    }
+
+    // Update blocks debug info
+    updateBlocksDebugInfo() {
+        debug.updateStats({ blocks: this.totalBlocks });
     }
 
     getVisibleChunks(camera) {

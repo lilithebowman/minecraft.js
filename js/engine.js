@@ -134,11 +134,6 @@ export class Engine {
             if (this.world) {
                 this.world.update(deltaTime);
             }
-
-            // Update block manager
-            if (this.blockManager) {
-                this.blockManager.update(deltaTime);
-            }
             
             // Emit update event
             this.eventEmitter.emit('update', deltaTime);
