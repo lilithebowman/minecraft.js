@@ -8,6 +8,11 @@ export class Renderer {
         // Maximum number of chunks to render
         this.maxChunks = 4;
 
+        // Limit FPS to 60
+        this.fpsLimit = 60;
+        this.fpsInterval = 1000 / this.fpsLimit;
+        this.lastRenderTime = 0;
+
         // Create the scene
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0x87CEEB); // Sky blue background
@@ -71,6 +76,13 @@ export class Renderer {
 
     // Render the scene
     render(deltaTime) {
+        // Check if last render time is less than fps interval
+        if (this.lastRenderTime && (deltaTime - this.lastRenderTime) < this.fpsInterval) {
+            return; // Skip rendering to maintain FPS limit
+        }
+        this.lastRenderTime = deltaTime;
+        
+        // Check if world is set
         if (!this.world) {
             console.warn('Cannot render: world not set');
             return;
