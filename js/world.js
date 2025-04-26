@@ -10,6 +10,9 @@ export class World {
         this.blockManager = new BlockManager();
         this.frustum = new Frustum();
         this.renderDistance = 8; // Chunks
+        this.chunkLoadQueue = [];
+        this.maxConcurrentLoads = 4;
+        this.loadingDiv = null;
     }
 
     async initialize(blockManager) {
@@ -29,16 +32,20 @@ export class World {
         const amplitude = 32;
         const baseHeight = 64;
 
+        this.loadingDiv = this.createChunkLoadingDisplay();
+
         // Generate chunks in render distance
         for (let cx = -this.renderDistance; cx < this.renderDistance; cx++) {
             for (let cz = -this.renderDistance; cz < this.renderDistance; cz++) {
                 const chunk = new Chunk(cx, cz);
 
+                // Update the chunk loading display
+                this.updateChunkLoadingDisplay(cx, cz);
+
                 // Look for the chunk in the cache
                 const loaded = await chunk.loadFromCache();
                 if (loaded) {
                     // If loaded, skip generation
-                    console.log(`Chunk (${cx}, ${cz}) loaded from cache`);
                     this.chunks.set(`${cx},${cz}`, chunk);
                     continue;
                 }
@@ -85,9 +92,6 @@ export class World {
                 // Save the chunk to cache
                 await chunk.saveToCache();
 
-                // Log that we have saved a new chunk
-                console.log(`Chunk (${cx}, ${cz}) saved to cache`);
-
                 // Initialize chunk mesh
                 chunk.rebuildMesh();
                 
@@ -97,6 +101,12 @@ export class World {
             }
         }
         
+        // Remove loading display
+        if (this.loadingDiv) {
+            this.loadingDiv.remove();
+        }
+
+        // Log completion
         console.log('World generation complete');
     }
 
@@ -203,12 +213,59 @@ export class World {
         }
     }
 
+    // Crate a chunk loading display in the middle of the canvas
+    createChunkLoadingDisplay() {
+        this.loadingDiv = document.createElement('div');
+        this.loadingDiv.style.position = 'absolute';
+        this.loadingDiv.style.top = '50%';
+        this.loadingDiv.style.left = '50%';
+        this.loadingDiv.style.transform = 'translate(-50%, -50%)';
+        this.loadingDiv.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+        this.loadingDiv.style.color = 'white';
+        this.loadingDiv.style.padding = '20px';
+        this.loadingDiv.style.borderRadius = '10px';
+        this.loadingDiv.style.fontSize = '20px';
+        this.loadingDiv.innerText = 'Loading chunks...';
+        this.loadingDiv.style.zIndex = '1000';
+        this.loadingDiv.style.minWidth = '200px';
+        this.loadingDiv.style.textAlign = 'center';
+        document.body.appendChild(this.loadingDiv);
+        return this.loadingDiv;
+    }
+
+    // Update the chunk loading display
+    updateChunkLoadingDisplay(loadedChunks, totalChunks) {
+        this.loadingDiv.innerText = `Loading chunks... ${loadedChunks},${totalChunks}`;
+        if (loadedChunks === totalChunks) {
+            this.loadingDiv.innerText = 'Chunks loaded!';
+        }
+    }
+
     getVisibleChunks(camera) {
-        if (!camera) return Array.from(this.chunks.values());
+        if (!camera || !camera.position) return [];
         
         this.frustum.update(camera);
-        return Array.from(this.chunks.values())
-            .filter(chunk => this.frustum.isChunkVisible(chunk));
+        const chunks = Array.from(this.chunks.values())
+            .filter(chunk => this.frustum.isChunkVisible(chunk))
+            .sort((a, b) => {
+                // Sort by distance to camera
+                const distA = this.getChunkDistanceToCamera(a, camera);
+                const distB = this.getChunkDistanceToCamera(b, camera);
+                return distA - distB;
+            })
+            .slice(0, 32); // Limit max visible chunks
+            
+        return chunks;
+    }
+
+    getChunkDistanceToCamera(chunk, camera) {
+        const chunkCenter = {
+            x: chunk.x * 16 + 8,
+            z: chunk.z * 16 + 8
+        };
+        const dx = chunkCenter.x - camera.position.x;
+        const dz = chunkCenter.z - camera.position.z;
+        return dx * dx + dz * dz;
     }
 
     /**
@@ -217,9 +274,9 @@ export class World {
      * @param {number} maxBlocks - Maximum number of blocks to return
      * @returns {Array} Array of visible blocks sorted by distance to player
      */
-    getVisibleBlocks(playerPosition, maxBlocks) {
+    getVisibleBlocks(playerPosition, playerCamera, maxBlocks) {
         const blocks = [];
-        const visibleChunks = this.getVisibleChunks(this.camera);
+        const visibleChunks = this.getLocalBlocks(playerCamera);
 
         // Get blocks from visible chunks
         for (const chunk of visibleChunks) {

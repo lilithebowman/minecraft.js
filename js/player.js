@@ -3,6 +3,7 @@ import { Force } from './physics/force.js';
 import { Position } from './physics/position.js';
 import { Velocity } from './physics/velocity.js';
 import { debug } from './debug.js';
+import { Camera } from './camera.js';
 
 export class Player {
     constructor(position = new Position(0, 100, 0)) {
@@ -13,6 +14,8 @@ export class Player {
         this.forward = new THREE.Vector3(0, 0, -1);
         this.right = new THREE.Vector3(1, 0, 0);
         this.isGrounded = false;
+        this.camera = new Camera();
+        this.camera.attachToPlayer(this);
     }
 
     /**

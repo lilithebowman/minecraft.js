@@ -33,6 +33,49 @@ export class Chunk {
         this.isDirty = false;
         this.blockManager = null;  // Will be set by World
         this.mesh = null;
+        this.visibleBlocks = [];
+        this.needsVisibilityUpdate = true;
+    }
+
+    getLocalBlocks(camera) {
+        if (this.needsVisibilityUpdate) {
+            this.updateVisibleBlocks();
+        }
+        return this.visibleBlocks;
+    }
+
+    updateVisibleBlocks(camera) {
+        this.visibleBlocks = [];
+        
+        for (let x = camera.position.x + 0; x < camera.position.x + 16; x++) {
+            for (let y = camera.position.y + 0; y < camera.position.y + 256; y++) {
+                for (let z = camera.position.z + 0; z < camera.position.z + 16; z++) {
+                    const blockType = this.getBlock(x, y, z);
+                    if (blockType && this.isBlockVisible(x, y, z)) {
+                        this.visibleBlocks.push({
+                            type: blockType,
+                            position: {
+                                x: this.x * 16 + x,
+                                y: y,
+                                z: this.z * 16 + z
+                            }
+                        });
+                    }
+                }
+            }
+        }
+        
+        this.needsVisibilityUpdate = false;
+    }
+
+    isBlockVisible(x, y, z) {
+        // Check if block has any exposed faces
+        return !this.getBlock(x+1, y, z) ||
+               !this.getBlock(x-1, y, z) ||
+               !this.getBlock(x, y+1, z) ||
+               !this.getBlock(x, y-1, z) ||
+               !this.getBlock(x, y, z+1) ||
+               !this.getBlock(x, y, z-1);
     }
 
     getBlock(x, y, z) {
@@ -43,13 +86,14 @@ export class Chunk {
         return this.blocks[x][y][z];
     }
 
-    setBlock(x, y, z, blockType) {
+    setBlock(x, y, z, type) {
         // Validate coordinates
         if (x < 0 || x >= this.size || y < 0 || y >= this.height || z < 0 || z >= this.size) {
             return false;
         }
         
-        this.blocks[x][y][z] = blockType;
+        this.blocks[x][y][z] = type;
+        this.needsVisibilityUpdate = true;
         this.isDirty = true;
         return true;
     }

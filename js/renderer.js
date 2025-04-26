@@ -31,75 +31,45 @@ export class Renderer {
 
         // Create block geometry once
         this.blockGeometry = new THREE.BoxGeometry(1, 1, 1);
+        // Create instanced mesh map
+        this.instancedMeshes = new Map();
+        this.INSTANCES_PER_TYPE = 5000;
 
-        // Initialize frustum
+        // Initialize frustum for visibility checks
         this.frustum = new Frustum();
+        this.skybox = new Skybox(this.scene);
 
-        // Create camera first
-        this.camera = new Camera();
-        
-        // Create world rotation group
+        // Create world group
         this.worldGroup = new THREE.Group();
-        this.scene.add(this.worldGroup);
 
-        this.world = null;
-        this.player = null;
-		this.engine = null;
+        // Initialize instanced meshes
+        this.initializeInstancedMeshes();
+    }
 
-        // Initialize skybox last
-        this.skybox = new Skybox();
-        if (this.skybox.mesh) {
-            this.scene.add(this.skybox.mesh);
+    initializeInstancedMeshes() {
+        const blockTypes = ['grass', 'dirt', 'stone', 'bedrock'];
+        
+        for (const type of blockTypes) {
+            const geometry = this.blockGeometry;
+            const material = this.textureManager.getMaterial(type);
+            const instancedMesh = new THREE.InstancedMesh(
+                geometry,
+                material,
+                this.INSTANCES_PER_TYPE
+            );
+            instancedMesh.count = 0; // Start with 0 instances
+            this.instancedMeshes.set(type, instancedMesh);
+            this.worldGroup.add(instancedMesh);
         }
     }
 
-    setWorld(world) {
-        if (!world) {
-            console.error('Attempted to set null world in renderer');
-            return;
-        }
-        this.world = world;
-    }
-
-    setPlayer(player) {
-        if (!player) {
-            console.error('Attempted to set null player in renderer');
-            return;
-        }
-        this.player = player;
-        this.camera.attachToPlayer(player);
-    }
-
-    getPlayerChunk() {
-        if (!this.player) return null;
-        return {
-            x: Math.floor(this.player.position.x / 16),
-            z: Math.floor(this.player.position.z / 16)
-        };
-    }
-
-    isChunkInRange(blockX, blockZ, renderDistance = 2) {
-        const playerChunk = this.getPlayerChunk();
-        if (!playerChunk) return false;
-
-        const blockChunkX = Math.floor(blockX / 16);
-        const blockChunkZ = Math.floor(blockZ / 16);
-
-        return Math.abs(blockChunkX - playerChunk.x) <= renderDistance &&
-               Math.abs(blockChunkZ - playerChunk.z) <= renderDistance;
-    }
-
+    // Handle window resizing
     handleResize() {
         this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.camera.handleResize();
     }
 
-	init(engine) {
-		this.engine = engine;
-		this.engine.getEventEmitter().on('render', (deltaTime) => {
-			this.render(deltaTime);
-		});
-	}
-
+    // Render the scene
     render(deltaTime) {
         if (!this.world) {
             console.warn('Cannot render: world not set');
@@ -132,44 +102,71 @@ export class Renderer {
         directionalLight.position.set(10, 100, 10);
         this.worldGroup.add(ambientLight, directionalLight);
 
-        // Add blocks from visible chunks
-        const visibleChunks = this.world.getVisibleChunks(this.camera);
-        let rendereredChunks = 0;
+        // Reset instance counts
+        for (const mesh of this.instancedMeshes.values()) {
+            mesh.count = 0;
+        }
+
+        const matrix = new THREE.Matrix4();
+        
+        if(!this.player || !this.player.camera) {
+            console.warn('Cannot render: player not set');
+            return;
+        }
+        const visibleChunks = this.world.getVisibleChunks(this.player.camera);
+        
         for (const chunk of visibleChunks) {
-            rendereredChunks++;
-            if (rendereredChunks > this.maxChunks) break;
             if (this.frustum.isChunkVisible(chunk)) {
-                for (let x = 0; x < 16; x++) {
-                    for (let y = 0; y < 256; y++) {
-                        for (let z = 0; z < 16; z++) {
-                            const blockType = chunk.getBlock(x, y, z);
-                            if (blockType) {
-                                const worldX = chunk.x * 16 + x;
-                                const worldZ = chunk.z * 16 + z;
-                                const block = new THREE.Mesh(
-                                    this.blockGeometry,
-                                    this.blockManager.getMaterial(blockType)
-                                );
-                                block.position.set(worldX, y, worldZ);
-                                this.worldGroup.add(block);
-                            }
-                        }
+                for (const block of player.getVisibleBlocks()) {
+                    const instancedMesh = this.instancedMeshes.get(block.type);
+                    if (instancedMesh && instancedMesh.count < this.INSTANCES_PER_TYPE) {
+                        matrix.setPosition(block.position.x, block.position.y, block.position.z);
+                        instancedMesh.setMatrixAt(instancedMesh.count, matrix);
+                        instancedMesh.count++;
                     }
                 }
             }
         }
 
-        // Add debug axes
-        const axesHelper = new THREE.AxesHelper(50);
-        this.worldGroup.add(axesHelper);
+        // Update instance matrices
+        for (const mesh of this.instancedMeshes.values()) {
+            mesh.instanceMatrix.needsUpdate = true;
+        }
 
         // Update world group rotation based on player rotation
         if (this.player) {
             this.worldGroup.rotation.y = -this.player.rotation;
         }
 
+        // Set the active camera
+        this.camera = this.player.camera;
+
         // Render the scene with camera
         this.renderer.render(this.scene, this.camera.getCamera());
+    }
+
+    setWorld(world) {
+        this.world = world;
+        this.world.position = {
+            x: 0,
+            y: 0,
+            z: 0
+        };
+        this.world.rotation = {
+            x: 0,
+            y: 0,
+            z: 0
+        };
+
+        this.worldGroup.rotation.set(world.rotation.x, world.rotation.y, world.rotation.z);
+        this.worldGroup.position.set(world.position.x, world.position.y, world.position.z);
+        this.scene.add(this.worldGroup);
+    }
+
+    setPlayer(player) {
+        this.player = player;
+        this.camera = player.camera;
+        this.camera.attachToPlayer(player);
     }
 
     async initialize(world, player) {

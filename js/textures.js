@@ -28,7 +28,7 @@ export class TextureManager {
 
     getMaterial(textureName) {
         if (!this.initialized || !this.textures.atlas) {
-            console.error('Texture atlas not loaded - call initialize() first');
+            console.warn('Texture atlas not loaded - call initialize() first');
             return new THREE.MeshBasicMaterial({ color: 0xff00ff }); // Purple fallback
         }
 

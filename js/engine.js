@@ -48,7 +48,7 @@ export class Engine {
             try {
                 await this.renderer.initialize(world, player);
                 // Initialize engine events
-                this.renderer.init(this);
+                this.renderer.initialize(this.world, this.player);
                 console.log('Renderer initialized');
             } catch (error) {
                 throw new Error(`Renderer initialization failed: ${error.message}`);
