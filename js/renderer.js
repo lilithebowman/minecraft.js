@@ -131,6 +131,7 @@ export class Renderer {
 		}
 		const visibleChunks = this.world.getVisibleChunks(this.player.camera);
 		
+		// Iterate through visible chunks and set instance matrices
 		for (const chunk of visibleChunks) {
 			if (this.frustum.isChunkVisible(chunk)) {
 				for (const block of player.getVisibleBlocks()) {
