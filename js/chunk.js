@@ -208,4 +208,48 @@ export class Chunk {
             0, 1   // Bottom left
         ];
     }
+
+    async saveToCache() {
+        try {
+            const response = await fetch('cacheChunk.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    x: this.x,
+                    z: this.z,
+                    blocks: this.blocks
+                })
+            });
+            
+            const result = await response.json();
+            if (!result.success) {
+                throw new Error(result.error || 'Failed to cache chunk');
+            }
+            
+            return true;
+        } catch (error) {
+            console.error('Failed to cache chunk:', error);
+            return false;
+        }
+    }
+
+    async loadFromCache() {
+        try {
+            const response = await fetch(`cacheChunk.php?x=${this.x}&z=${this.z}`);
+            const result = await response.json();
+            
+            if (result.success && result.data) {
+                this.blocks = result.data;
+                this.isDirty = true;
+                return true;
+            }
+            
+            return false;
+        } catch (error) {
+            console.error('Failed to load chunk from cache:', error);
+            return false;
+        }
+    }
 }

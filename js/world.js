@@ -107,14 +107,69 @@ export class World {
         chunk.needsUpdate = true;
     }
 
-    getOrCreateChunk(chunkX, chunkZ) {
+    async getOrCreateChunk(chunkX, chunkZ) {
         const key = `${chunkX},${chunkZ}`;
         if (!this.chunks.has(key)) {
             const chunk = new Chunk(chunkX, chunkZ);
             chunk.blockManager = this.blockManager;
+            
+            // Try to load from cache first
+            const loaded = await chunk.loadFromCache();
+            if (!loaded) {
+                // Generate new chunk if not in cache
+                this.generateChunkTerrain(chunk);
+                await chunk.saveToCache();
+            }
+            
             this.chunks.set(key, chunk);
         }
         return this.chunks.get(key);
+    }
+
+    generateChunkTerrain(chunk) {
+        const scale = 50;
+        const amplitude = 32;
+        const baseHeight = 64;
+
+        // Generate terrain for this chunk
+        for (let x = 0; x < 16; x++) {
+            for (let z = 0; z < 16; z++) {
+                const worldX = (chunk.x * 16) + x;
+                const worldZ = (chunk.z * 16) + z;
+                
+                // Generate height using noise
+                let height = baseHeight;
+                height += this.noiseGen.noise(worldX/scale, 0, worldZ/scale) * amplitude;
+                height = Math.floor(height);
+
+                // Generate column
+                for (let y = 0; y < height; y++) {
+                    let blockType;
+                    if (y === 0) {
+                        blockType = 'bedrock';
+                    } else if (y < height - 4) {
+                        blockType = 'stone';
+                    } else if (y < height - 1) {
+                        blockType = 'dirt';
+                    } else {
+                        blockType = 'grass';
+                    }
+
+                    // Add block to chunk
+                    chunk.setBlock(x, y, z, blockType);
+                    
+                    // Register block with block manager
+                    const blockId = `${worldX},${y},${worldZ}`;
+                    this.blockManager.addBlock(blockId, {
+                        type: blockType,
+                        position: { x: worldX, y, z: worldZ }
+                    });
+                }
+            }
+        }
+
+        // Mark chunk as dirty to update mesh
+        chunk.isDirty = true;
     }
 
     getChunk(chunkX, chunkZ) {
