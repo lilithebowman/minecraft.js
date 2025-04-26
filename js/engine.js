@@ -19,6 +19,10 @@ export class Engine {
         this.player = null;
         this.renderer = null;
         this.input = null;
+        this.maxTicks = 1000;
+        this.tickRate = 1000 / 60; // 60 FPS
+        this.tickCount = 0;
+        this.lastTickTime = 0;
     }
 
     async init(world, player, renderer) {
@@ -98,6 +102,17 @@ export class Engine {
 
     // Main game loop
     gameLoop() {
+        // Check if the last tick time has passed
+        if (this.time.currentTime - this.lastTickTime >= this.tickRate) {
+            this.tickCount++;
+            this.lastTickTime = this.time.currentTime;
+        }
+        // Limit the number of ticks to prevent lag
+        if (this.tickCount > this.maxTicks) {
+            this.tickCount = 0;
+            return;
+        }
+
         if (!this.isRunning || !this.player || !this.world || !this.renderer) {
             console.warn('Game loop stopped: missing required components');
             this.isRunning = false;
