@@ -13,8 +13,23 @@ export class DebugLog {
             blocks: 0
         };
 
-        // Create debug axes
-        this.axesHelper = this.showDebugAxes();
+        // Create debug axes with larger size
+        this.axesHelper = this.createDebugAxes();
+        this.axesCamera = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
+        this.axesScene = new THREE.Scene();
+        this.axesScene.add(this.axesHelper);
+        
+        // Create separate renderer for axes
+        this.axesRenderer = new THREE.WebGLRenderer({ alpha: true });
+        this.axesRenderer.setSize(100, 100);
+        this.axesRenderer.setClearColor(0x000000, 0);
+        
+        // Style the axes container
+        this.axesRenderer.domElement.style.position = 'fixed';
+        this.axesRenderer.domElement.style.bottom = '10px';
+        this.axesRenderer.domElement.style.right = '10px';
+        this.axesRenderer.domElement.style.zIndex = '1000';
+        document.body.appendChild(this.axesRenderer.domElement);
         
         // Override console.log
         this.originalLog = console.log;
@@ -52,21 +67,15 @@ export class DebugLog {
         this.container.appendChild(this.statsPanel);
     }
 
-    // Show the debug axes
-    showDebugAxes() {
-        // Create axes helper
-        const axesHelper = new THREE.AxesHelper(5);
-        axesHelper.position.set(0, 0.1, 0); // Slightly above ground to be visible
+    createDebugAxes() {
+        const axesHelper = new THREE.AxesHelper(50);
         
-        // Color coding for axes
+        // Set custom colors for better visibility
         const materials = axesHelper.material;
         if (Array.isArray(materials)) {
-            // X axis - red
-            materials[0].color.setHex(0xff0000);
-            // Y axis - green
-            materials[1].color.setHex(0x00ff00);
-            // Z axis - blue
-            materials[2].color.setHex(0x0000ff);
+            materials[0].color.setHex(0xff0000); // X axis - red
+            materials[1].color.setHex(0x00ff00); // Y axis - green
+            materials[2].color.setHex(0x0000ff); // Z axis - blue
         }
         
         return axesHelper;
@@ -118,12 +127,22 @@ export class DebugLog {
             .join('');
     }
 
-    toggleAxes(scene) {
-        if (this.axesHelper.parent) {
-            scene.remove(this.axesHelper);
-        } else {
-            scene.add(this.axesHelper);
-        }
+    updateAxes(playerCamera) {
+        if (!playerCamera) return;
+
+        // Position axes camera
+        this.axesCamera.position.set(0, 0, 100);
+        
+        // Copy rotation from player camera
+        this.axesCamera.rotation.copy(playerCamera.rotation);
+        
+        // Render axes
+        this.axesRenderer.render(this.axesScene, this.axesCamera);
+    }
+
+    toggleAxes() {
+        this.axesRenderer.domElement.style.display = 
+            this.axesRenderer.domElement.style.display === 'none' ? 'block' : 'none';
     }
 }
 
