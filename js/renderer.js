@@ -115,13 +115,7 @@ export class Renderer {
         }
 
         // Update skybox first
-        this.skybox.update(deltaTime);
-        
-        // Make skybox follow camera position
-        if (this.camera) {
-            const campos = this.camera.getCamera().position;
-            this.skybox.mesh.position.copy(campos);
-        }
+        this.skybox.update(this.scene);
 
         // Update camera position before rendering
         this.camera.updatePosition();

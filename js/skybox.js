@@ -5,95 +5,44 @@ export class Skybox {
     constructor() {
         this.noiseGen = new NoiseGenerator();
         this.textureSize = 1024;
-        // Make the skybox much larger to ensure it encompasses the scene
-        this.geometry = new THREE.BoxGeometry(2000, 2000, 2000);
-        this.texturePath = 'textures/skybox_clouds.png';
         this.initialize();
     }
 
     async initialize() {
         try {
+            let texture;
+            
             // Try to load existing texture first
-            const texture = await this.loadTexture();
-            this.materials = this.createSkyboxMaterials(texture);
-        } catch (error) {
-            // If loading fails, generate and save new texture
-            console.log('Generating new skybox texture...');
-            const canvas = this.createCloudTexture();
-            await this.saveTexture(canvas);
-            const texture = new THREE.CanvasTexture(canvas);
-            this.materials = this.createSkyboxMaterials(texture);
-        }
-        this.mesh = new THREE.Mesh(this.geometry, this.materials);
-        this.mesh.position.set(0, 0, 0);
-    }
+            try {
+                texture = await this.loadExistingTexture();
+                console.log('Loaded existing skybox texture');
+            } catch (error) {
+                console.log('No existing texture found, generating new one...');
+                const canvas = this.createCloudTexture();
+                texture = new THREE.CanvasTexture(canvas);
+                
+                // Save the newly generated texture
+                await this.saveTexture(canvas);
+            }
 
-    async loadTexture() {
-        return new Promise((resolve, reject) => {
-            const loader = new THREE.TextureLoader();
-            loader.load(
-                this.texturePath,
-                (texture) => {
-                    texture.wrapS = THREE.RepeatWrapping;
-                    texture.wrapT = THREE.RepeatWrapping;
-                    texture.repeat.set(2, 2);
-                    resolve(texture);
-                },
-                undefined,
-                reject
-            );
-        });
-    }
-
-    async saveTexture(canvas) {
-        try {
-            // Convert canvas to base64 data URL
-            const dataURL = canvas.toDataURL('image/png');
+            texture.needsUpdate = true;
             
-            // Prepare JSON payload
-            const payload = {
-                name: 'skybox_clouds',
-                data: dataURL
-            };
-
-            // Send to PHP script
-            const response = await fetch('saveTexture.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
+            // Create the background material using the texture
+            this.material = new THREE.MeshBasicMaterial({
+                map: texture,
+                side: THREE.BackSide
             });
-            
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            
-            const result = await response.json();
-            if (result.error) {
-                throw new Error(result.error);
-            }
-            
-            console.log('Skybox texture saved successfully:', result);
-            return result;
+
         } catch (error) {
-            console.error('Failed to save skybox texture:', error);
+            console.error('Failed to initialize skybox:', error);
             throw error;
         }
     }
 
-    createSkyboxMaterials(texture) {
-        // Create a single material for all faces
-        const material = new THREE.MeshBasicMaterial({
-            map: texture,
-            side: THREE.BackSide,
-            fog: false,
-            transparent: true,
-            opacity: 0.8
-        });
-
-        // Return array of 6 references to the same material
-        return Array(6).fill(material);
+    update(scene) {
+        if (!scene.background) {
+            scene.background = this.material;
+        }
     }
 
     createCloudTexture() {
@@ -138,8 +87,52 @@ export class Skybox {
         return canvas;
     }
 
-    update(deltaTime) {
-        // Rotate more noticeably
-        this.mesh.rotation.y += deltaTime * 0.0001;
+    async saveTexture(canvas) {
+        try {
+            // Convert canvas to base64 data URL
+            const dataURL = canvas.toDataURL('image/png');
+            
+            // Prepare JSON payload
+            const payload = {
+                name: 'skybox_clouds',
+                data: dataURL
+            };
+
+            // Send to PHP script
+            const response = await fetch('saveTexture.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            if (result.error) {
+                throw new Error(result.error);
+            }
+            
+            console.log('Skybox texture saved successfully:', result);
+            return result;
+        } catch (error) {
+            console.error('Failed to save skybox texture:', error);
+            throw error;
+        }
+    }
+
+    async loadExistingTexture() {
+        return new Promise((resolve, reject) => {
+            const loader = new THREE.TextureLoader();
+            loader.load(
+                'textures/skybox_clouds.png',
+                (texture) => resolve(texture),
+                undefined,
+                (error) => reject(error)
+            );
+        });
     }
 }
