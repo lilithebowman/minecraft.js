@@ -48,6 +48,18 @@ export class Engine {
             await this.world.initialize(this.block);
             console.log('World initialized');
 
+            // Position player on top of center chunk
+            const centerX = 0;
+            const centerZ = 0;
+            const surfaceY = this.findSurfaceHeight(centerX, centerZ);
+            
+            this.player.position.set(
+                centerX,
+                surfaceY + 1, // Place slightly above surface to prevent falling through
+                centerZ
+            );
+            console.log(`Positioned player at ${centerX}, ${surfaceY + 1}, ${centerZ}`);
+
             // Initialize renderer
             try {
                 await this.renderer.initialize(world, player);
@@ -168,6 +180,20 @@ export class Engine {
 
     getEventEmitter() {
         return this.eventEmitter;
+    }
+
+    // Add this helper method to find the surface height
+    findSurfaceHeight(x, z) {
+        if (!this.world) return 64; // Default height if world not ready
+        
+        // Start from max height and scan down
+        for (let y = 255; y >= 0; y--) {
+            const block = this.world.getBlock(x, y, z);
+            if (block) {
+                return y;
+            }
+        }
+        return 64; // Fallback height if no blocks found
     }
 }
 
