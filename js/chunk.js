@@ -38,10 +38,25 @@ export class Chunk {
     }
 
     getLocalBlocks(camera) {
-        if (this.needsVisibilityUpdate) {
-            this.updateVisibleBlocks();
+        const blocks = [];
+        for (let x = 0; x < this.size; x++) {
+            for (let y = 0; y < this.height; y++) {
+                for (let z = 0; z < this.size; z++) {
+                    const blockType = this.getBlock(x, y, z);
+                    if (blockType && this.isBlockVisible(x, y, z)) {
+                        blocks.push({
+                            type: blockType,
+                            position: {
+                                x: this.x * 16 + x,
+                                y: y,
+                                z: this.z * 16 + z
+                            }
+                        });
+                    }
+                }
+            }
         }
-        return this.visibleBlocks;
+        return blocks;
     }
 
     updateVisibleBlocks(camera) {

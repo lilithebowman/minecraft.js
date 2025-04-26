@@ -7,6 +7,7 @@ import { debug } from './debug.js';
 export class Renderer {
     constructor() {
         // Maximum number of chunks to render
+        this.minChunks = 1;
         this.maxChunks = 4;
 
         // Limit FPS to 60
@@ -123,10 +124,12 @@ export class Renderer {
         // Update frustum with current camera
         this.frustum.update(this.camera.getCamera());
 
-        // Clear the world group
+        // Clear the world group but keep instanced meshes
+        const instancedMeshes = new Map(this.instancedMeshes);
         while (this.worldGroup.children.length > 0) {
             this.worldGroup.remove(this.worldGroup.children[0]);
         }
+        this.instancedMeshes = instancedMeshes;
 
         // Add lighting
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
@@ -134,35 +137,48 @@ export class Renderer {
         directionalLight.position.set(10, 100, 10);
         this.worldGroup.add(ambientLight, directionalLight);
 
-        // Reset instance counts
+        // Re-add instanced meshes to world group
         for (const mesh of this.instancedMeshes.values()) {
-            mesh.count = 0;
+            this.worldGroup.add(mesh);
         }
 
-        const matrix = new THREE.Matrix4();
-        
-        if(!this.player || !this.player.camera) {
+        if (!this.player || !this.player.camera) {
             console.warn('Cannot render: player not set');
             return;
         }
-        const visibleChunks = this.world.getVisibleChunks(this.player.camera)
-            .filter(chunk => this.frustum.isChunkVisible(chunk));
 
-        // Send chunks to worker for processing
-        this.blockWorker.postMessage({
-            chunks: visibleChunks.map(chunk => ({
-                visibleBlocks: chunk.getVisibleBlocks()
-            })),
-            INSTANCES_PER_TYPE: this.INSTANCES_PER_TYPE
-        });
+        // Get visible chunks within player's view
+        const allChunks = this.world.getVisibleChunks(this.player.camera);
+        debug.log(`Total chunks: ${allChunks.length}`);
+        
+        const visibleChunks = allChunks.filter(chunk => this.frustum.isChunkVisible(chunk));
+        debug.log(`Visible chunks after frustum culling: ${visibleChunks.length}`);
 
-        // Update world group rotation based on player rotation
-        if (this.player) {
-            this.worldGroup.rotation.y = -this.player.rotation;
+        // If no chunks are visible, warn the user
+        if (visibleChunks.length < this.minChunks) {
+            console.warn('No visible chunks to render');
+            debug.log('Camera position:', this.player.camera.position);
+            debug.log('Player position:', this.player.position);
         }
 
-        // Set the active camera
-        this.camera = this.player.camera;
+        // Process visible blocks directly
+        for (const chunk of visibleChunks) {
+            const blocks = chunk.getLocalBlocks(this.player.camera);
+            for (const block of blocks) {
+                const mesh = this.instancedMeshes.get(block.type);
+                if (mesh && mesh.count < this.INSTANCES_PER_TYPE) {
+                    const matrix = new THREE.Matrix4();
+                    matrix.setPosition(block.position.x, block.position.y, block.position.z);
+                    mesh.setMatrixAt(mesh.count++, matrix);
+                    mesh.instanceMatrix.needsUpdate = true;
+                }
+            }
+        }
+
+        // Add world group to scene if not already added
+        if (!this.scene.children.includes(this.worldGroup)) {
+            this.scene.add(this.worldGroup);
+        }
 
         // Render the scene with camera
         this.renderer.render(this.scene, this.camera.getCamera());

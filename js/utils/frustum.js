@@ -18,8 +18,9 @@ export class Frustum {
     }
 
     isChunkVisible(chunk) {
-        // Create a bounding box for the chunk
-        // Chunks are 16x256x16 blocks
+        if (!chunk) return false;
+
+        // Create chunk bounding box
         const minX = chunk.x * 16;
         const minZ = chunk.z * 16;
         const box = new THREE.Box3(
@@ -27,6 +28,7 @@ export class Frustum {
             new THREE.Vector3(minX + 16, 256, minZ + 16)
         );
 
+        // Check if box intersects frustum
         return this.frustum.intersectsBox(box);
     }
 }

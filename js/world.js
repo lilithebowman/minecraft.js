@@ -16,6 +16,7 @@ export class World {
         this.totalBlocks = 0;
         this.workers = [];
         this.maxWorkers = navigator.hardwareConcurrency || 4;
+        this.visibleBlocks = [];
         this.initializeWorkers();
     }
 
@@ -226,6 +227,8 @@ export class World {
                 chunk.needsUpdate = false;
             }
         }
+
+        this.updateBlocksDebugInfo(this.visibleBlocks);
     }
 
     // Crate a chunk loading display in the middle of the canvas
@@ -257,23 +260,35 @@ export class World {
     }
 
     // Update blocks debug info
-    updateBlocksDebugInfo() {
-        debug.updateStats({ blocks: this.totalBlocks });
+    updateBlocksDebugInfo(size) {
+        debug.updateStats({ blocks: size });
     }
 
     getVisibleChunks(camera) {
-        if (!camera || !camera.position) return [];
+        if (!camera || !camera.camera.position) return [];
         
-        // Add chunk culling by distance first before frustum check
-        const chunks = Array.from(this.chunks.values())
-            .filter(chunk => {
-                const dist = this.getChunkDistanceToCamera(chunk, camera);
-                return dist <= (this.renderDistance * 16) * (this.renderDistance * 16);
-            })
-            .filter(chunk => this.frustum.isChunkVisible(chunk))
-            .slice(0, 32);
-            
-        return chunks;
+        // Get player chunk coordinates
+        const playerX = Math.floor(camera.camera.position.x / 16);
+        const playerZ = Math.floor(camera.camera.position.z / 16);
+        
+        // Get chunks in render distance
+        const visibleChunks = [];
+        const renderDistance = 8; // Configurable render distance
+
+        for (let x = -renderDistance; x <= renderDistance; x++) {
+            for (let z = -renderDistance; z <= renderDistance; z++) {
+                const chunkX = playerX + x;
+                const chunkZ = playerZ + z;
+                const chunk = this.getChunk(chunkX, chunkZ);
+                
+                if (chunk) {
+                    visibleChunks.push(chunk);
+                }
+            }
+        }
+
+        debug.log(`Found ${visibleChunks.length} visible chunks`);
+        return visibleChunks;
     }
 
     getChunkDistanceToCamera(chunk, camera) {
@@ -295,6 +310,8 @@ export class World {
     getVisibleBlocks(playerPosition, playerCamera, maxBlocks) {
         const blocks = [];
         const visibleChunks = this.getLocalBlocks(playerCamera);
+
+        this.visibleBlocks = visibleChunks
 
         // Get blocks from visible chunks
         for (const chunk of visibleChunks) {
