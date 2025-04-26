@@ -114,8 +114,8 @@ export class Renderer {
             return;
         }
 
-        // Update skybox first
-        this.skybox.update(this.scene);
+        // Update skybox with camera reference
+        this.skybox.update(this.scene, this.camera.camera);
 
         // Update camera position before rendering
         this.camera.updatePosition();
