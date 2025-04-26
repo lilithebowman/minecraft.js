@@ -117,7 +117,7 @@ export class Engine {
         this.update(this.time.deltaTime);
 
         // Render the current state
-        this.render(this.time.deltaTime);
+        this.renderer.render(this.time.deltaTime);
 
         // Queue next frame
         requestAnimationFrame(() => this.gameLoop());
@@ -144,32 +144,6 @@ export class Engine {
             this.eventEmitter.emit('update', deltaTime);
         } catch (error) {
             console.error('Error in update loop:', error);
-            this.stop();
-        }
-    }
-
-    render(deltaTime) {
-        try {
-            if (!this.renderer) return;
-
-            // Update renderer's display list
-            this.renderer.clearDisplayList();
-            
-            // Get visible blocks
-            const blocks = this.world.getVisibleBlocks(this.player.position, this.maxBlocks);
-            
-            // Add blocks to display list
-            for (const block of blocks) {
-                this.renderer.addBlock(block.position.x, block.position.y, block.position.z, block.type);
-            }
-            
-            // Render frame
-            this.renderer.render(deltaTime);
-            
-            // Emit render event
-            this.eventEmitter.emit('render', deltaTime);
-        } catch (error) {
-            console.error('Error in render loop:', error);
             this.stop();
         }
     }

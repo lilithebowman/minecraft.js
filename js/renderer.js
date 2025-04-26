@@ -1,13 +1,10 @@
 import * as THREE from 'three';
-import { TextureManager, DisplayList, Camera } from './modules.js';
+import { TextureManager, Camera } from './modules.js';
 import { Frustum } from './utils/frustum.js';
 import { Skybox } from './skybox.js';
 
 export class Renderer {
     constructor() {
-        // Initialize display list
-        this.displayList = new Set();
-
         // Create the scene
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0x87CEEB); // Sky blue background
@@ -70,33 +67,6 @@ export class Renderer {
         this.camera.attachToPlayer(player);
     }
 
-    addBlock(x, y, z, type) {
-        const block = new THREE.Mesh(
-            this.blockGeometry,
-            this.blockManager.getMaterial(type)
-        );
-        block.position.set(x, y, z);
-        this.worldGroup.add(block);
-        return this.displayList.add(block);
-    }
-
-    removeBlock(id) {
-        const block = this.displayList.get(id);
-        if (block) {
-            this.scene.remove(block);
-            this.displayList.remove(id);
-            return true;
-        }
-        return false;
-    }
-
-    clearDisplayList() {
-        for (const object of this.displayList) {
-            this.worldGroup.remove(object);
-        }
-        this.displayList.clear();
-    }
-
     getPlayerChunk() {
         if (!this.player) return null;
         return {
@@ -124,9 +94,6 @@ export class Renderer {
 		this.engine = engine;
 		this.engine.getEventEmitter().on('render', (deltaTime) => {
 			this.render(deltaTime);
-		});
-		this.engine.getEventEmitter().on('reset', () => {
-			this.clearDisplayList();
 		});
 	}
 

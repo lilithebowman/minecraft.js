@@ -3,7 +3,6 @@ export { BoxCollider } from './physics/boxCollider.js';
 export { Camera } from './camera.js';
 export { Chunk } from './chunk.js';
 export { Collider } from './physics/collider.js';
-export { DisplayList } from './displayList.js';
 export { Engine } from './engine.js';
 export { Framerate } from './framerate.js';
 export { Force } from './physics/force.js';

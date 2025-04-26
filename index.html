@@ -52,10 +52,10 @@
             console.log('Starting game initialization...');
             
             // Create components
+            const renderer = new Renderer();
             const engine = new Engine();
             const world = new World();
             const player = new Player();
-            const renderer = new Renderer();
 
             // Initialize engine with dependencies
             await engine.init(world, player, renderer);
@@ -71,34 +71,6 @@
 
     // Start the game
     initGame();
-</script>
-<script>
-// Example of using a Set
-class DisplayList {
-    constructor() {
-        this.objects = new Set();
-    }
-
-    add(object) {
-        this.objects.add(object);
-    }
-
-    remove(object) {
-        this.objects.delete(object);
-    }
-
-    get(object) {
-        return this.objects.has(object) ? object : undefined;
-    }
-
-    clear() {
-        this.objects.clear();
-    }
-
-    getAll() {
-        return this.objects.values();
-    }
-}
 </script>
 </body>
 </html>
