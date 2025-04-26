@@ -73,6 +73,32 @@ export class Renderer {
                 }
             }
         };
+
+        // Use multiple chunk processors
+        this.chunkProcessors = [];
+        const processorCount = navigator.hardwareConcurrency || 4;
+        
+        for (let i = 0; i < processorCount; i++) {
+            const worker = new Worker(
+                new URL('./workers/chunkProcessor.js', import.meta.url),
+                { type: 'module' }
+            );
+            
+            worker.onmessage = this.handleChunkProcessorMessage.bind(this);
+            this.chunkProcessors.push(worker);
+        }
+
+        // Set block types
+        this.blockTypes = ['grass', 'dirt', 'stone', 'bedrock'];
+
+        // Pre-allocate buffers
+        this.instanceBuffers = new Map();
+        this.blockTypes.forEach(type => {
+            this.instanceBuffers.set(type, {
+                matrices: new Float32Array(this.INSTANCES_PER_TYPE * 16),
+                count: 0
+            });
+        });
     }
 
     initializeInstancedMeshes() {
@@ -100,29 +126,46 @@ export class Renderer {
 
     // Render the scene
     render(deltaTime) {
-        if (this.lastRenderTime + this.fpsInterval < Date.now()) {
-            this.lastRenderTime = Date.now();
+        if (this.lastRenderTime + this.fpsInterval > Date.now()) return;
+        
+        this.lastRenderTime = Date.now();
 
-            // Update camera
-            if (this.camera) {
-                this.camera.updatePosition();
-                this.frustum.update(this.camera);
-            }
+        // Get visible chunks
+        const visibleChunks = this.world.getVisibleChunks(this.camera);
+        if (visibleChunks.length === 0) return;
 
-            // Update skybox
-            if (this.skybox) {
-                this.skybox.update(this.camera);
-            }
+        // Distribute chunks among workers
+        const chunksPerWorker = Math.ceil(visibleChunks.length / this.chunkProcessors.length);
+        this.chunkProcessors.forEach((worker, index) => {
+            const start = index * chunksPerWorker;
+            const chunks = visibleChunks.slice(start, start + chunksPerWorker);
+            
+            worker.postMessage({
+                chunks,
+                frustum: this.frustum.toJSON()
+            });
+        });
 
-            // Render the scene
-            this.renderer.render(this.scene, this.camera.getCamera());
+        // Update camera and render
+        if (this.camera) {
+            this.camera.updatePosition();
+            this.frustum.update(this.camera);
         }
 
-        // Update block instances
-        if (this.blockWorker && this.block) {
-            const visibleChunks = this.world.getVisibleChunks(this.camera);
-            const instanceData = this.getInstanceData(visibleChunks);
-            this.blockWorker.postMessage({ instanceData });
+        this.renderer.render(this.scene, this.camera.getCamera());
+    }
+
+    handleChunkProcessorMessage(e) {
+        const { instanceData } = e.data;
+        
+        // Update instance meshes using the pre-allocated buffers
+        for (const [type, data] of instanceData.entries()) {
+            const mesh = this.instancedMeshes.get(type);
+            if (mesh && data.count > 0) {
+                mesh.count = data.count;
+                mesh.instanceMatrix.array.set(data.positions);
+                mesh.instanceMatrix.needsUpdate = true;
+            }
         }
     }
 

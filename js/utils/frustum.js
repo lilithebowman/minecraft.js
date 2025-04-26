@@ -31,4 +31,9 @@ export class Frustum {
         // Check if box intersects frustum
         return this.frustum.intersectsBox(box);
     }
+
+    // toJSON method to serialize the frustum
+    toJSON() {
+        return JSON.stringify(this.frustum);
+    }
 }

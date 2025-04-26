@@ -287,7 +287,6 @@ export class World {
             }
         }
 
-        debug.log(`Found ${visibleChunks.length} visible chunks`);
         return visibleChunks;
     }
 
