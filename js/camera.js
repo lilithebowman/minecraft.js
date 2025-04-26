@@ -19,7 +19,7 @@ export class Camera {
 	}
 
 	setPitch(pitch) {
-		this.pitch = pitch;
+		this.camera.pitch = pitch;
 		this.updatePosition();
 	}
 

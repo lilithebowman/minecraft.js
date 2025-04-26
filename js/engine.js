@@ -27,7 +27,7 @@ export class Engine {
 
     async init(world, player, renderer) {
         console.log('Initializing engine...');
-        
+
         try {
             // Validate required components with detailed errors
             if (!world) throw new Error('World object is required for engine initialization');

@@ -1,3 +1,5 @@
+import * as THREE from 'three';
+
 export class DebugLog {
     constructor() {
         this.createContainer();
@@ -11,6 +13,9 @@ export class DebugLog {
             blocks: 0
         };
 
+        // Create debug axes
+        this.axesHelper = this.showDebugAxes();
+        
         // Override console.log
         this.originalLog = console.log;
         console.log = (...args) => {
@@ -45,6 +50,26 @@ export class DebugLog {
             border-bottom: 1px solid rgba(255, 255, 255, 0.3);
         `;
         this.container.appendChild(this.statsPanel);
+    }
+
+    // Show the debug axes
+    showDebugAxes() {
+        // Create axes helper
+        const axesHelper = new THREE.AxesHelper(5);
+        axesHelper.position.set(0, 0.1, 0); // Slightly above ground to be visible
+        
+        // Color coding for axes
+        const materials = axesHelper.material;
+        if (Array.isArray(materials)) {
+            // X axis - red
+            materials[0].color.setHex(0xff0000);
+            // Y axis - green
+            materials[1].color.setHex(0x00ff00);
+            // Z axis - blue
+            materials[2].color.setHex(0x0000ff);
+        }
+        
+        return axesHelper;
     }
 
     createConsolePanel() {
@@ -91,6 +116,14 @@ export class DebugLog {
         this.consolePanel.innerHTML = this.messages
             .map(msg => `<div style="margin: 2px 0;"><span style="color: #aaa;">[${msg.time}]</span> ${msg.text}</div>`)
             .join('');
+    }
+
+    toggleAxes(scene) {
+        if (this.axesHelper.parent) {
+            scene.remove(this.axesHelper);
+        } else {
+            scene.add(this.axesHelper);
+        }
     }
 }
 
