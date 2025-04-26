@@ -155,7 +155,23 @@ export class Input {
     }
 
     update() {
-        if (!this.engine.player || this.isFrozen) return;
+        const player = this.engine.player;
+        if (!player || this.isFrozen) return;
+
+        // Handle mouse movement
+        if (this.mouseMovement.x !== 0) {
+            player.rotate(this.mouseMovement.x * this.mouseSensitivity);
+        }
+        
+        if (this.mouseMovement.y !== 0) {
+            // Update pitch based on vertical mouse movement
+            const newPitch = player.pitch - this.mouseMovement.y * this.mouseSensitivity;
+            player.setPitch(newPitch);
+        }
+
+        // Reset mouse movement
+        this.mouseMovement.x = 0;
+        this.mouseMovement.y = 0;
 
         // Update key display
         if (this.keys.size > 0) {
@@ -187,27 +203,5 @@ export class Input {
         if (this.keys.has('Space') && player.isGrounded) {
             player.addForce(this.movementForces.jump.clone());
         }
-
-        // Handle mouse movement for rotation
-        if (Math.abs(this.mouseMovement.x) > 0.01) {
-            this.engine.player.rotate(this.mouseMovement.x * this.mouseSensitivity);
-            this.mouseMovement.x = 0;
-        }
-
-        // Handle vertical mouse movement for camera pitch
-        if (Math.abs(this.mouseMovement.y) > 0.01) {
-            // Update pitch and clamp it
-            this.pitch -= this.mouseMovement.y * this.mouseSensitivity;
-            this.pitch = Math.max(this.minPitch, Math.min(this.maxPitch, this.pitch));
-            
-            // Update player's camera pitch
-            if (this.engine.player.camera) {
-                this.engine.player.camera.setPitch(this.pitch);
-            }
-            this.mouseMovement.y = 0;
-        }
-
-        // Reset mouse movement
-        this.mouseMovement = { x: 0, y: 0 };
     }
 }

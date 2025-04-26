@@ -10,7 +10,8 @@ export class Player {
         this.position = position;
         this.velocity = new Velocity();
         this.size = { x: 0.6, y: 1.8, z: 0.6 }; // Player's bounding box size
-        this.rotation = 0;
+        this.rotation = 0; // yaw
+        this.pitch = 0;    // looking up/down
         this.forward = new THREE.Vector3(0, 0, -1);
         this.right = new THREE.Vector3(1, 0, 0);
         this.isGrounded = false;
@@ -69,23 +70,48 @@ export class Player {
     }
 
     /**
-     * Rotates the player by a given angle in radians
-     * Updates forward and right vectors accordingly
+     * Rotates the player horizontally (yaw)
      * @param {number} angle - Rotation angle in radians
      */
     rotate(angle) {
-        // Update rotation
+        // Update yaw rotation
         this.rotation += angle;
 
-        // Update forward vector
-        this.forward.x = Math.sin(this.rotation);
-        this.forward.z = -Math.cos(this.rotation);
+        // Update forward vector with pitch included
+        this.forward.x = Math.sin(this.rotation) * Math.cos(this.pitch);
+        this.forward.y = Math.sin(this.pitch);
+        this.forward.z = -Math.cos(this.rotation) * Math.cos(this.pitch);
         this.forward.normalize();
 
-        // Update right vector (cross product of forward and up)
+        // Update right vector
         const up = new THREE.Vector3(0, 1, 0);
         this.right.crossVectors(this.forward, up);
         this.right.normalize();
+
+        // Update camera
+        if (this.camera) {
+            this.camera.updateRotation(this.rotation, this.pitch);
+        }
+    }
+
+    /**
+     * Updates the player's pitch (looking up/down)
+     * @param {number} angle - Pitch angle in radians
+     */
+    setPitch(angle) {
+        // Clamp pitch to prevent camera flipping
+        this.pitch = Math.max(-Math.PI/2 + 0.1, Math.min(Math.PI/2 - 0.1, angle));
+        
+        // Update forward vector with new pitch
+        this.forward.x = Math.sin(this.rotation) * Math.cos(this.pitch);
+        this.forward.y = Math.sin(this.pitch);
+        this.forward.z = -Math.cos(this.rotation) * Math.cos(this.pitch);
+        this.forward.normalize();
+
+        // Update camera
+        if (this.camera) {
+            this.camera.updateRotation(this.rotation, this.pitch);
+        }
     }
 }
 

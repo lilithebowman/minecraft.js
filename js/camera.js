@@ -1,54 +1,89 @@
 import * as THREE from 'three';
 
 export class Camera {
-	constructor() {
-		// Initialize camera
-		this.camera = new THREE.PerspectiveCamera(
-			75, // Field of view
-			window.innerWidth / window.innerHeight,
-			0.1, // Near plane
-			1000 // Far plane
-		);
+    constructor() {
+        // Initialize camera
+        this.camera = new THREE.PerspectiveCamera(
+            75, // Field of view
+            window.innerWidth / window.innerHeight,
+            0.1, // Near plane
+            1000 // Far plane
+        );
 
-		// Set initial position and rotation
-		this.camera.position.set(0, 100, 100);
-		this.camera.lookAt(0, 0, 0);
+        // Set initial position and rotation
+        this.camera.position.set(0, 100, 100);
+        this.camera.lookAt(0, 0, 0);
 
-		// Add resize handler
-		window.addEventListener('resize', () => this.handleResize());
-	}
+        // Add resize handler
+        window.addEventListener('resize', () => this.handleResize());
 
-	setPitch(pitch) {
-		this.camera.pitch = pitch;
-		this.updatePosition();
-	}
+        this.rotation = 0;
+        this.pitch = 0;
+    }
 
-	attachToPlayer(player) {
-		this.player = player;
-		this.updatePosition();
-	}
+    updateRotation(rotation, pitch) {
+        this.rotation = rotation;
+        this.pitch = pitch;
+        this.updatePosition();
+    }
 
-	updatePosition() {
-		if (!this.player) return;
+    updatePosition() {
+        if (!this.player) return;
 
-		// Position camera relative to player
-		const offset = new THREE.Vector3(0, 2, 0); // Camera height above player
-		this.camera.position.copy(this.player.position).add(offset);
-		
-		// Update camera rotation based on player's rotation
-		const lookAt = new THREE.Vector3();
-		lookAt.copy(this.player.position)
-			.add(offset)
-			.add(this.player.forward.multiplyScalar(10));
-		this.camera.lookAt(lookAt);
-	}
+        // Position camera at player eye level
+        const eyeHeight = 1.6;
+        const playerPos = this.player.position;
+        this.camera.position.set(
+            playerPos.x,
+            playerPos.y + eyeHeight,
+            playerPos.z
+        );
 
-	handleResize() {
-		this.camera.aspect = window.innerWidth / window.innerHeight;
-		this.camera.updateProjectionMatrix();
-	}
+        // Calculate look direction using rotation and pitch
+        const lookAt = new THREE.Vector3(
+            Math.sin(this.rotation) * Math.cos(this.pitch),
+            Math.sin(this.pitch),
+            -Math.cos(this.rotation) * Math.cos(this.pitch)
+        );
+        
+        // Set camera look target
+        const target = new THREE.Vector3();
+        target.copy(this.camera.position).add(lookAt);
+        this.camera.lookAt(target);
+    }
 
-	getCamera() {
-		return this.camera;
-	}
+    /**
+     * Returns the THREE.PerspectiveCamera instance
+     * @returns {THREE.PerspectiveCamera} The camera instance
+     */
+    getCamera() {
+        return this.camera;
+    }
+
+    /**
+     * Attaches the camera to a player
+     * @param {Player} player - The player to attach the camera to
+     */
+    attachToPlayer(player) {
+        this.player = player;
+        
+        // Initial camera setup at player position
+        const eyeHeight = 1.6;
+        this.camera.position.set(
+            player.position.x,
+            player.position.y + eyeHeight,
+            player.position.z
+        );
+        
+        // Initial look direction
+        const lookAt = new THREE.Vector3(
+            Math.sin(this.rotation) * Math.cos(this.pitch),
+            Math.sin(this.pitch),
+            -Math.cos(this.rotation) * Math.cos(this.pitch)
+        );
+        
+        const target = new THREE.Vector3();
+        target.copy(this.camera.position).add(lookAt);
+        this.camera.lookAt(target);
+    }
 }
