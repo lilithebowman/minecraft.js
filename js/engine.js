@@ -140,6 +140,14 @@ export class Engine {
             this.input.update();
         }
 
+        // Update player and world
+        if (this.player) {
+            this.player.update(this.time.deltaTime);
+        }
+        if (this.world) {
+            this.world.update(this.time.deltaTime);
+        }
+
         // Update game state
         this.updateGameState(this.time.deltaTime);
 
