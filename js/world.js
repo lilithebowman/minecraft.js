@@ -54,7 +54,6 @@ export class World {
                 // Add bedrock block
                 const chunk = this.getOrCreateChunk(Math.floor(x/16), Math.floor(z/16));
                 chunk.setBlock(x % 16, -1024, z % 16, 'bedrock');
-                console.log(`Placed bedrock at ${x}, -1024, ${z}`);
             }
         }
         

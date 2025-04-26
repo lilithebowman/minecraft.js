@@ -31,6 +31,37 @@ export class Input {
 
         // Initialize input handlers
         this.init();
+
+        // Create key display element
+        this.createKeyDisplay();
+    }
+
+    createKeyDisplay() {
+        this.keyDisplay = document.createElement('div');
+        this.keyDisplay.style.position = 'fixed';
+        this.keyDisplay.style.bottom = '10px';
+        this.keyDisplay.style.left = '10px';
+        this.keyDisplay.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+        this.keyDisplay.style.color = 'white';
+        this.keyDisplay.style.padding = '5px';
+        this.keyDisplay.style.fontFamily = 'monospace';
+        this.keyDisplay.style.fontSize = '12px';
+        this.keyDisplay.style.borderRadius = '3px';
+        this.keyDisplay.style.pointerEvents = 'none';
+        this.keyDisplay.style.width = '200px';
+        this.keyDisplay.style.height = '3em';  // Increased height for 2 rows
+        this.keyDisplay.style.lineHeight = '1.5em';
+        this.keyDisplay.style.display = 'flex';
+        this.keyDisplay.style.flexDirection = 'column';
+        
+        // Create separate elements for keys and mouse
+        this.keyRow = document.createElement('div');
+        this.mouseRow = document.createElement('div');
+        
+        this.keyDisplay.appendChild(this.keyRow);
+        this.keyDisplay.appendChild(this.mouseRow);
+        
+        document.body.appendChild(this.keyDisplay);
     }
 
     init() {
@@ -46,7 +77,6 @@ export class Input {
 
     onKeyDown(event) {
         this.keys.add(event.code);
-        console.log(`Key pressed: ${event.code}`);
         
         // Handle flying toggle
         if (event.code === 'Space') {
@@ -68,7 +98,6 @@ export class Input {
 
     onKeyUp(event) {
         this.keys.delete(event.code);
-        console.log(`Key released: ${event.code}`);
         
         // Stop flying when space is released
         if (event.code === 'Space') {
@@ -82,6 +111,15 @@ export class Input {
             // Add mouse movement to accumulator
             this.mouseMovement.x += event.movementX;
             this.mouseMovement.y += event.movementY;
+            this.updateMouseDisplay();
+        }
+    }
+
+    updateMouseDisplay() {
+        if (this.mouseRow) {
+            const x = Math.round(this.mouseMovement.x * 100) / 100;
+            const y = Math.round(this.mouseMovement.y * 100) / 100;
+            this.mouseRow.textContent = `Mouse: x=${x} y=${y}`;
         }
     }
 
@@ -99,15 +137,25 @@ export class Input {
         document.removeEventListener('keyup', this.onKeyUp);
         document.removeEventListener('mousemove', this.onMouseMove);
         document.removeEventListener('pointerlockchange', this.onPointerLockChange);
+
+        // Remove key display
+        if (this.keyDisplay) {
+            document.body.removeChild(this.keyDisplay);
+            this.keyRow = null;
+            this.mouseRow = null;
+            this.keyDisplay = null;
+        }
     }
 
     update() {
         const player = this.engine.player;
         if (!player || this.isFrozen) return;
 
-        // Debug active keys
+        // Update key display
         if (this.keys.size > 0) {
-            console.log('Active keys:', Array.from(this.keys));
+            this.keyRow.textContent = `Keys: ${Array.from(this.keys).join(', ')}`;
+        } else {
+            this.keyRow.textContent = 'Keys: none';
         }
 
         // Handle keyboard input and apply forces with higher magnitude

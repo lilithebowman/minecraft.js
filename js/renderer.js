@@ -12,9 +12,6 @@ export class Renderer {
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0x87CEEB); // Sky blue background
         
-        // Initialize camera
-        this.camera = new Camera();
-
         // Add fog to scene for depth
         this.scene.fog = new THREE.Fog(0x87ceeb, 0, 500);
         this.scene.background = new THREE.Color(0x87ceeb);
@@ -37,6 +34,9 @@ export class Renderer {
 
         // Initialize frustum
         this.frustum = new Frustum();
+
+        // Create camera first
+        this.camera = new Camera();
         
         // Create world rotation group
         this.worldGroup = new THREE.Group();
@@ -46,9 +46,11 @@ export class Renderer {
         this.player = null;
 		this.engine = null;
 
-        // Add skybox
+        // Initialize skybox last
         this.skybox = new Skybox();
-        this.scene.add(this.skybox.mesh);
+        if (this.skybox.mesh) {
+            this.scene.add(this.skybox.mesh);
+        }
     }
 
     setWorld(world) {
@@ -134,8 +136,14 @@ export class Renderer {
             return;
         }
 
-        // Update skybox
+        // Update skybox first
         this.skybox.update(deltaTime);
+        
+        // Make skybox follow camera position
+        if (this.camera) {
+            const campos = this.camera.getCamera().position;
+            this.skybox.mesh.position.copy(campos);
+        }
 
         // Update camera position before rendering
         this.camera.updatePosition();
@@ -196,15 +204,15 @@ export class Renderer {
             // Initialize texture manager first
             await this.textureManager.initialize();
             
+            // Initialize skybox
+            await this.skybox.initialize();
+            
             // Set world and player
             this.setWorld(world);
             this.setPlayer(player);
             
             // Create block manager reference
             this.blockManager = world.blockManager;
-            
-            // Initialize the scene
-            this.scene.add(this.worldGroup);
             
             console.log('Renderer initialized successfully');
             return this;
