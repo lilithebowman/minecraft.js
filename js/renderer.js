@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { TextureManager, DisplayList, Camera } from './modules.js';
 import { Frustum } from './utils/frustum.js';
+import { Skybox } from './skybox.js';
 
 export class Renderer {
     constructor() {
@@ -44,6 +45,10 @@ export class Renderer {
         this.world = null;
         this.player = null;
 		this.engine = null;
+
+        // Add skybox
+        this.skybox = new Skybox();
+        this.scene.add(this.skybox.mesh);
     }
 
     setWorld(world) {
@@ -128,6 +133,9 @@ export class Renderer {
             console.warn('Cannot render: world not set');
             return;
         }
+
+        // Update skybox
+        this.skybox.update(deltaTime);
 
         // Update camera position before rendering
         this.camera.updatePosition();
