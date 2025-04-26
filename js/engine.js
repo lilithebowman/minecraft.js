@@ -3,6 +3,7 @@ import { Framerate } from './framerate.js';
 import { BlockManager } from './blocks.js';
 import { Input } from './input.js';
 import { DebugLog } from './debug.js';
+import { EventEmitter } from './utils/event_emitter.js';
 
 export class Engine {
     constructor() {
@@ -10,7 +11,8 @@ export class Engine {
         this.time = new Time();
         this.framerate = new Framerate();
         this.blockManager = new BlockManager();
-        this.maxBlocks = 10000; // Maximum blocks to render
+        this.maxBlocks = 10000;
+        this.eventEmitter = new EventEmitter();  // Add this line
         
         // Store game objects
         this.world = null;
@@ -93,29 +95,13 @@ export class Engine {
     }
 
     update(deltaTime) {
-        // Update input first
-        if (this.input) {
-            this.input.update();
-        }
-
-        if (this.world) {
-            this.world.update(deltaTime);
-            // Update block count after world update
-            this.blockManager.updateDisplay();
-        }
-        
         if (this.player) {
-            this.player.update(deltaTime);
-            // Update position display after player update
+            // Update player position display
             this.player.updatePositionDisplay();
         }
-
-        // Update debug stats
-        this.debugLog.updateStats({
-            fps: Math.round(this.framerate.getFPS()),
-            position: this.player.position,
-            blocks: this.blockManager.getBlockCount()
-        });
+        
+        // Emit an update event
+        this.eventEmitter.emit('update', deltaTime);
     }
 
     render() {
@@ -149,6 +135,10 @@ export class Engine {
         const dy = this.player.position.y - position.y;
         const dz = this.player.position.z - position.z;
         return Math.sqrt(dx * dx + dy * dy + dz * dz);
+    }
+
+    getEventEmitter() {
+        return this.eventEmitter;
     }
 }
 

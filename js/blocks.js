@@ -4,6 +4,10 @@ import * as THREE from 'three';
 
 export class BlockManager {
     constructor() {
+        // Initialize blocks Map
+        this.blocks = new Map();
+        this.textureManager = new TextureManager();
+        
         this.blockTypes = {
             'grass': { texture: 'grass_top' },
             'dirt': { texture: 'dirt' },
