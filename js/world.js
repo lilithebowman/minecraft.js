@@ -8,23 +8,24 @@ export class World {
     constructor() {
         this.chunks = new Map();
         this.noiseGen = new NoiseGenerator();
-        this.blockManager = new BlockManager();
         this.frustum = new Frustum();
         this.renderDistance = 8; // Chunks
         this.chunkLoadQueue = [];
         this.maxConcurrentLoads = 4;
         this.loadingDiv = null;
         this.totalBlocks = 0;
+        this.workers = [];
+        this.maxWorkers = navigator.hardwareConcurrency || 4;
+        this.initializeWorkers();
     }
 
-    async initialize(blockManager) {
-        try {
-            this.blockManager = blockManager;
-            await this.generateWorld();
-            return true;
-        } catch (error) {
-            console.error('World initialization failed:', error);
-            throw error;
+    initializeWorkers() {
+        for (let i = 0; i < this.maxWorkers; i++) {
+            const worker = new Worker(
+                new URL('./workers/worldGenerator.js', import.meta.url),
+                { type: 'module' }
+            );
+            this.workers.push(worker);
         }
     }
 
@@ -35,83 +36,76 @@ export class World {
         const baseHeight = 64;
 
         this.loadingDiv = this.createChunkLoadingDisplay();
-
-        // Generate chunks in render distance
+        
+        // Create an array of chunk generation tasks
+        const tasks = [];
         for (let cx = -this.renderDistance; cx < this.renderDistance; cx++) {
             for (let cz = -this.renderDistance; cz < this.renderDistance; cz++) {
-                const chunk = new Chunk(cx, cz);
-
-                // Update the chunk loading display
-                this.updateChunkLoadingDisplay(cx, cz);
-
-                // Look for the chunk in the cache
-                const loaded = await chunk.loadFromCache();
-                if (loaded) {
-                    // If loaded, skip generation
-                    this.chunks.set(`${cx},${cz}`, chunk);
-                    continue;
-                }
-                
-                // If not loaded, generate new chunk
-                
-                // Generate terrain for this chunk
-                for (let x = 0; x < 16; x++) {
-                    for (let z = 0; z < 16; z++) {
-                        const worldX = (cx * 16) + x;
-                        const worldZ = (cz * 16) + z;
-                        
-                        // Generate height using noise
-                        let height = baseHeight;
-                        height += this.noiseGen.noise(worldX/scale, 0, worldZ/scale) * amplitude;
-                        height = Math.floor(height);
-
-                        // Generate column
-                        for (let y = 0; y < height; y++) {
-                            let blockType;
-                            if (y === 0) {
-                                blockType = 'bedrock';
-                            } else if (y < height - 4) {
-                                blockType = 'stone';
-                            } else if (y < height - 1) {
-                                blockType = 'dirt';
-                            } else {
-                                blockType = 'grass';
-                            }
-
-                            // Add block to chunk
-                            chunk.setBlock(x, y, z, blockType);
-
-                            // Add to total blocks
-                            this.totalBlocks++;
-                            
-                            // Register block with block manager
-                            const blockId = `${worldX},${y},${worldZ}`;
-                            this.blockManager.addBlock(blockId, {
-                                type: blockType,
-                                position: { x: worldX, y, z: worldZ }
-                            });
-                        }
-                    }
-                }
-
-                // Save the chunk to cache
-                await chunk.saveToCache();
-
-                // Initialize chunk mesh
-                chunk.rebuildMesh();
-                
-                // Add chunk to world
-                const key = `${cx},${cz}`;
-                this.chunks.set(key, chunk);
+                tasks.push({ cx, cz });
             }
         }
+
+        // Process chunks in parallel using workers
+        const chunkPromises = tasks.map(async (task, index) => {
+            const worker = this.workers[index % this.maxWorkers];
+            
+            // Try loading from cache first
+            const chunk = new Chunk(task.cx, task.cz);
+            const loaded = await chunk.loadFromCache();
+            
+            if (loaded) {
+                this.chunks.set(`${task.cx},${task.cz}`, chunk);
+                this.updateChunkLoadingDisplay(index, tasks.length);
+                return;
+            }
+
+            // If not in cache, generate using worker
+            return new Promise((resolve) => {
+                worker.onmessage = (e) => {
+                    const { blocks } = e.data;
+                    
+                    // Add blocks to chunk
+                    blocks.forEach(block => {
+                        chunk.setBlock(block.x, block.y, block.z, block.type);
+                        this.totalBlocks++;
+                        
+                        // Register with block manager
+                        const blockId = `${block.worldX},${block.y},${block.worldZ}`;
+                        this.blockManager.addBlock(blockId, {
+                            type: block.type,
+                            position: { 
+                                x: block.worldX, 
+                                y: block.y, 
+                                z: block.worldZ 
+                            }
+                        });
+                    });
+
+                    chunk.rebuildMesh();
+                    this.chunks.set(`${task.cx},${task.cz}`, chunk);
+                    chunk.saveToCache();
+                    
+                    this.updateChunkLoadingDisplay(index, tasks.length);
+                    resolve();
+                };
+
+                worker.postMessage({
+                    chunkX: task.cx,
+                    chunkZ: task.cz,
+                    scale,
+                    amplitude,
+                    baseHeight
+                });
+            });
+        });
+
+        // Wait for all chunks to be generated
+        await Promise.all(chunkPromises);
         
-        // Remove loading display
         if (this.loadingDiv) {
             this.loadingDiv.remove();
         }
 
-        // Log completion
         console.log('World generation complete');
     }
 
@@ -320,5 +314,23 @@ export class World {
 
         // Return only the closest blocks up to maxBlocks
         return blocks.slice(0, maxBlocks);
+    }
+
+    dispose() {
+        // Clean up workers when done
+        this.workers.forEach(worker => worker.terminate());
+        this.workers = [];
+    }
+
+    async initialize(blockManager) {
+        try {
+            this.blockManager = blockManager;
+            await this.generateWorld();
+            return true;
+        } catch (error) {
+            console.error('World initialization failed:', error);
+            this.dispose(); // Clean up workers on error
+            throw error;
+        }
     }
 }
