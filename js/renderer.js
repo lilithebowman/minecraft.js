@@ -5,6 +5,9 @@ import { Skybox } from './skybox.js';
 
 export class Renderer {
     constructor() {
+        // Maximum number of chunks to render
+        this.maxChunks = 4;
+
         // Create the scene
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0x87CEEB); // Sky blue background
@@ -131,7 +134,10 @@ export class Renderer {
 
         // Add blocks from visible chunks
         const visibleChunks = this.world.getVisibleChunks(this.camera);
+        let rendereredChunks = 0;
         for (const chunk of visibleChunks) {
+            rendereredChunks++;
+            if (rendereredChunks > this.maxChunks) break;
             if (this.frustum.isChunkVisible(chunk)) {
                 for (let x = 0; x < 16; x++) {
                     for (let y = 0; y < 256; y++) {

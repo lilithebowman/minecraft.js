@@ -33,6 +33,17 @@ export class World {
         for (let cx = -this.renderDistance; cx < this.renderDistance; cx++) {
             for (let cz = -this.renderDistance; cz < this.renderDistance; cz++) {
                 const chunk = new Chunk(cx, cz);
+
+                // Look for the chunk in the cache
+                const loaded = await chunk.loadFromCache();
+                if (loaded) {
+                    // If loaded, skip generation
+                    console.log(`Chunk (${cx}, ${cz}) loaded from cache`);
+                    this.chunks.set(`${cx},${cz}`, chunk);
+                    continue;
+                }
+                
+                // If not loaded, generate new chunk
                 
                 // Generate terrain for this chunk
                 for (let x = 0; x < 16; x++) {
@@ -70,6 +81,12 @@ export class World {
                         }
                     }
                 }
+
+                // Save the chunk to cache
+                await chunk.saveToCache();
+
+                // Log that we have saved a new chunk
+                console.log(`Chunk (${cx}, ${cz}) saved to cache`);
 
                 // Initialize chunk mesh
                 chunk.rebuildMesh();

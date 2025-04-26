@@ -17,10 +17,23 @@ class ChunkCache {
         $filename = $this->getCacheFilename($x, $z);
         $json = json_encode($data);
         
-        if (file_put_contents($filename, $json) === false) {
+        if (file_put_contents($filename, gzencode($json)) === false) {
             http_response_code(500);
             echo json_encode(['error' => 'Failed to save chunk data']);
             return false;
+        }
+
+        // Set the file permissions
+        chmod($filename, 0644);
+        // Set the file ownership
+        if (function_exists('posix_getuid')) {
+            $uid = posix_getuid();
+            chown($filename, $uid);
+        }
+        // Set the file group ownership
+        if (function_exists('posix_getgid')) {
+            $gid = posix_getgid();
+            chgrp($filename, $gid);
         }
         
         return true;
@@ -38,6 +51,14 @@ class ChunkCache {
             return null;
         }
         
+        // ungzip the data if necessary
+        if (substr($json, 0, 2) === "\x1f\x8b") {
+            $json = gzinflate(substr($json, 10));
+        }
+        // Decode the JSON data
+        if ($json === false) {
+            return null;
+        }
         return json_decode($json, true);
     }
 }
@@ -57,6 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 } elseif ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $cache = new ChunkCache();
+
     $x = isset($_GET['x']) ? intval($_GET['x']) : null;
     $z = isset($_GET['z']) ? intval($_GET['z']) : null;
     
