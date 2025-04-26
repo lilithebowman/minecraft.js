@@ -129,7 +129,7 @@ export class Engine {
         }
 
         // Update game state
-        this.update(this.time.deltaTime);
+        this.updateGameState(this.time.deltaTime);
 
         // Render the current state
         this.renderer.render(this.time.deltaTime);
@@ -138,7 +138,7 @@ export class Engine {
         requestAnimationFrame(() => this.gameLoop());
     }
 
-    update(deltaTime) {
+    updateGameState(deltaTime) {
         try {
             // Update player
             if (this.player) {

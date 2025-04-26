@@ -13,15 +13,22 @@ export class Input {
         this.isFlying = false;
         this.isFrozen = false;
 
-        // Add flying force
+        // Add movement forces
         this.movementForces = {
-            forward: new Force(new THREE.Vector3(0, 0, -1), 5),
-            backward: new Force(new THREE.Vector3(0, 0, 1), 5),
-            left: new Force(new THREE.Vector3(-1, 0, 0), 5),
-            right: new Force(new THREE.Vector3(1, 0, 0), 5),
-            jump: new Force(new THREE.Vector3(0, 1, 0), 10, 0.2),
-            fly: new Force(new THREE.Vector3(0, 1, 0), 5) // Continuous upward force
+            forward: new Force(new THREE.Vector3(0, 0, -1), 1.5),    // Reduced from 5
+            backward: new Force(new THREE.Vector3(0, 0, 1), 1.5),    // Reduced from 5
+            left: new Force(new THREE.Vector3(-1, 0, 0), 1.5),       // Reduced from 5
+            right: new Force(new THREE.Vector3(1, 0, 0), 1.5),       // Reduced from 5
+            jump: new Force(new THREE.Vector3(0, 1, 0), 4, 0.15),    // Reduced from 10, shorter duration
+            fly: new Force(new THREE.Vector3(0, 1, 0), 1.0)          // Reduced from 5
         };
+
+        // Add camera pitch limits (in radians)
+        this.maxPitch = Math.PI / 2 - 0.1; // Just under 90 degrees
+        this.minPitch = -Math.PI / 2 + 0.1; // Just over -90 degrees
+        
+        // Track pitch separately from yaw
+        this.pitch = 0;
 
         // Bind methods to maintain context
         this.onKeyDown = this.onKeyDown.bind(this);
@@ -186,6 +193,19 @@ export class Input {
         if (Math.abs(this.mouseMovement.x) > 0.01) {
             player.rotate(this.mouseMovement.x * this.mouseSensitivity);
             this.mouseMovement.x = 0;
+        }
+
+        // Handle vertical mouse movement for camera pitch
+        if (Math.abs(this.mouseMovement.y) > 0.01) {
+            // Update pitch and clamp it
+            this.pitch -= this.mouseMovement.y * this.mouseSensitivity;
+            this.pitch = Math.max(this.minPitch, Math.min(this.maxPitch, this.pitch));
+            
+            // Update player's camera pitch
+            if (player.camera) {
+                player.camera.setPitch(this.pitch);
+            }
+            this.mouseMovement.y = 0;
         }
 
         // Reset mouse movement
