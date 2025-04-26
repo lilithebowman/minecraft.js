@@ -1,6 +1,7 @@
 import { TextureManager } from './modules.js';
 import { BoxCollider } from './physics/boxCollider.js';
 import * as THREE from 'three';
+import { debug } from './debug.js';
 
 export class BlockManager {
     constructor() {
@@ -14,7 +15,6 @@ export class BlockManager {
             'stone': { texture: 'stone' },
             'bedrock': { texture: 'bedrock', unbreakable: true } // Add unbreakable property
         };
-        this.createDisplay();
     }
 
     async initialize() {
@@ -28,23 +28,12 @@ export class BlockManager {
             console.error('Failed to initialize block manager:', error);
             throw error;
         }
+        debug.log('BlockManager initialized');
     }
-
-    createDisplay() {
-        this.display = document.createElement('div');
-        this.display.style.position = 'fixed';
-        this.display.style.top = '30px';  // Position below framerate counter
-        this.display.style.right = '10px';
-        this.display.style.color = 'white';
-        this.display.style.fontFamily = 'monospace';
-        this.display.style.fontSize = '16px';
-        this.display.style.zIndex = '100';
-        document.body.appendChild(this.display);
-        this.updateDisplay();
-    }
-
-    updateDisplay() {
-        this.display.textContent = `Blocks: ${this.getBlockCount()}`;
+    
+    update(deltaTime) {
+        // Update the status display
+        debug.updateStats({ blocks: this.getBlockCount() });
     }
 
     async addBlock(id, blockData) {
@@ -73,9 +62,6 @@ export class BlockManager {
             material,
             collider
         };
-
-        this.blocks.set(id, enrichedBlockData);
-        this.updateDisplay();
     }
 
     getMaterial(blockType) {
@@ -90,7 +76,6 @@ export class BlockManager {
             throw new Error(`Block with ID ${id} does not exist.`);
         }
         this.blocks.delete(id);
-        this.updateDisplay();
     }
 
     getBlock(id) {
@@ -98,7 +83,7 @@ export class BlockManager {
     }
 
     getBlockCount() {
-        return this.blocks.size;
+        return this.blocks.count;
     }
 
     listBlocks() {

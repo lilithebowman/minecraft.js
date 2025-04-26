@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Force } from './physics/force.js';
 import { Position } from './physics/position.js';
 import { Velocity } from './physics/velocity.js';
+import { debug } from './debug.js';
 
 export class Player {
     constructor(position = new Position(0, 100, 0)) {
@@ -14,38 +15,12 @@ export class Player {
         this.isGrounded = false;
     }
 
-    createPositionDisplay() {
-        // Create position display element
-        this.posDisplay = document.createElement('div');
-        this.posDisplay.style.position = 'fixed';
-        this.posDisplay.style.top = '50px'; // Below block counter
-        this.posDisplay.style.right = '10px';
-        this.posDisplay.style.color = 'white';
-        this.posDisplay.style.fontFamily = 'monospace';
-        this.posDisplay.style.fontSize = '16px';
-        this.posDisplay.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-        this.posDisplay.style.padding = '5px';
-        this.posDisplay.style.zIndex = '100';
-        document.body.appendChild(this.posDisplay);
-        this.updatePositionDisplay();
-    }
-
-    updatePositionDisplay() {
-        if (this.posDisplay) {
-            const x = Math.round(this.position.x * 10) / 10;
-            const y = Math.round(this.position.y * 10) / 10;
-            const z = Math.round(this.position.z * 10) / 10;
-            this.posDisplay.textContent = `Position: ${x}, ${y}, ${z}`;
-        }
-    }
-
     /**
      * Adds a force to the player
      * @param {Force} force - The force to be added
      */
     addForce(force) {
-        if (!force || !force.update) {
-            console.warn('Invalid force object provided to addForce');
+        if (!force || !(force instanceof Force)) {
             return;
         }
 
@@ -87,8 +62,7 @@ export class Player {
         this.position.z = Math.max(-1024, Math.min(1024, this.position.z));
         this.position.y = Math.max(-1024, Math.min(1024, this.position.y));
 
-        // Update position display
-        this.updatePositionDisplay();
+        debug.updateStats({position: this.position});
     }
 
     /**

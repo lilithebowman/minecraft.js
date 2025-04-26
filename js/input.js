@@ -160,24 +160,16 @@ export class Input {
 
         // Handle keyboard input and apply forces with higher magnitude
         if (this.keys.has('KeyW')) {
-            const force = new Force(player.forward, 20);
-            player.addForce(force);
-            console.log('Adding forward force');
+            player.addForce(this.movementForces.forward);
         }
         if (this.keys.has('KeyS')) {
-            const force = new Force(player.forward.clone().multiplyScalar(-1), 20);
-            player.addForce(force);
-            console.log('Adding backward force');
+            player.addForce(this.movementForces.backward);
         }
         if (this.keys.has('KeyA')) {
-            const force = new Force(player.right.clone().multiplyScalar(-1), 20);
-            player.addForce(force);
-            console.log('Adding left force');
+            player.addForce(this.movementForces.left);
         }
         if (this.keys.has('KeyD')) {
-            const force = new Force(player.right, 20);
-            player.addForce(force);
-            console.log('Adding right force');
+            player.addForce(this.movementForces.right);
         }
 
         // Handle flying

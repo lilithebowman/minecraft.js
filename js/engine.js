@@ -2,7 +2,7 @@ import { Time } from './time.js';
 import { Framerate } from './framerate.js';
 import { BlockManager } from './blocks.js';
 import { Input } from './input.js';
-import { DebugLog } from './debug.js';
+import { debug } from './debug.js';
 import { EventEmitter } from './utils/event_emitter.js';
 
 export class Engine {
@@ -12,14 +12,13 @@ export class Engine {
         this.framerate = new Framerate();
         this.blockManager = new BlockManager();
         this.maxBlocks = 10000;
-        this.eventEmitter = new EventEmitter();  // Add this line
+        this.eventEmitter = new EventEmitter();
         
         // Store game objects
         this.world = null;
         this.player = null;
         this.renderer = null;
         this.input = null;
-        this.debugLog = new DebugLog();
     }
 
     async init(world, player, renderer) {
@@ -44,14 +43,6 @@ export class Engine {
             console.log('Initializing world...');
             await this.world.initialize(this.blockManager);
             console.log('World initialized');
-
-            // Initialize player
-            try {
-                this.player.createPositionDisplay();
-                console.log('Player initialized');
-            } catch (error) {
-                throw new Error(`Player initialization failed: ${error.message}`);
-            }
 
             // Initialize renderer
             try {
@@ -142,6 +133,11 @@ export class Engine {
             // Update world
             if (this.world) {
                 this.world.update(deltaTime);
+            }
+
+            // Update block manager
+            if (this.blockManager) {
+                this.blockManager.update(deltaTime);
             }
             
             // Emit update event

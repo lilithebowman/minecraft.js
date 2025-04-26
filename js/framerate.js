@@ -1,16 +1,15 @@
+import { debug } from './debug.js';
+
 export class Framerate {
     constructor() {
         this.frames = 0;
         this.lastTime = performance.now();
         this.fps = 0;
-        
-        // Update FPS every second
-        this.fpsUpdateInterval = 1000; 
+        this.fpsUpdateInterval = 1000;
     }
 
     update() {
         this.frames++;
-        
         const currentTime = performance.now();
         const elapsed = currentTime - this.lastTime;
 
@@ -18,6 +17,11 @@ export class Framerate {
             this.fps = Math.round((this.frames * 1000) / elapsed);
             this.frames = 0;
             this.lastTime = currentTime;
+            
+            // Update debug stats with current FPS
+            debug.updateStats({
+                fps: this.fps
+            });
         }
     }
 

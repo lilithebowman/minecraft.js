@@ -5,6 +5,11 @@ export class DebugLog {
         this.createConsolePanel();
         this.messages = [];
         this.maxMessages = 50;
+        this.stats = {  
+            fps: 0,
+            position: { x: 0, y: 0, z: 0 },
+            blocks: 0
+        };
 
         // Override console.log
         this.originalLog = console.log;
@@ -53,10 +58,15 @@ export class DebugLog {
     }
 
     updateStats(stats) {
+        this.stats = { 
+            fps: stats.fps || this.stats.fps,
+            position: stats.position || this.stats.position,
+            blocks: stats.blocks || this.stats.blocks
+        };
         this.statsPanel.innerHTML = `
-            FPS: ${stats.fps}<br>
-            Position: (${Math.round(stats.position.x)}, ${Math.round(stats.position.y)}, ${Math.round(stats.position.z)})<br>
-            Blocks: ${stats.blocks}
+            FPS: ${this.stats.fps}<br>
+            Position: (${Math.round(this.stats.position.x)}, ${Math.round(this.stats.position.y)}, ${Math.round(this.stats.position.z)})<br>
+            Blocks: ${this.stats.blocks}
         `;
     }
 
@@ -83,3 +93,5 @@ export class DebugLog {
             .join('');
     }
 }
+
+export const debug = new DebugLog();
