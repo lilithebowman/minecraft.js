@@ -4,37 +4,48 @@ import { Position } from './physics/position.js';
 import { Velocity } from './physics/velocity.js';
 
 export class Player {
-    constructor(position) {
-        this.position = position; // { x, y, z }
+    constructor(position = new Position(0, 100, 0)) {
+        this.position = position;
+        this.velocity = new Velocity();
         this.size = { x: 0.6, y: 1.8, z: 0.6 }; // Player's bounding box size
+        this.rotation = 0;
+        this.forward = new THREE.Vector3(0, 0, -1);
+        this.right = new THREE.Vector3(1, 0, 0);
+        this.isGrounded = false;
     }
 
-    checkForBlocksNearPlayer(chunks) {
-        const playerBottom = Math.floor(this.position.y);
-        const playerTop = Math.ceil(this.position.y + this.size.y);
+    createPositionDisplay() {
+        // Create position display element
+        this.posDisplay = document.createElement('div');
+        this.posDisplay.style.position = 'fixed';
+        this.posDisplay.style.top = '50px'; // Below block counter
+        this.posDisplay.style.right = '10px';
+        this.posDisplay.style.color = 'white';
+        this.posDisplay.style.fontFamily = 'monospace';
+        this.posDisplay.style.fontSize = '16px';
+        this.posDisplay.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+        this.posDisplay.style.padding = '5px';
+        this.posDisplay.style.zIndex = '100';
+        document.body.appendChild(this.posDisplay);
+        this.updatePositionDisplay();
+    }
 
-        for (let y = playerBottom; y <= playerTop; y++) {
-            const block = this.getBlockAtPosition(this.position.x, y, this.position.z, chunks);
-            if (block) {
-                // Place the player on top of the block
-                this.position.y = y + 1;
-                break;
-            }
+    updatePositionDisplay() {
+        if (this.posDisplay) {
+            const x = Math.round(this.position.x * 10) / 10;
+            const y = Math.round(this.position.y * 10) / 10;
+            const z = Math.round(this.position.z * 10) / 10;
+            this.posDisplay.textContent = `Position: ${x}, ${y}, ${z}`;
         }
     }
 
-    getBlockAtPosition(x, y, z, chunks) {
-        const chunkX = Math.floor(x / 16);
-        const chunkZ = Math.floor(z / 16);
-        const localX = (Math.floor(x) % 16 + 16) % 16;
-        const localZ = (Math.floor(z) % 16 + 16) % 16;
-
-        const chunkKey = `${chunkX},${chunkZ}`;
-        const chunk = chunks.get(chunkKey); // Assuming chunks is a Map
-        if (!chunk) return null;
-
-        return chunk.getBlock(localX, Math.floor(y), localZ);
+    update(deltaTime) {
+        // Update position display
+        this.updatePositionDisplay();
+        // ... rest of update logic
     }
+
+    // ... existing methods ...
 }
 
 export default Player;

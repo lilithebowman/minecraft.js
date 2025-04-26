@@ -26,25 +26,54 @@ export class Engine {
         console.log('Initializing engine...');
         
         try {
-            // Initialize texture manager first (through block manager)
+            // Validate required components with detailed errors
+            if (!world) throw new Error('World object is required for engine initialization');
+            if (!player) throw new Error('Player object is required for engine initialization');
+            if (!renderer) throw new Error('Renderer object is required for engine initialization');
+
+            // Initialize block manager first
             console.log('Initializing block manager and textures...');
             await this.blockManager.initialize();
             
-            // Set up dependencies after textures are loaded
+            // Set up components
             this.world = world;
             this.player = player;
             this.renderer = renderer;
 
-            // Set up dependencies
-            this.world.blockManager = this.blockManager;
-            this.renderer.blockManager = this.blockManager;
-            this.renderer.setWorld(world);
-            this.renderer.setPlayer(player);
+            // Initialize world with block manager
+            console.log('Initializing world...');
+            await this.world.initialize(this.blockManager);
+            console.log('World initialized');
+
+            // Initialize player
+            try {
+                this.player.createPositionDisplay();
+                console.log('Player initialized');
+            } catch (error) {
+                throw new Error(`Player initialization failed: ${error.message}`);
+            }
+
+            // Initialize renderer
+            try {
+                await this.renderer.initialize(world, player);
+                // Initialize engine events
+                this.renderer.init(this);
+                console.log('Renderer initialized');
+            } catch (error) {
+                throw new Error(`Renderer initialization failed: ${error.message}`);
+            }
+
+            // Initialize input system last
+            try {
+                this.input = new Input(this);
+                console.log('Input system initialized');
+            } catch (error) {
+                throw new Error(`Input system initialization failed: ${error.message}`);
+            }
             
-            // Initialize input system
-            this.input = new Input(this);
-            
-            console.log('Engine initialized successfully');
+            console.log('Engine initialization complete');
+            return this;
+
         } catch (error) {
             console.error('Failed to initialize engine:', error);
             throw error;
@@ -78,54 +107,74 @@ export class Engine {
 
     // Main game loop
     gameLoop() {
-        if (!this.isRunning) return;
+        if (!this.isRunning || !this.player || !this.world || !this.renderer) {
+            console.warn('Game loop stopped: missing required components');
+            this.isRunning = false;
+            return;
+        }
 
         // Update time tracking
         this.time.update();
         this.framerate.update();
 
+        // Update input first
+        if (this.input) {
+            this.input.update();
+        }
+
         // Update game state
         this.update(this.time.deltaTime);
 
         // Render the current state
-        this.render();
+        this.render(this.time.deltaTime);
 
         // Queue next frame
         requestAnimationFrame(() => this.gameLoop());
     }
 
     update(deltaTime) {
-        if (this.player) {
-            // Update player position display
-            this.player.updatePositionDisplay();
-        }
-        
-        // Emit an update event
-        this.eventEmitter.emit('update', deltaTime);
-    }
+        try {
+            // Update player
+            if (this.player) {
+                this.player.update(deltaTime);
+            }
 
-    render() {
-        if (this.renderer) {
-            // Update renderer's display list with current blocks
-            this.renderer.clearDisplayList();
-            
-            // Get all blocks and sort by distance to player
-            const blocks = this.world.getAllBlocks()
-                .sort((a, b) => {
-                    const distA = this.getDistanceToPlayer(a.position);
-                    const distB = this.getDistanceToPlayer(b.position);
-                    return distA - distB;
-                })
-                .slice(0, this.maxBlocks); // Limit to maxBlocks
-            
-            // Add closest blocks to display list
-            for (const block of blocks) {
-                const {type, position} = block;
-                this.renderer.addBlock(position.x, position.y, position.z, type);
+            // Update world
+            if (this.world) {
+                this.world.update(deltaTime);
             }
             
-            // Render the frame
-            this.renderer.render();
+            // Emit update event
+            this.eventEmitter.emit('update', deltaTime);
+        } catch (error) {
+            console.error('Error in update loop:', error);
+            this.stop();
+        }
+    }
+
+    render(deltaTime) {
+        try {
+            if (!this.renderer) return;
+
+            // Update renderer's display list
+            this.renderer.clearDisplayList();
+            
+            // Get visible blocks
+            const blocks = this.world.getVisibleBlocks(this.player.position, this.maxBlocks);
+            
+            // Add blocks to display list
+            for (const block of blocks) {
+                this.renderer.addBlock(block.position.x, block.position.y, block.position.z, block.type);
+            }
+            
+            // Render frame
+            this.renderer.render(deltaTime);
+            
+            // Emit render event
+            this.eventEmitter.emit('render', deltaTime);
+        } catch (error) {
+            console.error('Error in render loop:', error);
+            this.stop();
         }
     }
 

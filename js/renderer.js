@@ -182,4 +182,27 @@ export class Renderer {
         // Render the scene with camera
         this.renderer.render(this.scene, this.camera.getCamera());
     }
+
+    async initialize(world, player) {
+        try {
+            // Initialize texture manager first
+            await this.textureManager.initialize();
+            
+            // Set world and player
+            this.setWorld(world);
+            this.setPlayer(player);
+            
+            // Create block manager reference
+            this.blockManager = world.blockManager;
+            
+            // Initialize the scene
+            this.scene.add(this.worldGroup);
+            
+            console.log('Renderer initialized successfully');
+            return this;
+        } catch (error) {
+            console.error('Failed to initialize renderer:', error);
+            throw error;
+        }
+    }
 }

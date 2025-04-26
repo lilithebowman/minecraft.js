@@ -1,4 +1,4 @@
-class EventEmitter {
+export class EventEmitter {
     constructor() {
         this.listeners = {};
     }
@@ -22,5 +22,3 @@ class EventEmitter {
         }
     }
 }
-
-export default EventEmitter;
