@@ -37,7 +37,7 @@ export class World {
 		const baseHeight = 64;
 
 		this.loadingDiv = this.createChunkLoadingDisplay();
-		
+
 		// Create an array of chunk generation tasks
 		const tasks = [];
 		for (let cx = -this.renderDistance; cx < this.renderDistance; cx++) {
@@ -49,11 +49,11 @@ export class World {
 		// Process chunks in parallel using workers
 		const chunkPromises = tasks.map(async (task, index) => {
 			const worker = this.workers[index % this.maxWorkers];
-			
+
 			// Try loading from cache first
 			const chunk = new Chunk(task.cx, task.cz);
 			const loaded = await chunk.loadFromCache();
-			
+
 			if (loaded) {
 				this.chunks.set(`${task.cx},${task.cz}`, chunk);
 				this.updateChunkLoadingDisplay(index, tasks.length);
@@ -64,20 +64,20 @@ export class World {
 			return new Promise((resolve) => {
 				worker.onmessage = (e) => {
 					const { blocks } = e.data;
-					
+
 					// Add blocks to chunk
 					blocks.forEach(block => {
 						chunk.setBlock(block.x, block.y, block.z, block.type);
 						this.totalBlocks++;
-						
+
 						// Register with block manager
 						const blockId = `${block.worldX},${block.y},${block.worldZ}`;
 						this.block.addBlock(blockId, {
 							type: block.type,
-							position: { 
-								x: block.worldX, 
-								y: block.y, 
-								z: block.worldZ 
+							position: {
+								x: block.worldX,
+								y: block.y,
+								z: block.worldZ
 							}
 						});
 					});
@@ -85,7 +85,7 @@ export class World {
 					chunk.rebuildMesh();
 					this.chunks.set(`${task.cx},${task.cz}`, chunk);
 					chunk.saveToCache();
-					
+
 					this.updateChunkLoadingDisplay(index, tasks.length);
 					resolve();
 				};
@@ -102,7 +102,7 @@ export class World {
 
 		// Wait for all chunks to be generated
 		await Promise.all(chunkPromises);
-		
+
 		if (this.loadingDiv) {
 			this.loadingDiv.remove();
 		}
@@ -111,14 +111,14 @@ export class World {
 	}
 
 	getBlock(x, y, z) {
-		const chunk = this.getChunk(Math.floor(x/16), Math.floor(z/16));
+		const chunk = this.getChunk(Math.floor(x / 16), Math.floor(z / 16));
 		return chunk?.getBlock(x & 15, y, z & 15);
 	}
 
 	setBlock(x, y, z, type) {
-		const chunk = this.getOrCreateChunk(Math.floor(x/16), Math.floor(z/16));
+		const chunk = this.getOrCreateChunk(Math.floor(x / 16), Math.floor(z / 16));
 		const blockId = `${x},${y},${z}`;
-		
+
 		// Update block manager
 		if (type) {
 			this.block.addBlock(blockId, {
@@ -139,7 +139,7 @@ export class World {
 		if (!this.chunks.has(key)) {
 			const chunk = new Chunk(chunkX, chunkZ);
 			chunk.block = this.block;
-			
+
 			// Try to load from cache first
 			const loaded = await chunk.loadFromCache();
 			if (!loaded) {
@@ -147,7 +147,7 @@ export class World {
 				this.generateChunkTerrain(chunk);
 				await chunk.saveToCache();
 			}
-			
+
 			this.chunks.set(key, chunk);
 		}
 		return this.chunks.get(key);
@@ -164,10 +164,10 @@ export class World {
 				for (let z = 0; z < 16; z++) {
 					const worldX = (chunk.x * 16) + x;
 					const worldZ = (chunk.z * 16) + z;
-					
+
 					// Generate height using noise
 					let height = baseHeight;
-					height += this.noiseGen.noise(worldX/scale, 0, worldZ/scale) * amplitude;
+					height += this.noiseGen.noise(worldX / scale, 0, worldZ / scale) * amplitude;
 					height = Math.floor(height);
 
 					// Generate column
@@ -185,7 +185,7 @@ export class World {
 
 						// Add block to chunk
 						chunk.setBlock(x, y, z, blockType);
-						
+
 						// Register block with block manager
 						const blockId = `${worldX},${y},${worldZ}`;
 						this.block.addBlock(blockId, {
@@ -266,11 +266,11 @@ export class World {
 
 	getVisibleChunks(camera) {
 		if (!camera || !camera.camera.position) return [];
-		
+
 		// Get player chunk coordinates
 		const playerX = Math.floor(camera.camera.position.x / 16);
 		const playerZ = Math.floor(camera.camera.position.z / 16);
-		
+
 		// Get chunks in render distance
 		const visibleChunks = [];
 		const renderDistance = 8; // Configurable render distance
@@ -280,7 +280,7 @@ export class World {
 				const chunkX = playerX + x;
 				const chunkZ = playerZ + z;
 				const chunk = this.getChunk(chunkX, chunkZ);
-				
+
 				if (chunk) {
 					visibleChunks.push(chunk);
 				}
@@ -321,7 +321,7 @@ export class World {
 						if (blockType) {
 							const worldX = chunk.x * 16 + x;
 							const worldZ = chunk.z * 16 + z;
-							
+
 							// Calculate distance to player
 							const dx = worldX - playerPosition.x;
 							const dy = y - playerPosition.y;
@@ -386,7 +386,7 @@ export class World {
 
 	updateDebugStats() {
 		if (!this.debugMode) return;
-		
+
 		this.debugStats.loadedChunks = this.chunks.size;
 		this.debugStats.totalBlocks = this.totalBlocks;
 		debug.updateStats(this.debugStats);
