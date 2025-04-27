@@ -60,44 +60,12 @@ export class World {
 				return;
 			}
 
-			// If not in cache, generate using worker
-			return new Promise((resolve) => {
-				worker.onmessage = (e) => {
-					const { blocks } = e.data;
-
-					// Add blocks to chunk
-					blocks.forEach(block => {
-						chunk.setBlock(block.x, block.y, block.z, block.type);
-						this.totalBlocks++;
-
-						// Register with block manager
-						const blockId = `${block.worldX},${block.y},${block.worldZ}`;
-						this.block.addBlock(blockId, {
-							type: block.type,
-							position: {
-								x: block.worldX,
-								y: block.y,
-								z: block.worldZ
-							}
-						});
-					});
-
-					chunk.rebuildMesh();
-					this.chunks.set(`${task.cx},${task.cz}`, chunk);
-					chunk.saveToCache();
-
-					this.updateChunkLoadingDisplay(index, tasks.length);
-					resolve();
-				};
-
-				worker.postMessage({
-					chunkX: task.cx,
-					chunkZ: task.cz,
-					scale,
-					amplitude,
-					baseHeight
-				});
-			});
+			// If not in cache, generate a new chunk
+			chunk = await this.generateChunkTerrain(chunk);
+			this.chunks.set(`${task.cx},${task.cz}`, chunk);
+			await chunk.saveToCache();
+			this.updateChunkLoadingDisplay(index + 1, tasks.length);
+			this.totalBlocks += chunk.getBlockCount();
 		});
 
 		// Wait for all chunks to be generated
