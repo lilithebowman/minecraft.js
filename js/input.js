@@ -1,4 +1,3 @@
-import { Force } from './modules.js';
 import * as THREE from 'three';
 
 export class Input {
@@ -15,12 +14,8 @@ export class Input {
 
 		// Add movement forces
 		this.movementForces = {
-			forward: new Force(new THREE.Vector3(0, 0, -1), 1.5),    // Reduced from 5
-			backward: new Force(new THREE.Vector3(0, 0, 1), 1.5),    // Reduced from 5
-			left: new Force(new THREE.Vector3(-1, 0, 0), 1.5),       // Reduced from 5
-			right: new Force(new THREE.Vector3(1, 0, 0), 1.5),       // Reduced from 5
-			jump: new Force(new THREE.Vector3(0, 1, 0), 4, 0.15),    // Reduced from 10, shorter duration
-			fly: new Force(new THREE.Vector3(0, 1, 0), 1.0)          // Reduced from 5
+			jump: new THREE.Vector3(0, 5, 0), // Jump force
+			fly: new THREE.Vector3(0, 5, 0), // Fly force
 		};
 
 		// Add camera pitch limits (in radians)
@@ -32,7 +27,6 @@ export class Input {
 
 		// Bind methods to maintain context
 		this.onKeyDown = this.onKeyDown.bind(this);
-		this.onKeyUp = this.onKeyUp.bind(this);
 		this.onMouseMove = this.onMouseMove.bind(this);
 		this.onPointerLockChange = this.onPointerLockChange.bind(this);
 
@@ -74,7 +68,6 @@ export class Input {
 	init() {
 		// Keyboard events
 		document.addEventListener('keydown', this.onKeyDown);
-		document.addEventListener('keyup', this.onKeyUp);
 		
 		// Mouse events
 		document.addEventListener('mousemove', this.onMouseMove);
@@ -84,17 +77,33 @@ export class Input {
 
 	onKeyDown(event) {
 		this.keys.add(event.code);
-		
-		// Handle flying toggle
-		if (event.code === 'Space') {
-			this.isFlying = true;
-			console.log('Flying enabled');
+
+		// --- Keyboard Movement Forces ---
+		const moveMagnitude = 10.0; // Increased magnitude for testing
+		const moveDuration = 0.1;  // Short duration, applied each frame key is held
+
+		// Apply forces using the helper
+		if (this.keys.has('KeyW')) {
+			this.engine.player.addForce(this.engine.player.forward, moveMagnitude, moveDuration);
+		}
+		if (this.keys.has('KeyS')) {
+			// Calculate backward dynamically instead of relying on player.backward
+			const backward = this.engine.player.forward?.clone().negate(); // Use optional chaining and clone
+			this.engine.player.addForce(backward, moveMagnitude, moveDuration);
+		}
+		if (this.keys.has('KeyA')) {
+			// Calculate left dynamically instead of relying on player.left
+			const left = this.engine.player.right?.clone().negate(); // Use optional chaining and clone
+			this.engine.player.addForce(left, moveMagnitude, moveDuration);
+		}
+		if (this.keys.has('KeyD')) {
+			this.engine.player.addForce(this.engine.player.right, moveMagnitude, moveDuration);
 		}
 
 		// Handle freeze toggle
 		if (event.code === 'KeyF') {
-			this.isFrozen = !this.isFrozen;
-			console.log(`Player ${this.isFrozen ? 'frozen' : 'unfrozen'}`);
+			this.engine.player.isFrozen = !this.engine.player.isFrozen;
+			console.log(`Player ${this.engine.player.isFrozen ? 'frozen' : 'unfrozen'}`);
 			if (this.isFrozen) {
 				// Clear all forces when frozen
 				this.engine.player.clearForces();
@@ -110,16 +119,6 @@ export class Input {
 		const block = this.engine.block.createBlock(blockPosition, 'stone');
 		this.engine.world.addBlock(block);
 		console.log(`Block created at ${blockPosition.x}, ${blockPosition.y}, ${blockPosition.z}`);
-	}
-
-	onKeyUp(event) {
-		this.keys.delete(event.code);
-		
-		// Stop flying when space is released
-		if (event.code === 'Space') {
-			this.isFlying = false;
-			console.log('Flying disabled');
-		}
 	}
 
 	onMouseMove(event) {
@@ -150,7 +149,6 @@ export class Input {
 	destroy() {
 		// Remove all event listeners
 		document.removeEventListener('keydown', this.onKeyDown);
-		document.removeEventListener('keyup', this.onKeyUp);
 		document.removeEventListener('mousemove', this.onMouseMove);
 		document.removeEventListener('pointerlockchange', this.onPointerLockChange);
 
@@ -167,55 +165,46 @@ export class Input {
 		const player = this.engine.player;
 		if (!player || this.isFrozen) return;
 
-		// Handle mouse movement
-		if (this.mouseMovement.x !== 0) {
-			player.rotate(this.mouseMovement.x * this.mouseSensitivity);
+		// --- Mouse Handling ---
+		if (this.isPointerLocked) {
+			if (this.mouseMovement.x !== 0) {
+				player.rotate(this.mouseMovement.x * this.mouseSensitivity);
+			}
+			if (this.mouseMovement.y !== 0) {
+				const newPitch = player.pitch - this.mouseMovement.y * this.mouseSensitivity;
+				player.setPitch(newPitch); // Assuming setPitch clamps the value
+			}
+			// On left click, create a block (Consider moving this to a separate click handler)
+			if (this.keys.has('Mouse0')) {
+				this.createBlock();
+			}
 		}
-		
-		if (this.mouseMovement.y !== 0) {
-			// Update pitch based on vertical mouse movement
-			const newPitch = player.pitch - this.mouseMovement.y * this.mouseSensitivity;
-			player.setPitch(newPitch);
-		}
-
-		// On left click, create a block
-		if (this.isPointerLocked && this.keys.has('Mouse0')) {
-			this.createBlock();
-		}
-
-		// Reset mouse movement
+		// Reset mouse movement accumulator
 		this.mouseMovement.x = 0;
 		this.mouseMovement.y = 0;
+		this.updateMouseDisplay(); // Update display even if reset
 
-		// Update key display
-		if (this.keys.size > 0) {
-			this.keyRow.textContent = `Keys: ${Array.from(this.keys).join(', ')}`;
-		} else {
-			this.keyRow.textContent = 'Keys: none';
-		}
 
-		// Handle keyboard input and apply forces with higher magnitude
-		if (this.keys.has('KeyW')) {
-			player.addForce(this.movementForces.forward);
-		}
-		if (this.keys.has('KeyS')) {
-			player.addForce(this.movementForces.backward);
-		}
-		if (this.keys.has('KeyA')) {
-			player.addForce(this.movementForces.left);
-		}
-		if (this.keys.has('KeyD')) {
-			player.addForce(this.movementForces.right);
+		// --- Key Display ---
+		if (this.keyRow) {
+			this.keyRow.textContent = this.keys.size > 0
+				? `Keys: ${Array.from(this.keys).join(', ')}`
+				: 'Keys: none';
 		}
 
-		// Handle flying
-		if (this.isFlying && !player.isGrounded) {
-			player.addForce(this.movementForces.fly.clone());
+		// --- Flying and Jumping ---
+		// Handle flying (apply continuous upward force if flying and space is held)
+		if (this.isFlying && this.keys.has('Space')) {
+			if (this.movementForces.fly) {
+				player.addForce(this.movementForces.fly.clone());
+			}
 		}
 
-		// Handle jump
-		if (this.keys.has('Space') && player.isGrounded) {
-			player.addForce(this.movementForces.jump.clone());
+		// Handle jump (apply impulse force if grounded and space is pressed, not flying)
+		if (this.keys.has('Space') && player.isGrounded && !this.isFlying) {
+			if (this.movementForces.jump) {
+				player.addForce(this.movementForces.jump.clone());
+			}
 		}
 	}
 }

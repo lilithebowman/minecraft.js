@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { Force } from './physics/force.js';
 import { Position } from './physics/position.js';
 import { Velocity } from './physics/velocity.js';
 import { debug } from './debug.js';
@@ -14,6 +13,8 @@ export class Player {
 		this.pitch = 0;
 		this.forward = new THREE.Vector3(0, 0, -1);
 		this.right = new THREE.Vector3(1, 0, 0);
+		this.backward = new THREE.Vector3(0, 0, 1);
+		this.left = new THREE.Vector3(-1, 0, 0);
 		this.isGrounded = false;
 		
 		// Initialize camera
@@ -24,32 +25,14 @@ export class Player {
 		this.camera.updatePosition();
 	}
 
-	/**
-	 * Adds a force to the player
-	 * @param {Force} force - The force to be added
-	 */
-	addForce(force) {
-		if (!force || !(force instanceof Force)) {
-			return;
-		}
-
-		// Get the force vector for this frame
-		const frameForce = force.update(this.deltaTime);
-		
-		// Apply the force to player's velocity
-		if (frameForce) {
-			this.velocity.add(frameForce);
-			
-			// Apply the updated velocity to position
-			this.position.add(
-				this.velocity.vector.clone().multiplyScalar(this.deltaTime)
-			);
-		}
-	}
-
 	// Clear all forces
 	clearForces() {
 		this.velocity.set(0, 0, 0);
+	}
+
+	// Add forces to player
+	addForce(force) {
+		this.velocity.add(force);
 	}
 
 	/**
@@ -61,11 +44,8 @@ export class Player {
 		
 		// Add gravity if not grounded
 		if (!this.isGrounded && !this.isFlying) {
-			const gravity = new Force(
-				new THREE.Vector3(0, -1, 0),
-				9.81 // gravitational acceleration
-			);
-			this.addForce(gravity/10);
+			const gravity = new THREE.Vector3(0, -9.81, 0);
+			this.velocity.add(gravity.clone().multiplyScalar(deltaTime));
 		}
 
 		// Apply drag to slow down movement

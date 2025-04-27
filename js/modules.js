@@ -5,7 +5,6 @@ export { Chunk } from './chunk.js';
 export { Collider } from './physics/collider.js';
 export { Engine } from './engine.js';
 export { Framerate } from './framerate.js';
-export { Force } from './physics/force.js';
 export { NoiseGenerator } from './utils/noise.js';
 export { Player } from './player.js';
 export { Renderer } from './renderer.js';
