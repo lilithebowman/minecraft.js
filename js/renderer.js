@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { TextureManager, Camera } from './modules.js';
+import { TextureManager } from './modules.js';
 import { Frustum } from './utils/frustum.js';
 import { Skybox } from './skybox.js';
 import { debug } from './debug.js';
@@ -68,17 +68,23 @@ export class Renderer {
 	// Handle window resizing
 	handleResize() {
 		this.renderer.setSize(window.innerWidth, window.innerHeight);
-		this.camera.handleResize();
+		this.player.camera.handleResize();
 	}
 
 	// Render the scene
 	render(deltaTime) {
+		if (!this.player || !this.world) {
+			console.warn('Player or world not set, skipping render');
+			return;
+		}
+
+		// Check if enough time has passed since the last render
 		if (this.lastRenderTime + this.fpsInterval > Date.now()) return;
 
 		this.lastRenderTime = Date.now();
 
 		// Get visible chunks
-		const visibleChunks = this.world.getVisibleChunks(this.camera);
+		const visibleChunks = this.world.getVisibleChunks(this.player);
 		if (visibleChunks.length === 0) return;
 
 		// Distribute chunks among workers
@@ -102,16 +108,13 @@ export class Renderer {
 		}
 
 		// Update block meshes
-		this.blockMeshRenderer.updateMeshes(visibleChunks, this.camera, this.frustum);
+		this.blockMeshRenderer.updateMeshes(visibleChunks, this.player.camera, this.frustum);
 
-		// Update camera and render
-		if (this.camera) {
-			this.camera.updatePosition();
-			this.frustum.update(this.camera);
-		}
+		// Update frustum
+		this.frustum.update(this.player.camera);
 
 		// Render the scene
-		this.renderer.render(this.scene, this.camera.getCamera());
+		this.renderer.render(this.scene, this.player.camera);
 	}
 
 	setWorld(world) {
@@ -134,8 +137,7 @@ export class Renderer {
 
 	setPlayer(player) {
 		this.player = player;
-		this.camera = player.camera;
-		this.camera.attachToPlayer(player);
+		this.player.camera = player.getCamera(); // Use the player's THREE.PerspectiveCamera
 	}
 
 	createCrosshair() {
@@ -145,7 +147,7 @@ export class Renderer {
 		this.centerCube = new THREE.Mesh(centerCubeGeometry, centerCubeMaterial);
 
 		// Add it to the camera, not the scene, so it moves with the camera
-		this.camera.getCamera().add(this.centerCube);
+		this.player.camera.add(this.centerCube);
 
 		// Position it slightly in front of the camera
 		this.centerCube.position.set(0, 0, -0.5);
@@ -200,7 +202,7 @@ export class Renderer {
 		}
 
 		if (this.centerCube) {
-			this.camera.getCamera().remove(this.centerCube);
+			this.player.camera.getCamera().remove(this.centerCube);
 			this.centerCube.geometry.dispose();
 			this.centerCube.material.dispose();
 			this.centerCube = null;

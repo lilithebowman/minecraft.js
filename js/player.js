@@ -2,13 +2,13 @@ import * as THREE from 'three';
 import { Position } from './physics/position.js';
 import { Velocity } from './physics/velocity.js';
 import { debug } from './debug.js';
-import { Camera } from './camera.js';
 
 export class Player {
 	constructor(position = new Position(0, 100, 0)) {
 		this.position = position;
 		this.velocity = new Velocity();
 		this.size = { x: 0.6, y: 1.8, z: 0.6 };
+		this.eyeHeight = 1.6; // Eye level height from feet
 		this.rotation = 0;
 		this.pitch = 0;
 		this.forward = new THREE.Vector3(0, 0, -1);
@@ -17,13 +17,28 @@ export class Player {
 		this.left = new THREE.Vector3(-1, 0, 0);
 		this.isGrounded = false;
 		this.isFrozen = true;
+		this.isFlying = false;
 
-		// Initialize camera
-		this.camera = new Camera();
-		this.camera.attachToPlayer(this);
+		// Initialize camera directly with Three.js
+		this.camera = new THREE.PerspectiveCamera(
+			75, // Field of view
+			window.innerWidth / window.innerHeight, // Aspect ratio
+			0.1, // Near clipping plane
+			1000 // Far clipping plane
+		);
 
 		// Set initial camera position
-		this.camera.updatePosition();
+		this.updateCameraPosition();
+
+		// Handle window resize
+		window.addEventListener('resize', () => this.handleResize());
+	}
+
+	handleResize() {
+		if (this.camera) {
+			this.camera.aspect = window.innerWidth / window.innerHeight;
+			this.camera.updateProjectionMatrix();
+		}
 	}
 
 	// Clear all forces
@@ -61,9 +76,7 @@ export class Player {
 		this.position.y = Math.max(Number.MIN_SAFE_INTEGER, Math.min(Number.MAX_SAFE_INTEGER, this.position.y));
 
 		// Update camera position and rotation
-		if (this.camera && this.position && this.pitch) {
-			this.camera.updatePosition(this.position, this.rotation, this.pitch);
-		}
+		this.updateCameraPosition();
 
 		debug.updateStats({
 			position: this.position,
@@ -73,6 +86,25 @@ export class Player {
 				z: 0
 			}
 		});
+	}
+
+	/**
+	 * Update camera position to match player's eyes
+	 */
+	updateCameraPosition() {
+		if (!this.camera) return;
+
+		// Position camera at player's eye level
+		this.camera.position.set(
+			this.position.x,
+			this.position.y + this.eyeHeight,
+			this.position.z
+		);
+
+		// Set camera rotation using quaternions for smoother rotation
+		this.camera.quaternion.setFromEuler(
+			new THREE.Euler(this.pitch, this.rotation, 0, 'YXZ')
+		);
 	}
 
 	/**
@@ -95,9 +127,7 @@ export class Player {
 		this.right.normalize();
 
 		// Update camera
-		if (this.camera) {
-			this.camera.updateRotation(this.rotation, this.pitch);
-		}
+		this.updateCameraPosition();
 	}
 
 	/**
@@ -115,8 +145,57 @@ export class Player {
 		this.forward.normalize();
 
 		// Update camera
-		if (this.camera) {
-			this.camera.updateRotation(this.rotation, this.pitch);
+		this.updateCameraPosition();
+	}
+
+	/**
+	 * Get the THREE.Camera object
+	 * @returns {THREE.PerspectiveCamera}
+	 */
+	getCamera() {
+		return this.camera;
+	}
+
+	/**
+	 * Get the direction the camera is facing
+	 * @returns {THREE.Vector3}
+	 */
+	getCameraDirection() {
+		const direction = new THREE.Vector3(0, 0, -1);
+		direction.applyQuaternion(this.camera.quaternion);
+		return direction;
+	}
+
+	/**
+	 * Creates a crosshair at the center of the view
+	 * @param {THREE.Material} material - Material to use for the crosshair
+	 */
+	createCrosshair(material) {
+		// Create a small cube in the center of view
+		const centerCubeGeometry = new THREE.BoxGeometry(0.01, 0.01, 0.01);
+		const centerCubeMaterial = material || new THREE.MeshBasicMaterial({ color: 0x000000 });
+		this.centerCube = new THREE.Mesh(centerCubeGeometry, centerCubeMaterial);
+
+		// Add it to the camera
+		this.camera.add(this.centerCube);
+
+		// Position it slightly in front of the camera
+		this.centerCube.position.set(0, 0, -0.5);
+	}
+
+	/**
+	 * Disposes of all resources
+	 */
+	dispose() {
+		// Remove event listeners
+		window.removeEventListener('resize', this.handleResize);
+
+		// Dispose of any meshes
+		if (this.centerCube) {
+			this.camera.remove(this.centerCube);
+			this.centerCube.geometry.dispose();
+			this.centerCube.material.dispose();
+			this.centerCube = null;
 		}
 	}
 }

@@ -1,7 +1,6 @@
 export { Block } from './blocks.js';
 export { BlockTypes, getAllBlockTypes, getSolidBlockTypes, getLiquidBlockTypes } from './BlockTypes.js';
 export { BoxCollider } from './physics/boxCollider.js';
-export { Camera } from './camera.js';
 export { Chunk } from './chunk.js';
 export { Collider } from './physics/collider.js';
 export { Engine } from './engine.js';

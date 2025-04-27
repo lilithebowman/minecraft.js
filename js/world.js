@@ -236,12 +236,16 @@ export class World {
 		debug.updateStats({ blocks: size });
 	}
 
-	getVisibleChunks(camera) {
-		if (!camera || !camera.camera.position) return [];
+	getVisibleChunks(player) {
+		if (!player || !player.camera) {
+			console.warn('Invalid player object in getVisibleChunks');
+			return [];
+		}
 
-		// Get player chunk coordinates
-		const playerX = Math.floor(camera.camera.position.x / 16);
-		const playerZ = Math.floor(camera.camera.position.z / 16);
+		// Get the camera position directly from the THREE.PerspectiveCamera
+		const cameraPos = player.camera.position;
+		const playerX = Math.floor(cameraPos.x / 16);
+		const playerZ = Math.floor(cameraPos.z / 16);
 
 		// Get chunks in render distance
 		const visibleChunks = [];
