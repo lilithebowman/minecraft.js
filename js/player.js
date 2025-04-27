@@ -43,7 +43,7 @@ export class Player {
 		this.deltaTime = deltaTime;
 		
 		// Add gravity if not grounded
-		if (!this.isGrounded && !this.isFlying) {
+		if (!this.isGrounded && !this.isFrozen && !this.isFlying) {
 			const gravity = new THREE.Vector3(0, -9.81, 0);
 			this.velocity.add(gravity.clone().multiplyScalar(deltaTime));
 		}

@@ -27,6 +27,7 @@ export class Input {
 
 		// Bind methods to maintain context
 		this.onKeyDown = this.onKeyDown.bind(this);
+		this.onKeyUp = this.onKeyUp.bind(this);
 		this.onMouseMove = this.onMouseMove.bind(this);
 		this.onPointerLockChange = this.onPointerLockChange.bind(this);
 
@@ -68,6 +69,7 @@ export class Input {
 	init() {
 		// Keyboard events
 		document.addEventListener('keydown', this.onKeyDown);
+		document.addEventListener('keyup', this.onKeyUp);
 		
 		// Mouse events
 		document.addEventListener('mousemove', this.onMouseMove);
@@ -104,7 +106,7 @@ export class Input {
 		if (event.code === 'KeyF') {
 			this.engine.player.isFrozen = !this.engine.player.isFrozen;
 			console.log(`Player ${this.engine.player.isFrozen ? 'frozen' : 'unfrozen'}`);
-			if (this.isFrozen) {
+			if (this.engine.player.isFrozen) {
 				// Clear all forces when frozen
 				this.engine.player.clearForces();
 				this.engine.player.velocity.set(0, 0, 0);
@@ -112,7 +114,25 @@ export class Input {
 		}
 	}
 
-	// Create a block on click
+	onKeyUp(event) {
+		this.keys.delete(event.code);
+
+		// Handle pointer lock on escape key
+		if (event.code === 'Escape') {
+			document.exitPointerLock();
+		}
+
+		// Handle flying toggle
+		if (event.code === 'KeyG') {
+			this.isFlying = !this.isFlying;
+			console.log(`Flying ${this.isFlying ? 'enabled' : 'disabled'}`);
+			if (this.isFlying) {
+				this.engine.player.velocity.set(0, 0, 0); // Reset velocity when flying is enabled
+			}
+		}
+	}
+
+	// Create a block at the player's position
 	createBlock() {
 		const player = this.engine.player;
 		const blockPosition = player.position.clone().add(player.forward.clone().multiplyScalar(2));
@@ -149,6 +169,7 @@ export class Input {
 	destroy() {
 		// Remove all event listeners
 		document.removeEventListener('keydown', this.onKeyDown);
+		document.removeEventListener('keyup', this.onKeyUp);
 		document.removeEventListener('mousemove', this.onMouseMove);
 		document.removeEventListener('pointerlockchange', this.onPointerLockChange);
 
