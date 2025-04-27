@@ -1,4 +1,16 @@
 <?php
+// Set headers
+header('Content-Type: application/json'); // Ensure the response is JSON
+header('Access-Control-Allow-Origin: *'); // Allow cross-origin requests (adjust as needed)
+header('Access-Control-Allow-Methods: GET, POST, OPTIONS'); // Specify allowed methods
+header('Access-Control-Allow-Headers: Content-Type'); // Allow specific headers
+
+// Handle preflight OPTIONS request
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(204); // No content
+    exit;
+}
+
 // Handle incoming requests
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $cache = new ChunkCache();
@@ -7,6 +19,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($data['x'], $data['z'], $data['blocks'])) {
         if ($cache->saveChunk($data['x'], $data['z'], $data['blocks'])) {
             echo json_encode(['success' => true]);
+        } else {
+            http_response_code(500);
+            echo json_encode(['error' => 'Failed to save chunk']);
         }
     } else {
         http_response_code(400);
@@ -30,4 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         http_response_code(400);
         echo json_encode(['error' => 'Missing coordinates']);
     }
+} else {
+    http_response_code(405); // Method not allowed
+    echo json_encode(['error' => 'Method not allowed']);
 }
