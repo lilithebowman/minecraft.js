@@ -316,6 +316,21 @@ export class World {
 		return blocks.slice(0, maxBlocks);
 	}
 
+	getLocalBlocks(camera) {
+		// Get visible chunks
+		const visibleChunks = this.getVisibleChunks(camera);
+		const allBlocks = [];
+
+		// Collect blocks from each chunk
+		for (const chunk of visibleChunks) {
+			const chunkBlocks = chunk.getLocalBlocks(camera);
+			allBlocks.push(...chunkBlocks);
+		}
+
+		console.log(`Total blocks to render: ${allBlocks.length}`);
+		return allBlocks;
+	}
+
 	findNearestBlock(position) {
 		let nearestBlock = null;
 		let minDistance = Infinity;

@@ -135,14 +135,24 @@ export class BlockMeshRenderer {
 
 	handleChunkProcessorMessage(e) {
 		const { instanceData } = e.data;
+		console.log(`Received processor data for ${instanceData.size} block types`);
 
-		// Update instance meshes using the pre-allocated buffers
-		for (const [type, data] of instanceData.entries()) {
+		// Update instance meshes
+		for (const [type, data] of instanceData) {
 			const mesh = this.instancedMeshes.get(type);
 			if (mesh && data.count > 0) {
+				console.log(`Setting ${data.count} instances for ${type}`);
 				mesh.count = data.count;
-				mesh.instanceMatrix.array.set(data.positions);
-				mesh.instanceMatrix.needsUpdate = true;
+
+				// Update instance matrix
+				if (data.positions && data.positions.length > 0) {
+					for (let i = 0; i < data.count; i++) {
+						const matrix = new THREE.Matrix4();
+						matrix.fromArray(data.positions[i]);
+						mesh.setMatrixAt(i, matrix);
+					}
+					mesh.instanceMatrix.needsUpdate = true;
+				}
 			}
 		}
 	}

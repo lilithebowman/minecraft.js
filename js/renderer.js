@@ -110,13 +110,7 @@ export class Renderer {
 			this.frustum.update(this.camera);
 		}
 
-		// add a black cube to the center of the view
-		const centerCubeGeometry = new THREE.BoxGeometry(1, 1, 1);
-		const centerCubeMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
-		const centerCube = new THREE.Mesh(centerCubeGeometry, centerCubeMaterial);
-		centerCube.position.set(0, 0, -5); // Position it in front of the camera
-		this.scene.add(centerCube);
-
+		// Render the scene
 		this.renderer.render(this.scene, this.camera.getCamera());
 	}
 
@@ -144,32 +138,17 @@ export class Renderer {
 		this.camera.attachToPlayer(player);
 	}
 
-	createDebugGrid() {
-		// Create a grid of points
-		const gridSize = 32;
-		const spacing = 1; // 1 meter spacing
-		const points = [];
+	createCrosshair() {
+		// Create a small black cube in the center of the view
+		const centerCubeGeometry = new THREE.BoxGeometry(0.05, 0.05, 0.05);
+		const centerCubeMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
+		this.centerCube = new THREE.Mesh(centerCubeGeometry, centerCubeMaterial);
 
-		// Generate grid points
-		for (let x = -gridSize; x <= gridSize; x += spacing) {
-			for (let z = -gridSize; z <= gridSize; z += spacing) {
-				points.push(new THREE.Vector3(x, 0, z));
-			}
-		}
+		// Add it to the camera, not the scene, so it moves with the camera
+		this.camera.getCamera().add(this.centerCube);
 
-		// Create geometry and material
-		const geometry = new THREE.BufferGeometry().setFromPoints(points);
-		const material = new THREE.PointsMaterial({
-			color: 0xffff00,
-			size: 0.1,
-			sizeAttenuation: true
-		});
-
-		// Create points mesh
-		this.debugGrid = new THREE.Points(geometry, material);
-		this.scene.add(this.debugGrid);
-
-		debug.log(`Created debug grid with ${points.length} points`);
+		// Position it slightly in front of the camera
+		this.centerCube.position.set(0, 0, -0.5);
 	}
 
 	async initialize(world, player) {
@@ -191,8 +170,8 @@ export class Renderer {
 			const blockMeshes = this.blockMeshRenderer.createInstancedMeshes(this.textureManager);
 			this.worldGroup.add(blockMeshes);
 
-			// Add debug grid
-			this.createDebugGrid();
+			// Add crosshair/targeting cube
+			this.createCrosshair();
 
 			console.log('Renderer initialized successfully');
 			return this;
@@ -218,6 +197,13 @@ export class Renderer {
 			this.debugGrid.geometry.dispose();
 			this.debugGrid.material.dispose();
 			this.debugGrid = null;
+		}
+
+		if (this.centerCube) {
+			this.camera.getCamera().remove(this.centerCube);
+			this.centerCube.geometry.dispose();
+			this.centerCube.material.dispose();
+			this.centerCube = null;
 		}
 	}
 
