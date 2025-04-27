@@ -263,6 +263,9 @@ export class World {
 			}
 		}
 
+		// log the number of visible chunks
+		// console.log(`Visible chunks: ${visibleChunks.length}`); // returns 255
+
 		return visibleChunks;
 	}
 
