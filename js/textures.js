@@ -199,12 +199,6 @@ export class TextureManager {
 	}
 
 	async createAtlas() {
-		// Create canvas for the texture atlas
-		const canvas = document.createElement('canvas');
-		canvas.width = this.textureSize;
-		canvas.height = 64;
-		const ctx = canvas.getContext('2d');
-
 		// Define textures to create
 		const textures = [
 			{ name: 'grass_top', func: this.createGrassTop.bind(this) },
@@ -213,36 +207,11 @@ export class TextureManager {
 			{ name: 'bedrock', func: this.createBedrock.bind(this) }
 		];
 
-		// Calculate starting x position to center textures
-		const totalWidth = textures.length * this.tileSize;
-		const startX = (this.textureSize - totalWidth) / 2;
-
-		// Create and position each texture
-		for (let i = 0; i < textures.length; i++) {
-			const texture = textures[i];
-			const tileCanvas = await this.loadOrCreateTexture(texture.name, texture.func);
-			ctx.drawImage(
-				tileCanvas,
-				startX + (i * this.tileSize),
-				(64 - this.tileSize) / 2,
-				this.tileSize,
-				this.tileSize
-			);
-		}
-
 		// Create Three.js texture
-		const texture = new THREE.CanvasTexture(canvas);
+		const texture = new THREE.Texture();
 		texture.minFilter = THREE.NearestFilter;
 		texture.magFilter = THREE.NearestFilter;
 		this.textures.atlas = texture;
-
-		// Debug view
-		canvas.style.position = 'fixed';
-		canvas.style.bottom = '0';
-		canvas.style.left = '50%';
-		canvas.style.transform = 'translateX(-50%)';
-		canvas.style.border = '1px solid white';
-		document.body.appendChild(canvas);
 
 		return texture;
 	}
