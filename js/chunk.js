@@ -8,7 +8,7 @@ export class Chunk {
         this.height = 256;
 
         // Initialize 3D array for blocks using explicit loops
-        this.blocks = [];
+        this.blocks = new Map();
 
         // Create x dimension
         for (let x = 0; x < this.size; x++) {
@@ -31,12 +31,48 @@ export class Chunk {
         }
 
         this.isDirty = false;
-        this.block = null;  // Will be set by World
         this.mesh = null;
         this.visibleBlocks = [];
         this.needsVisibilityUpdate = true;
     }
 
+    // Add a block to this chunk
+    addBlock(x, y, z, type) {
+        if (x < 0 || x >= this.size || y < 0 || y >= this.height || z < 0 || z >= this.size) {
+            return false;
+        }
+        this.blocks.set({ x, y, z }, type);
+        this.isDirty = true;
+        return true;
+    }
+
+    // Get block count
+    getBlockCount() {
+        let count = 0;
+        for (let x = 0; x < this.size; x++) {
+            for (let y = 0; y < this.height; y++) {
+                for (let z = 0; z < this.size; z++) {
+                    if (this.blocks[x][y][z]) {
+                        count++;
+                    }
+                }
+            }
+        }
+        return count;
+    }
+
+    // Dispose of the chunk
+    dispose() {
+        if (this.mesh) {
+            this.mesh.geometry.dispose();
+            this.mesh.material.dispose();
+            this.mesh = null;
+        }
+        this.blocks = null;
+        this.isDirty = false;
+    }
+
+    // Get all blocks in this chunk
     getLocalBlocks(camera) {
         const blocks = [];
         for (let x = 0; x < this.size; x++) {

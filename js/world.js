@@ -61,7 +61,7 @@ export class World {
 			}
 
 			// If not in cache, generate a new chunk
-			chunk = await this.generateChunkTerrain(chunk);
+			await this.generateChunkTerrain(chunk);
 			this.chunks.set(`${task.cx},${task.cz}`, chunk);
 			await chunk.saveToCache();
 			this.updateChunkLoadingDisplay(index + 1, tasks.length);
@@ -123,6 +123,7 @@ export class World {
 	}
 
 	async generateChunkTerrain(chunk) {
+		const noiseGen = new NoiseGenerator();
 		try {
 			const scale = 50;
 			const amplitude = 32;
@@ -136,7 +137,7 @@ export class World {
 
 					// Generate height using noise
 					let height = baseHeight;
-					height += this.noiseGen.noise(worldX / scale, 0, worldZ / scale) * amplitude;
+					height += noiseGen.noise(worldX / scale, 0, worldZ / scale) * amplitude;
 					height = Math.floor(height);
 
 					// Generate column
@@ -157,7 +158,7 @@ export class World {
 
 						// Register block with block manager
 						const blockId = `${worldX},${y},${worldZ}`;
-						this.block.addBlock(blockId, {
+						chunk.addBlock(blockId, {
 							type: blockType,
 							position: { x: worldX, y, z: worldZ }
 						});
