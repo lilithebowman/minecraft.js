@@ -48,6 +48,13 @@ export class Camera {
         this.camera.lookAt(target);
     }
 
+    // Handle resizing the camera
+    handleResize() {
+        this.camera.aspect = window.innerWidth / window.innerHeight;
+        this.camera.updateProjectionMatrix();
+    }
+
+
     /**
      * Returns the THREE.PerspectiveCamera instance
      * @returns {THREE.PerspectiveCamera} The camera instance
@@ -62,7 +69,7 @@ export class Camera {
      */
     attachToPlayer(player) {
         this.player = player;
-        
+
         // Initial camera setup at player position
         const eyeHeight = 1.6;
         this.camera.position.set(
@@ -70,14 +77,14 @@ export class Camera {
             player.position.y + eyeHeight,
             player.position.z
         );
-        
+
         // Initial look direction
         const lookAt = new THREE.Vector3(
             Math.sin(this.rotation) * Math.cos(this.pitch),
             Math.sin(this.pitch),
             -Math.cos(this.rotation) * Math.cos(this.pitch)
         );
-        
+
         const target = new THREE.Vector3();
         target.copy(this.camera.position).add(lookAt);
         this.camera.lookAt(target);
