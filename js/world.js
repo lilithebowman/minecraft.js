@@ -320,16 +320,38 @@ export class World {
 		let nearestBlock = null;
 		let minDistance = Infinity;
 
-		// Iterate through chunks and blocks to find the nearest one
-		for (const chunk of this.getLoadedChunks()) {
-			console.log(chunk?.getBlocks());
-			for (const block of chunk.getBlocks()) {
-				if (!block?.isSolid) continue; // Skip non-solid blocks
+		// Iterate through all chunks
+		for (const [key, chunk] of this.chunks) {
+			// For each chunk, iterate through its blocks
+			for (let x = 0; x < chunk.size; x++) {
+				for (let y = 0; y < chunk.height; y++) {
+					for (let z = 0; z < chunk.size; z++) {
+						const blockType = chunk.getBlock(x, y, z);
 
-				const distance = position.distanceTo(block.position);
-				if (distance < minDistance) {
-					minDistance = distance;
-					nearestBlock = block;
+						// Skip empty blocks
+						if (!blockType) continue;
+
+						// Calculate world position
+						const worldX = chunk.x * 16 + x;
+						const worldZ = chunk.z * 16 + z;
+						const blockPosition = { x: worldX, y, z: worldZ };
+
+						// Calculate distance to player
+						const dx = position.x - blockPosition.x;
+						const dy = position.y - blockPosition.y;
+						const dz = position.z - blockPosition.z;
+						const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+						if (distance < minDistance) {
+							minDistance = distance;
+							nearestBlock = {
+								type: blockType,
+								position: blockPosition,
+								// Add isSolid property based on block type
+								isSolid: blockType !== 'water' && blockType !== 'lava'
+							};
+						}
+					}
 				}
 			}
 		}

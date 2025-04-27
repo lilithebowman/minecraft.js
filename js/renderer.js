@@ -152,6 +152,29 @@ export class Renderer {
 			});
 		});
 
+		// render skybox mesh
+		this.skybox.update(this.scene);
+		// Update debug grid
+		if (this.debugGrid) {
+			this.debugGrid.rotation.y += 0.01; // Rotate grid for better visibility
+		}
+		// Get instance data from visible chunks
+		const instanceData = this.getInstanceData(visibleChunks);
+		// Send instance data to block worker
+		this.blockWorker.postMessage({
+			instanceData,
+			frustum: this.frustum.toJSON()
+		});
+		// Process instance data for each block type
+		for (const [type, data] of instanceData.entries()) {
+			const mesh = this.instancedMeshes.get(type);
+			if (mesh) {
+				mesh.count = data.count;
+				mesh.instanceMatrix.array.set(data.positions);
+				mesh.instanceMatrix.needsUpdate = true;
+			}
+		}
+
 		// Update camera and render
 		if (this.camera) {
 			this.camera.updatePosition();

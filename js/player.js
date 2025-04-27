@@ -16,11 +16,12 @@ export class Player {
 		this.backward = new THREE.Vector3(0, 0, 1);
 		this.left = new THREE.Vector3(-1, 0, 0);
 		this.isGrounded = false;
-		
+		this.isFrozen = true;
+
 		// Initialize camera
 		this.camera = new Camera();
 		this.camera.attachToPlayer(this);
-		
+
 		// Set initial camera position
 		this.camera.updatePosition();
 	}
@@ -41,7 +42,7 @@ export class Player {
 	 */
 	update(deltaTime) {
 		this.deltaTime = deltaTime;
-		
+
 		// Add gravity if not grounded
 		if (!this.isGrounded && !this.isFrozen && !this.isFlying) {
 			const gravity = new THREE.Vector3(0, -9.81, 0);
@@ -105,8 +106,8 @@ export class Player {
 	 */
 	setPitch(angle) {
 		// Clamp pitch to prevent camera flipping
-		this.pitch = Math.max(-Math.PI/2 + 0.1, Math.min(Math.PI/2 - 0.1, angle));
-		
+		this.pitch = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, angle));
+
 		// Update forward vector with new pitch
 		this.forward.x = Math.sin(this.rotation) * Math.cos(this.pitch);
 		this.forward.y = Math.sin(this.pitch);

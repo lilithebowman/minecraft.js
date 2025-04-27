@@ -7,7 +7,7 @@ export class DebugLog {
         this.createConsolePanel();
         this.messages = [];
         this.maxMessages = 50;
-        this.stats = {  
+        this.stats = {
             fps: 0,
             position: { x: 0, y: 0, z: 0 },
             rotation: { x: 0, y: 0, z: 0 },
@@ -19,19 +19,20 @@ export class DebugLog {
         this.axesCamera = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
         this.axesScene = new THREE.Scene();
         this.axesScene.add(this.axesHelper);
-        
+
         // Create separate renderer for axes
         this.axesRenderer = new THREE.WebGLRenderer({ alpha: true });
         this.axesRenderer.setSize(100, 100);
         this.axesRenderer.setClearColor(0x000000, 0);
-        
+
         // Style the axes container
         this.axesRenderer.domElement.style.position = 'fixed';
         this.axesRenderer.domElement.style.bottom = '10px';
         this.axesRenderer.domElement.style.right = '10px';
         this.axesRenderer.domElement.style.zIndex = '1000';
+        this.axesRenderer.domElement.style.display = 'block';
         document.body.appendChild(this.axesRenderer.domElement);
-        
+
         // Override console.log
         this.originalLog = console.log;
         console.log = (...args) => {
@@ -70,7 +71,7 @@ export class DebugLog {
 
     createDebugAxes() {
         const axesHelper = new THREE.AxesHelper(50);
-        
+
         // Set custom colors for better visibility
         const materials = axesHelper.material;
         if (Array.isArray(materials)) {
@@ -78,7 +79,7 @@ export class DebugLog {
             materials[1].color.setHex(0x00ff00); // Y axis - green
             materials[2].color.setHex(0x0000ff); // Z axis - blue
         }
-        
+
         return axesHelper;
     }
 
@@ -93,7 +94,7 @@ export class DebugLog {
     }
 
     updateStats(stats) {
-        this.stats = { 
+        this.stats = {
             fps: stats.fps || this.stats.fps,
             position: stats.position || this.stats.position,
             blocks: stats.blocks || this.stats.blocks,
@@ -102,13 +103,13 @@ export class DebugLog {
         this.statsPanel.innerHTML = `
             FPS: ${this.stats.fps}<br>
             Position: (${Math.round(this.stats.position.x)}, ${Math.round(this.stats.position.y)}, ${Math.round(this.stats.position.z)})<br>
-            Rotation: (${Math.round(this.stats.rotation.x*100)}, ${Math.round(this.stats.rotation.y*100)}, ${Math.round(this.stats.rotation.z*100)})<br>
+            Rotation: (${Math.round(this.stats.rotation.x * 100)}, ${Math.round(this.stats.rotation.y * 100)}, ${Math.round(this.stats.rotation.z * 100)})<br>
             Blocks: ${this.stats.blocks}
         `;
     }
 
     log(...args) {
-        const message = args.map(arg => 
+        const message = args.map(arg =>
             typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
         ).join(' ');
 
@@ -138,19 +139,19 @@ export class DebugLog {
         const cameraX = radius * Math.sin(playerCamera.rotation.y);
         const cameraZ = radius * Math.cos(playerCamera.rotation.y);
         this.axesCamera.position.set(cameraX, 30, cameraZ);
-        
+
         // Make camera look at origin (where axes intersect)
         this.axesCamera.lookAt(0, 0, 0);
-        
+
         // Match Y-rotation with player camera for proper orientation
         this.axesCamera.rotation.y = playerCamera.rotation.y;
-        
+
         // Render axes
         this.axesRenderer.render(this.axesScene, this.axesCamera);
     }
 
     toggleAxes() {
-        this.axesRenderer.domElement.style.display = 
+        this.axesRenderer.domElement.style.display =
             this.axesRenderer.domElement.style.display === 'none' ? 'block' : 'none';
     }
 }

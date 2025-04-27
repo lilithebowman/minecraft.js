@@ -38,6 +38,22 @@ export class Skybox {
                 depthWrite: false
             });
 
+            // Create skybox geometry
+            const geometry = new THREE.BoxGeometry(1000, 1000, 1000);
+            this.skybox = new THREE.Mesh(geometry, this.material);
+            this.skybox.name = 'Skybox';
+            this.skybox.renderOrder = -1; // Ensure skybox is rendered first
+            this.skybox.frustumCulled = false; // Prevent frustum culling for skybox
+            this.skybox.castShadow = false;
+            this.skybox.receiveShadow = false;
+            this.skybox.visible = true;
+            this.skybox.userData = {
+                type: 'skybox',
+                description: 'A skybox with a cloud texture'
+            };
+            console.log('Skybox initialized successfully');
+            return this.skybox;
+
         } catch (error) {
             console.error('Failed to initialize skybox:', error);
             throw error;
