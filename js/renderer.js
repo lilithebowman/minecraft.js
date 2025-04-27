@@ -18,7 +18,6 @@ export class Renderer {
 
 		// Create the scene
 		this.scene = new THREE.Scene();
-		this.scene.background = new THREE.Color(0x87CEEB); // Sky blue background
 
 		// Add fog to scene for depth
 		this.scene.fog = new THREE.Fog(0x87ceeb, 0, 500);
@@ -29,7 +28,7 @@ export class Renderer {
 			antialias: true
 		});
 		this.renderer.setSize(window.innerWidth, window.innerHeight);
-		this.renderer.setPixelRatio(window.devicePixelRatio);
+		this.renderer.setPixelRatio(window.devicePixelRatio / 2);
 
 		// Handle window resizing
 		window.addEventListener('resize', () => this.handleResize());
@@ -39,7 +38,6 @@ export class Renderer {
 
 		// Initialize frustum for visibility checks
 		this.frustum = new Frustum();
-		this.skybox = new Skybox(this.scene);
 
 		// Create world group
 		this.worldGroup = new THREE.Group();
@@ -73,11 +71,6 @@ export class Renderer {
 
 	// Render the scene
 	render(deltaTime) {
-		if (!this.player || !this.world) {
-			console.warn('Player or world not set, skipping render');
-			return;
-		}
-
 		// Check if enough time has passed since the last render
 		if (this.lastRenderTime + this.fpsInterval > Date.now()) return;
 
@@ -98,9 +91,6 @@ export class Renderer {
 				frustum: this.frustum.toJSON()
 			});
 		});
-
-		// render skybox mesh
-		this.skybox.update(this.scene);
 
 		// Update debug grid
 		if (this.debugGrid) {
@@ -157,9 +147,6 @@ export class Renderer {
 		try {
 			// Initialize texture manager first
 			await this.textureManager.initialize();
-
-			// Initialize skybox
-			await this.skybox.initialize();
 
 			// Set world and player
 			this.setWorld(world);
