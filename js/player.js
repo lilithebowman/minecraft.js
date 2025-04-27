@@ -61,8 +61,8 @@ export class Player {
 		this.position.y = Math.max(Number.MIN_SAFE_INTEGER, Math.min(Number.MAX_SAFE_INTEGER, this.position.y));
 
 		// Update camera position and rotation
-		if (this.camera) {
-			this.camera.updatePosition();
+		if (this.camera && this.position && this.pitch) {
+			this.camera.updatePosition(this.position, this.rotation, this.pitch);
 		}
 
 		debug.updateStats({

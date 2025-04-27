@@ -24,28 +24,21 @@ export class Camera {
         this.updatePosition();
     }
 
-    updatePosition() {
-        if (!this.player) return;
-
+    updatePosition(position, rotation, pitch) {
+        if (!position) {
+            console.warn('Position is required to update camera position');
+            return;
+        }
         // Update camera position to player position plus eye height
         const eyeHeight = 1.6;
         this.camera.position.set(
-            this.player.position.x,
-            this.player.position.y + eyeHeight,
-            this.player.position.z
+            position.x,
+            position.y + eyeHeight,
+            position.z
         );
 
-        // Calculate look direction based on rotation and pitch
-        const lookDirection = new THREE.Vector3(
-            Math.sin(this.rotation) * Math.cos(this.pitch),
-            Math.sin(this.pitch),
-            -Math.cos(this.rotation) * Math.cos(this.pitch)
-        );
-
-        // Set look target
-        const target = new THREE.Vector3();
-        target.addVectors(this.camera.position, lookDirection);
-        this.camera.lookAt(target);
+        // Update camera rotation
+        this.camera.rotation.set(pitch, rotation, 0);
     }
 
     // Handle resizing the camera
