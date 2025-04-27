@@ -2,197 +2,197 @@ import * as THREE from 'three';
 import { NoiseGenerator } from './utils/noise.js';
 
 export class TextureManager {
-    constructor() {
-        this.textureSize = 256;
-        this.tileSize = 64;
-        this.textures = {};
-        this.noiseGen = new NoiseGenerator();
-        this.initialized = false;
-    }
+	constructor() {
+		this.textureSize = 256;
+		this.tileSize = 64;
+		this.textures = {};
+		this.noiseGen = new NoiseGenerator();
+		this.initialized = false;
+	}
 
-    async initialize() {
-        if (this.initialized) return this;
+	async initialize() {
+		if (this.initialized) return this;
 
-        console.log('Initializing texture manager...');
-        try {
-            this.initialized = true;
-            console.log('Texture atlas created successfully');
-        } catch (error) {
-            console.error('Failed to initialize texture manager:', error);
-            throw error;
-        }
-        return this;
-    }
+		console.log('Initializing texture manager...');
+		try {
+			this.initialized = true;
+			console.log('Texture atlas created successfully');
+		} catch (error) {
+			console.error('Failed to initialize texture manager:', error);
+			throw error;
+		}
+		return this;
+	}
 
-    getMaterial(textureName) {
-        if (!this.initialized || !this.textures.atlas) {
-            console.warn('Texture atlas not loaded - call initialize() first');
-            return new THREE.MeshBasicMaterial({ color: 0xff00ff }); // Purple fallback
-        }
+	getMaterial(textureName) {
+		if (!this.initialized || !this.textures.atlas) {
+			console.warn('Texture atlas not loaded - call initialize() first');
+			return new THREE.MeshBasicMaterial({ color: 0xff00ff }); // Purple fallback
+		}
 
-        // Create a new material using the texture atlas
-        const material = new THREE.MeshStandardMaterial({
-            map: this.textures.atlas,
-            roughness: 1.0,
-            metalness: 0.3
-        });
+		// Create a new material using the texture atlas
+		const material = new THREE.MeshStandardMaterial({
+			map: this.textures.atlas,
+			roughness: 1.0,
+			metalness: 0.3
+		});
 
-        // Calculate UV coordinates based on texture position in atlas
-        const textureIndex = {
-            'grass': 0,
-            'dirt': 1,
-            'stone': 2,
-            'bedrock': 3
-        }[textureName];
+		// Calculate UV coordinates based on texture position in atlas
+		const textureIndex = {
+			'grass': 0,
+			'dirt': 1,
+			'stone': 2,
+			'bedrock': 3
+		}[textureName];
 
-        if (textureIndex === undefined) {
-            console.error('Unknown texture:', textureName);
-            return material;
-        }
+		if (textureIndex === undefined) {
+			console.error('Unknown texture:', textureName);
+			return material;
+		}
 
-        // Calculate UV coordinates
-        const textureCount = 4; // Total number of textures in atlas
-        const tileSize = this.tileSize;
-        const atlasWidth = this.textureSize;
-        const atlasHeight = 256;
+		// Calculate UV coordinates
+		const textureCount = 4; // Total number of textures in atlas
+		const tileSize = this.tileSize;
+		const atlasWidth = this.textureSize;
+		const atlasHeight = 256;
 
-        // Calculate UV offset based on texture position
-        const startX = (atlasWidth - (textureCount * tileSize)) / 2;
-        const x = (startX + (textureIndex * tileSize)) / atlasWidth;
-        const y = (atlasHeight - tileSize) / (2 * atlasHeight);
+		// Calculate UV offset based on texture position
+		const startX = (atlasWidth - (textureCount * tileSize)) / 2;
+		const x = (startX + (textureIndex * tileSize)) / atlasWidth;
+		const y = (atlasHeight - tileSize) / (2 * atlasHeight);
 
-        // Set UV transformation
-        material.map.offset.set(x, y);
-        material.map.repeat.set(tileSize / atlasWidth, tileSize / atlasHeight);
-        material.needsUpdate = true;
+		// Set UV transformation
+		material.map.offset.set(x, y);
+		material.map.repeat.set(tileSize / atlasWidth, tileSize / atlasHeight);
+		material.needsUpdate = true;
 
-        return material;
-    }
+		return material;
+	}
 
-    async loadOrCreateTexture(name, createFunc) {
-        // Try to load from server first
-        try {
-            const response = await fetch(`textures/${name}.png`);
-            if (response.ok) {
-                const blob = await response.blob();
-                const img = new Image();
-                img.src = URL.createObjectURL(blob);
-                return new Promise((resolve) => {
-                    img.onload = () => resolve(img);
-                });
-            }
-        } catch (err) {
-            console.warn('Failed to load texture from server:', err);
-        }
+	async loadOrCreateTexture(name, createFunc) {
+		// Try to load from server first
+		try {
+			const response = await fetch(`textures/${name}.png`);
+			if (response.ok) {
+				const blob = await response.blob();
+				const img = new Image();
+				img.src = URL.createObjectURL(blob);
+				return new Promise((resolve) => {
+					img.onload = () => resolve(img);
+				});
+			}
+		} catch (err) {
+			console.warn('Failed to load texture from server:', err);
+		}
 
-        // Create new texture
-        const canvas = document.createElement('canvas');
-        canvas.width = this.tileSize;
-        canvas.height = this.tileSize;
-        const ctx = canvas.getContext('2d');
-        const imageData = createFunc(ctx);
-        ctx.putImageData(imageData, 0, 0);
+		// Create new texture
+		const canvas = document.createElement('canvas');
+		canvas.width = this.tileSize;
+		canvas.height = this.tileSize;
+		const ctx = canvas.getContext('2d');
+		const imageData = createFunc(ctx);
+		ctx.putImageData(imageData, 0, 0);
 
-        // Save to server
-        try {
-            const dataURL = canvas.toDataURL('image/png');
-            const response = await fetch('saveTexture.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    name: name,
-                    data: dataURL
-                })
-            });
+		// Save to server
+		try {
+			const dataURL = canvas.toDataURL('image/png');
+			const response = await fetch('saveTexture.php', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					name: name,
+					data: dataURL
+				})
+			});
 
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
+			if (!response.ok) {
+				throw new Error('Network response was not ok');
+			}
 
-            const result = await response.json();
-            if (!result.success) {
-                throw new Error(result.error || 'Failed to save texture');
-            }
-        } catch (err) {
-            console.warn('Unable to save texture to server:', err);
-        }
+			const result = await response.json();
+			if (!result.success) {
+				throw new Error(result.error || 'Failed to save texture');
+			}
+		} catch (err) {
+			console.warn('Unable to save texture to server:', err);
+		}
 
-        return canvas;
-    }
+		return canvas;
+	}
 
-    createGrassTop(ctx) {
-        const tile = ctx.createImageData(64, 64);
-        const data = tile.data;
+	createGrassTop(ctx) {
+		const tile = ctx.createImageData(64, 64);
+		const data = tile.data;
 
-        for (let y = 0; y < 64; y++) {
-            for (let x = 0; x < 64; x++) {
-                const i = (y * 64 + x) * 4;
-                const noise = this.noiseGen.noise(x / 8, y / 8, 0) * 0.5 + 0.5;
-                // Minecraft grass green colors
-                data[i] = 89 + noise * 35;     // R (darker green)
-                data[i + 1] = 145 + noise * 45; // G (brighter green)
-                data[i + 2] = 50 + noise * 25;  // B (slight blue tint)
-                data[i + 3] = 255;              // A
-            }
-        }
-        return tile;
-    }
+		for (let y = 0; y < 64; y++) {
+			for (let x = 0; x < 64; x++) {
+				const i = (y * 64 + x) * 4;
+				const noise = this.noiseGen.noise(x / 8, y / 8, 0) * 0.5 + 0.5;
+				// Minecraft grass green colors
+				data[i] = 89 + noise * 35;     // R (darker green)
+				data[i + 1] = 145 + noise * 45; // G (brighter green)
+				data[i + 2] = 50 + noise * 25;  // B (slight blue tint)
+				data[i + 3] = 255;              // A
+			}
+		}
+		return tile;
+	}
 
-    createDirt(ctx) {
-        const tile = ctx.createImageData(64, 64);
-        const data = tile.data;
+	createDirt(ctx) {
+		const tile = ctx.createImageData(64, 64);
+		const data = tile.data;
 
-        for (let y = 0; y < 64; y++) {
-            for (let x = 0; x < 64; x++) {
-                const i = (y * 64 + x) * 4;
-                const noise = this.noiseGen.noise(x / 6, y / 6, 0) * 0.5 + 0.5;
-                // Minecraft dirt brown colors
-                data[i] = 134 + noise * 25;     // R
-                data[i + 1] = 96 + noise * 20;  // G
-                data[i + 2] = 67 + noise * 15;  // B
-                data[i + 3] = 255;              // A
-            }
-        }
-        return tile;
-    }
+		for (let y = 0; y < 64; y++) {
+			for (let x = 0; x < 64; x++) {
+				const i = (y * 64 + x) * 4;
+				const noise = this.noiseGen.noise(x / 6, y / 6, 0) * 0.5 + 0.5;
+				// Minecraft dirt brown colors
+				data[i] = 134 + noise * 25;     // R
+				data[i + 1] = 96 + noise * 20;  // G
+				data[i + 2] = 67 + noise * 15;  // B
+				data[i + 3] = 255;              // A
+			}
+		}
+		return tile;
+	}
 
-    createStone(ctx) {
-        const tile = ctx.createImageData(64, 64);
-        const data = tile.data;
+	createStone(ctx) {
+		const tile = ctx.createImageData(64, 64);
+		const data = tile.data;
 
-        for (let y = 0; y < 64; y++) {
-            for (let x = 0; x < 64; x++) {
-                const i = (y * 64 + x) * 4;
-                const noise = this.noiseGen.noise(x / 4, y / 4, 0) * 0.5 + 0.5;
-                // Minecraft stone grey colors
-                const shade = 128 + noise * 25;
-                data[i] = shade;     // R
-                data[i + 1] = shade; // G
-                data[i + 2] = shade; // B
-                data[i + 3] = 255;   // A
-            }
-        }
-        return tile;
-    }
+		for (let y = 0; y < 64; y++) {
+			for (let x = 0; x < 64; x++) {
+				const i = (y * 64 + x) * 4;
+				const noise = this.noiseGen.noise(x / 4, y / 4, 0) * 0.5 + 0.5;
+				// Minecraft stone grey colors
+				const shade = 128 + noise * 25;
+				data[i] = shade;     // R
+				data[i + 1] = shade; // G
+				data[i + 2] = shade; // B
+				data[i + 3] = 255;   // A
+			}
+		}
+		return tile;
+	}
 
-    createBedrock(ctx) {
-        const tile = ctx.createImageData(64, 64);
-        const data = tile.data;
+	createBedrock(ctx) {
+		const tile = ctx.createImageData(64, 64);
+		const data = tile.data;
 
-        for (let y = 0; y < 64; y++) {
-            for (let x = 0; x < 64; x++) {
-                const i = (y * 64 + x) * 4;
-                const noise = this.noiseGen.noise(x / 3, y / 3, 0) * 0.5 + 0.5;
-                // Minecraft bedrock dark colors
-                const shade = 35 + noise * 20;
-                data[i] = shade;     // R
-                data[i + 1] = shade; // G
-                data[i + 2] = shade; // B
-                data[i + 3] = 255;   // A
-            }
-        }
-        return tile;
-    }
+		for (let y = 0; y < 64; y++) {
+			for (let x = 0; x < 64; x++) {
+				const i = (y * 64 + x) * 4;
+				const noise = this.noiseGen.noise(x / 3, y / 3, 0) * 0.5 + 0.5;
+				// Minecraft bedrock dark colors
+				const shade = 35 + noise * 20;
+				data[i] = shade;     // R
+				data[i + 1] = shade; // G
+				data[i + 2] = shade; // B
+				data[i + 3] = 255;   // A
+			}
+		}
+		return tile;
+	}
 }
