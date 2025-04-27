@@ -241,34 +241,72 @@ export class Renderer {
 		this.camera.attachToPlayer(player);
 	}
 
-	async initialize(world, player) {
-		try {
-			// Initialize texture manager first
-			await this.textureManager.initialize();
-			
-			// Initialize skybox
-			await this.skybox.initialize();
-			
-			// Set world and player
-			this.setWorld(world);
-			this.setPlayer(player);
-			
-			// Create block manager reference
-			this.block = world.block;
-			
-			console.log('Renderer initialized successfully');
-			return this;
-		} catch (error) {
-			console.error('Failed to initialize renderer:', error);
-			throw error;
-		}
-	}
+	createDebugGrid() {
+        // Create a grid of points
+        const gridSize = 32;
+        const spacing = 1; // 1 meter spacing
+        const points = [];
+        
+        // Generate grid points
+        for (let x = -gridSize; x <= gridSize; x += spacing) {
+            for (let z = -gridSize; z <= gridSize; z += spacing) {
+                points.push(new THREE.Vector3(x, 0, z));
+            }
+        }
+
+        // Create geometry and material
+        const geometry = new THREE.BufferGeometry().setFromPoints(points);
+        const material = new THREE.PointsMaterial({
+            color: 0xffff00,
+            size: 0.1,
+            sizeAttenuation: true
+        });
+
+        // Create points mesh
+        this.debugGrid = new THREE.Points(geometry, material);
+        this.scene.add(this.debugGrid);
+        
+        debug.log(`Created debug grid with ${points.length} points`);
+    }
+
+    initialize(world, player) {
+        try {
+            // Initialize texture manager first
+            this.textureManager.initialize();
+            
+            // Initialize skybox
+            this.skybox.initialize();
+            
+            // Set world and player
+            this.setWorld(world);
+            this.setPlayer(player);
+            
+            // Create block manager reference
+            this.block = world.block;
+            
+            // Add debug grid
+            this.createDebugGrid();
+            
+            console.log('Renderer initialized successfully');
+            return this;
+        } catch (error) {
+            console.error('Failed to initialize renderer:', error);
+            throw error;
+        }
+    }
 
 	dispose() {
 		// Dispose resources
 		if (this.blockWorker) {
 			this.blockWorker.terminate();
 		}
+
+		if (this.debugGrid) {
+            this.scene.remove(this.debugGrid);
+            this.debugGrid.geometry.dispose();
+            this.debugGrid.material.dispose();
+            this.debugGrid = null;
+        }
 	}
 
 	addDebugBlocks(scene) {
