@@ -103,6 +103,13 @@ export class Renderer {
 		// Make sure chunk meshes are in the scene
 		this.addChunksToScene(visibleChunks);
 
+		// Render world group
+		this.worldGroup.rotation.set(
+			this.world.rotation.x,
+			this.world.rotation.y,
+			this.world.rotation.z
+		);
+
 		// Update frustum
 		this.frustum.update(this.player.camera);
 
