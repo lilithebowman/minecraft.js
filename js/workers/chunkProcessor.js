@@ -22,20 +22,20 @@ class ChunkProcessor {
         this.processChunks(chunks, frustum);
     }
 
-    processChunks(chunks, frustum) {
+    processChunks(chunks) {
         // Reset counts
         this.blockTypes.forEach(type => {
             this.instanceData.get(type).count = 0;
         });
 
         // Process chunks in parallel using SharedArrayBuffer
-        const results = chunks.map(chunk => this.processChunk(chunk, frustum));
-        
+        const results = chunks.map(chunk => this.processChunk(chunk));
+
         // Transfer the data back to main thread
-        self.postMessage({ 
+        self.postMessage({
             instanceData: this.instanceData
         }, [
-            ...this.blockTypes.map(type => 
+            ...this.blockTypes.map(type =>
                 this.instanceData.get(type).positions.buffer
             )
         ]);

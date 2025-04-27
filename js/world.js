@@ -102,6 +102,7 @@ export class World {
 
 		// Wait for all chunks to be generated
 		await Promise.all(chunkPromises);
+		console.log(`Total chunks generated: ${this.chunks.size}`);
 
 		if (this.loadingDiv) {
 			this.loadingDiv.remove();
@@ -253,7 +254,7 @@ export class World {
 
 	// Update the chunk loading display
 	updateChunkLoadingDisplay(loadedChunks, totalChunks) {
-		this.loadingDiv.innerText = `Loading chunks... ${loadedChunks},${totalChunks}`;
+		this.loadingDiv.innerText = `Loading chunks... ${loadedChunks}/${totalChunks}`;
 		if (loadedChunks === totalChunks) {
 			this.loadingDiv.innerText = 'Chunks loaded!';
 		}
@@ -344,6 +345,32 @@ export class World {
 
 		// Return only the closest blocks up to maxBlocks
 		return blocks.slice(0, maxBlocks);
+	}
+
+	findNearestBlock(position) {
+		let nearestBlock = null;
+		let minDistance = Infinity;
+
+		// Iterate through chunks and blocks to find the nearest one
+		for (const chunk of this.getLoadedChunks()) {
+			console.log(chunk?.getBlocks());
+			for (const block of chunk.getBlocks()) {
+				if (!block?.isSolid) continue; // Skip non-solid blocks
+
+				const distance = position.distanceTo(block.position);
+				if (distance < minDistance) {
+					minDistance = distance;
+					nearestBlock = block;
+				}
+			}
+		}
+
+		return nearestBlock;
+	}
+
+	// get loaded chunks
+	getLoadedChunks() {
+		return this.chunks;
 	}
 
 	dispose() {

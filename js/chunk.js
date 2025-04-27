@@ -6,10 +6,10 @@ export class Chunk {
         this.z = z;
         this.size = 16;
         this.height = 256;
-        
+
         // Initialize 3D array for blocks using explicit loops
         this.blocks = [];
-        
+
         // Create x dimension
         for (let x = 0; x < this.size; x++) {
             this.blocks[x] = [];
@@ -61,7 +61,7 @@ export class Chunk {
 
     updateVisibleBlocks(camera) {
         this.visibleBlocks = [];
-        
+
         for (let x = camera.position.x + 0; x < camera.position.x + 16; x++) {
             for (let y = camera.position.y + 0; y < camera.position.y + 256; y++) {
                 for (let z = camera.position.z + 0; z < camera.position.z + 16; z++) {
@@ -79,18 +79,22 @@ export class Chunk {
                 }
             }
         }
-        
+
         this.needsVisibilityUpdate = false;
     }
 
     isBlockVisible(x, y, z) {
         // Check if block has any exposed faces
-        return !this.getBlock(x+1, y, z) ||
-               !this.getBlock(x-1, y, z) ||
-               !this.getBlock(x, y+1, z) ||
-               !this.getBlock(x, y-1, z) ||
-               !this.getBlock(x, y, z+1) ||
-               !this.getBlock(x, y, z-1);
+        return !this.getBlock(x + 1, y, z) ||
+            !this.getBlock(x - 1, y, z) ||
+            !this.getBlock(x, y + 1, z) ||
+            !this.getBlock(x, y - 1, z) ||
+            !this.getBlock(x, y, z + 1) ||
+            !this.getBlock(x, y, z - 1);
+    }
+
+    getBlocks() {
+        return this.blocks;
     }
 
     getBlock(x, y, z) {
@@ -106,7 +110,7 @@ export class Chunk {
         if (x < 0 || x >= this.size || y < 0 || y >= this.height || z < 0 || z >= this.size) {
             return false;
         }
-        
+
         this.blocks[x][y][z] = type;
         this.needsVisibilityUpdate = true;
         this.isDirty = true;
@@ -184,15 +188,15 @@ export class Chunk {
             { dir: [0, 0, -1], name: 'back' }
         ];
 
-        for (const {dir, name} of directions) {
+        for (const { dir, name } of directions) {
             const [dx, dy, dz] = dir;
             const nx = x + dx;
             const ny = y + dy;
             const nz = z + dz;
 
             // Check if neighboring block exists
-            if (nx < 0 || nx >= this.size || 
-                ny < 0 || ny >= this.height || 
+            if (nx < 0 || nx >= this.size ||
+                ny < 0 || ny >= this.height ||
                 nz < 0 || nz >= this.size) {
                 faces.push(name); // Add face if on chunk border
             } else if (!this.getBlock(nx, ny, nz)) {
@@ -281,12 +285,12 @@ export class Chunk {
                     blocks: this.blocks
                 })
             });
-            
+
             const result = await response.json();
             if (!result.success) {
                 throw new Error(result.error || 'Failed to cache chunk');
             }
-            
+
             return true;
         } catch (error) {
             console.error('Failed to cache chunk:', error);
@@ -298,13 +302,13 @@ export class Chunk {
         try {
             const response = await fetch(`cacheChunk.php?x=${this.x}&z=${this.z}`);
             const result = await response.json();
-            
+
             if (result.success && result.data) {
                 this.blocks = result.data;
                 this.isDirty = true;
                 return true;
             }
-            
+
             return false;
         } catch (error) {
             console.error('Failed to load chunk from cache:', error);

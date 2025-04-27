@@ -21,7 +21,7 @@ export class Input {
 		// Add camera pitch limits (in radians)
 		this.maxPitch = Math.PI / 2 - 0.1; // Just under 90 degrees
 		this.minPitch = -Math.PI / 2 + 0.1; // Just over -90 degrees
-		
+
 		// Track pitch separately from yaw
 		this.pitch = 0;
 
@@ -55,14 +55,14 @@ export class Input {
 		this.keyDisplay.style.lineHeight = '1.5em';
 		this.keyDisplay.style.display = 'flex';
 		this.keyDisplay.style.flexDirection = 'column';
-		
+
 		// Create separate elements for keys and mouse
 		this.keyRow = document.createElement('div');
 		this.mouseRow = document.createElement('div');
-		
+
 		this.keyDisplay.appendChild(this.keyRow);
 		this.keyDisplay.appendChild(this.mouseRow);
-		
+
 		document.body.appendChild(this.keyDisplay);
 	}
 
@@ -70,7 +70,7 @@ export class Input {
 		// Keyboard events
 		document.addEventListener('keydown', this.onKeyDown);
 		document.addEventListener('keyup', this.onKeyUp);
-		
+
 		// Mouse events
 		document.addEventListener('mousemove', this.onMouseMove);
 		document.addEventListener('click', () => this.requestPointerLock());
@@ -129,6 +129,11 @@ export class Input {
 			if (this.isFlying) {
 				this.engine.player.velocity.set(0, 0, 0); // Reset velocity when flying is enabled
 			}
+		}
+
+		// Handle warping to nearest block
+		if (event.code === 'Backspace') {
+			this.warpToNearestBlock();
 		}
 	}
 
@@ -226,6 +231,30 @@ export class Input {
 			if (this.movementForces.jump) {
 				player.addForce(this.movementForces.jump.clone());
 			}
+		}
+	}
+
+	// Add this new method to the Input class
+	warpToNearestBlock() {
+		const player = this.engine.player;
+		if (!player) return;
+
+		// Get the nearest block from the world
+		const nearestBlock = this.engine.world.findNearestBlock(player.position);
+
+		if (nearestBlock) {
+			// Teleport player to the top of the nearest block
+			player.position.set(
+				nearestBlock.position.x,
+				nearestBlock.position.y + 1, // Position player on top of the block
+				nearestBlock.position.z
+			);
+
+			// Reset player velocity to prevent momentum after warping
+			player.velocity.set(0, 0, 0);
+			console.log(`Warped to nearest block at ${nearestBlock.position.x}, ${nearestBlock.position.y}, ${nearestBlock.position.z}`);
+		} else {
+			console.log("No blocks found nearby");
 		}
 	}
 }

@@ -18,7 +18,7 @@ export class Renderer {
 		// Create the scene
 		this.scene = new THREE.Scene();
 		this.scene.background = new THREE.Color(0x87CEEB); // Sky blue background
-		
+
 		// Add fog to scene for depth
 		this.scene.fog = new THREE.Fog(0x87ceeb, 0, 500);
 		this.scene.background = new THREE.Color(0x87ceeb);
@@ -57,10 +57,10 @@ export class Renderer {
 			new URL('./workers/blockInstanceWorker.js', import.meta.url),
 			{ type: 'module' }
 		);
-		
+
 		this.blockWorker.onmessage = (e) => {
 			const { instanceData } = e.data;
-			
+
 			// Update instance matrices
 			for (const [type, data] of instanceData) {
 				const mesh = this.instancedMeshes.get(type);
@@ -77,13 +77,13 @@ export class Renderer {
 		// Use multiple chunk processors
 		this.chunkProcessors = [];
 		const processorCount = navigator.hardwareConcurrency || 4;
-		
+
 		for (let i = 0; i < processorCount; i++) {
 			const worker = new Worker(
 				new URL('./workers/chunkProcessor.js', import.meta.url),
 				{ type: 'module' }
 			);
-			
+
 			worker.onmessage = this.handleChunkProcessorMessage.bind(this);
 			this.chunkProcessors.push(worker);
 		}
@@ -106,7 +106,7 @@ export class Renderer {
 
 	initializeInstancedMeshes() {
 		const blockTypes = ['grass', 'dirt', 'stone', 'bedrock'];
-		
+
 		for (const type of blockTypes) {
 			const geometry = this.blockGeometry;
 			const material = this.textureManager.getMaterial(type);
@@ -130,7 +130,7 @@ export class Renderer {
 	// Render the scene
 	render(deltaTime) {
 		if (this.lastRenderTime + this.fpsInterval > Date.now()) return;
-		
+
 		this.lastRenderTime = Date.now();
 
 		// Add debug blocks
@@ -145,7 +145,7 @@ export class Renderer {
 		this.chunkProcessors.forEach((worker, index) => {
 			const start = index * chunksPerWorker;
 			const chunks = visibleChunks.slice(start, start + chunksPerWorker);
-			
+
 			worker.postMessage({
 				chunks,
 				frustum: this.frustum.toJSON()
@@ -163,7 +163,7 @@ export class Renderer {
 
 	handleChunkProcessorMessage(e) {
 		const { instanceData } = e.data;
-		
+
 		// Update instance meshes using the pre-allocated buffers
 		for (const [type, data] of instanceData.entries()) {
 			const mesh = this.instancedMeshes.get(type);
@@ -191,7 +191,7 @@ export class Renderer {
 		for (const chunk of visibleChunks) {
 			// Get blocks from chunk
 			const blocks = chunk.getLocalBlocks(this.camera);
-			
+
 			// Process each block
 			for (const block of blocks) {
 				const data = instanceData.get(block.type);
@@ -203,7 +203,7 @@ export class Renderer {
 						block.position.y,
 						block.position.z
 					);
-					
+
 					// Store matrix elements
 					data.positions.push(Array.from(matrix.elements));
 					data.count++;
@@ -242,58 +242,58 @@ export class Renderer {
 	}
 
 	createDebugGrid() {
-        // Create a grid of points
-        const gridSize = 32;
-        const spacing = 1; // 1 meter spacing
-        const points = [];
-        
-        // Generate grid points
-        for (let x = -gridSize; x <= gridSize; x += spacing) {
-            for (let z = -gridSize; z <= gridSize; z += spacing) {
-                points.push(new THREE.Vector3(x, 0, z));
-            }
-        }
+		// Create a grid of points
+		const gridSize = 32;
+		const spacing = 1; // 1 meter spacing
+		const points = [];
 
-        // Create geometry and material
-        const geometry = new THREE.BufferGeometry().setFromPoints(points);
-        const material = new THREE.PointsMaterial({
-            color: 0xffff00,
-            size: 0.1,
-            sizeAttenuation: true
-        });
+		// Generate grid points
+		for (let x = -gridSize; x <= gridSize; x += spacing) {
+			for (let z = -gridSize; z <= gridSize; z += spacing) {
+				points.push(new THREE.Vector3(x, 0, z));
+			}
+		}
 
-        // Create points mesh
-        this.debugGrid = new THREE.Points(geometry, material);
-        this.scene.add(this.debugGrid);
-        
-        debug.log(`Created debug grid with ${points.length} points`);
-    }
+		// Create geometry and material
+		const geometry = new THREE.BufferGeometry().setFromPoints(points);
+		const material = new THREE.PointsMaterial({
+			color: 0xffff00,
+			size: 0.1,
+			sizeAttenuation: true
+		});
 
-    initialize(world, player) {
-        try {
-            // Initialize texture manager first
-            this.textureManager.initialize();
-            
-            // Initialize skybox
-            this.skybox.initialize();
-            
-            // Set world and player
-            this.setWorld(world);
-            this.setPlayer(player);
-            
-            // Create block manager reference
-            this.block = world.block;
-            
-            // Add debug grid
-            this.createDebugGrid();
-            
-            console.log('Renderer initialized successfully');
-            return this;
-        } catch (error) {
-            console.error('Failed to initialize renderer:', error);
-            throw error;
-        }
-    }
+		// Create points mesh
+		this.debugGrid = new THREE.Points(geometry, material);
+		this.scene.add(this.debugGrid);
+
+		debug.log(`Created debug grid with ${points.length} points`);
+	}
+
+	async initialize(world, player) {
+		try {
+			// Initialize texture manager first
+			await this.textureManager.initialize();
+
+			// Initialize skybox
+			await this.skybox.initialize();
+
+			// Set world and player
+			this.setWorld(world);
+			this.setPlayer(player);
+
+			// Create block manager reference
+			this.block = world.block;
+
+			// Add debug grid
+			this.createDebugGrid();
+
+			console.log('Renderer initialized successfully');
+			return this;
+		} catch (error) {
+			console.error('Failed to initialize renderer:', error);
+			throw error;
+		}
+	}
 
 	dispose() {
 		// Dispose resources
@@ -302,18 +302,18 @@ export class Renderer {
 		}
 
 		if (this.debugGrid) {
-            this.scene.remove(this.debugGrid);
-            this.debugGrid.geometry.dispose();
-            this.debugGrid.material.dispose();
-            this.debugGrid = null;
-        }
+			this.scene.remove(this.debugGrid);
+			this.debugGrid.geometry.dispose();
+			this.debugGrid.material.dispose();
+			this.debugGrid = null;
+		}
 	}
 
 	addDebugBlocks(scene) {
 		// Place blocks in a row 2 units in front of player spawn
 		const blockTypes = ['grass', 'dirt', 'stone', 'bedrock'];
 		const spacing = 2; // Space between blocks
-		
+
 		blockTypes.forEach((type, index) => {
 			const matrix = new THREE.Matrix4();
 			matrix.setPosition(
@@ -321,7 +321,7 @@ export class Renderer {
 				1,           // y: one block up
 				index * spacing + 2  // z: spaced out in front of player
 			);
-			
+
 			const mesh = this.instancedMeshes.get(type);
 			if (mesh) {
 				mesh.count = 1;
