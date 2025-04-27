@@ -1,14 +1,66 @@
 <?php
-// Set headers
-header('Content-Type: application/json'); // Ensure the response is JSON
-header('Access-Control-Allow-Origin: *'); // Allow cross-origin requests (adjust as needed)
-header('Access-Control-Allow-Methods: GET, POST, OPTIONS'); // Specify allowed methods
-header('Access-Control-Allow-Headers: Content-Type'); // Allow specific headers
+class ChunkCache {
+    private $cacheDir;
+    
+    public function __construct() {
+        $this->cacheDir = __DIR__ . '/cache/chunks/';
+        if (!is_dir($this->cacheDir)) {
+            mkdir($this->cacheDir, 0755, true);
+        }
+    }
+    
+    public function getCacheFilename($x, $z) {
+        return $this->cacheDir . "chunk_{$x}_{$z}.json";
+    }
+    
+    public function saveChunk($x, $z, $data) {
+        $filename = $this->getCacheFilename($x, $z);
+        $json = json_encode($data);
+        
+        if (file_put_contents($filename, gzencode($json)) === false) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Failed to save chunk data']);
+            return false;
+        }
 
-// Handle preflight OPTIONS request
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(204); // No content
-    exit;
+        // Set the file permissions
+        chmod($filename, 0644);
+        // Set the file ownership
+        if (function_exists('posix_getuid')) {
+            $uid = posix_getuid();
+            chown($filename, $uid);
+        }
+        // Set the file group ownership
+        if (function_exists('posix_getgid')) {
+            $gid = posix_getgid();
+            chgrp($filename, $gid);
+        }
+        
+        return true;
+    }
+    
+    public function loadChunk($x, $z) {
+        $filename = $this->getCacheFilename($x, $z);
+        
+        if (!file_exists($filename)) {
+            return null;
+        }
+        
+        $json = file_get_contents($filename);
+        if ($json === false) {
+            return null;
+        }
+        
+        // ungzip the data if necessary
+        if (substr($json, 0, 2) === "\x1f\x8b") {
+            $json = gzinflate(substr($json, 10));
+        }
+        // Decode the JSON data
+        if ($json === false) {
+            return null;
+        }
+        return json_decode($json, true);
+    }
 }
 
 // Handle incoming requests
@@ -19,9 +71,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($data['x'], $data['z'], $data['blocks'])) {
         if ($cache->saveChunk($data['x'], $data['z'], $data['blocks'])) {
             echo json_encode(['success' => true]);
-        } else {
-            http_response_code(500);
-            echo json_encode(['error' => 'Failed to save chunk']);
         }
     } else {
         http_response_code(400);
@@ -45,7 +94,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         http_response_code(400);
         echo json_encode(['error' => 'Missing coordinates']);
     }
-} else {
-    http_response_code(405); // Method not allowed
-    echo json_encode(['error' => 'Method not allowed']);
 }
