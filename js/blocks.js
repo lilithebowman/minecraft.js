@@ -2,18 +2,21 @@ import { TextureManager } from './modules.js';
 import { BoxCollider } from './physics/boxCollider.js';
 import * as THREE from 'three';
 import { debug } from './debug.js';
+import { BlockTypes } from './BlockTypes.js';
 
 export class Block {
     constructor() {
         // Initialize blocks Map
         this.blocks = new Map();
         this.textureManager = new TextureManager();
-        
+
         this.blockTypes = {
-            'grass': { texture: 'grass_top' },
-            'dirt': { texture: 'dirt' },
-            'stone': { texture: 'stone' },
-            'bedrock': { texture: 'bedrock', unbreakable: true } // Add unbreakable property
+            [BlockTypes.GRASS]: { texture: 'grass_top' },
+            [BlockTypes.DIRT]: { texture: 'dirt' },
+            [BlockTypes.STONE]: { texture: 'stone' },
+            [BlockTypes.BEDROCK]: { texture: 'bedrock', unbreakable: true },
+            [BlockTypes.WATER]: { texture: 'water', liquid: true },
+            [BlockTypes.LAVA]: { texture: 'lava', liquid: true }
         };
     }
 
@@ -44,7 +47,7 @@ export class Block {
 
         // Get material for the block type
         const material = this.textureManager.getMaterial(this.blockTypes[blockType].texture);
-        
+
         // Create collider for the block
         const collider = new BoxCollider(
             new THREE.Vector3(blockData.position.x + 0.5, blockData.position.y + 0.5, blockData.position.z + 0.5),

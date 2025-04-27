@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 import { debug } from './debug.js';
+import { getSolidBlockTypes } from './BlockTypes.js';
 
 export class BlockMeshRenderer {
-	constructor(blockTypes = ['grass', 'dirt', 'stone', 'bedrock']) {
+	constructor(blockTypes = getSolidBlockTypes()) {
 		// Maximum instances per block type
 		this.INSTANCES_PER_TYPE = 5000;
 

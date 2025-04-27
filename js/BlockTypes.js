@@ -3,12 +3,12 @@
  * This centralized list ensures consistent block type usage across the codebase.
  */
 export const BlockTypes = {
-    GRASS: 'grass',
-    DIRT: 'dirt',
-    STONE: 'stone',
-    BEDROCK: 'bedrock',
-    WATER: 'water',
-    LAVA: 'lava'
+	GRASS: 'grass',
+	DIRT: 'dirt',
+	STONE: 'stone',
+	BEDROCK: 'bedrock',
+	WATER: 'water',
+	LAVA: 'lava'
 };
 
 /**
@@ -16,7 +16,7 @@ export const BlockTypes = {
  * @returns {string[]} Array containing all block type strings
  */
 export function getAllBlockTypes() {
-    return Object.values(BlockTypes);
+	return Object.values(BlockTypes);
 }
 
 /**
@@ -24,7 +24,7 @@ export function getAllBlockTypes() {
  * @returns {string[]} Array containing solid block type strings
  */
 export function getSolidBlockTypes() {
-    return [BlockTypes.GRASS, BlockTypes.DIRT, BlockTypes.STONE, BlockTypes.BEDROCK];
+	return [BlockTypes.GRASS, BlockTypes.DIRT, BlockTypes.STONE, BlockTypes.BEDROCK];
 }
 
 /**
@@ -32,7 +32,7 @@ export function getSolidBlockTypes() {
  * @returns {string[]} Array containing liquid block type strings
  */
 export function getLiquidBlockTypes() {
-    return [BlockTypes.WATER, BlockTypes.LAVA];
+	return [BlockTypes.WATER, BlockTypes.LAVA];
 }
 
 /**
@@ -41,5 +41,5 @@ export function getLiquidBlockTypes() {
  * @returns {boolean} True if the block is solid, false otherwise
  */
 export function isSolidBlockType(blockType) {
-    return getSolidBlockTypes().includes(blockType);
+	return getSolidBlockTypes().includes(blockType);
 }

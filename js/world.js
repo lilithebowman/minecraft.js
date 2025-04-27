@@ -3,6 +3,8 @@ import { Chunk } from './chunk.js';
 import { NoiseGenerator } from './utils/noise.js';
 import { Frustum } from './utils/frustum.js';
 import { debug } from './debug.js';
+import { isSolidBlockType } from './BlockTypes.js';
+import { BlockTypes } from './BlockTypes.js';
 
 export class World {
 	constructor() {
@@ -144,13 +146,13 @@ export class World {
 					for (let y = 0; y < height; y++) {
 						let blockType;
 						if (y === 0) {
-							blockType = 'bedrock';
+							blockType = BlockTypes.BEDROCK;
 						} else if (y < height - 4) {
-							blockType = 'stone';
+							blockType = BlockTypes.STONE;
 						} else if (y < height - 1) {
-							blockType = 'dirt';
+							blockType = BlockTypes.DIRT;
 						} else {
-							blockType = 'grass';
+							blockType = BlockTypes.GRASS;
 						}
 
 						// Add block to chunk
@@ -362,8 +364,8 @@ export class World {
 							nearestBlock = {
 								type: blockType,
 								position: blockPosition,
-								// Add isSolid property based on block type
-								isSolid: blockType !== 'water' && blockType !== 'lava'
+								// Use helper function to determine if block is solid
+								isSolid: isSolidBlockType(blockType)
 							};
 						}
 					}
