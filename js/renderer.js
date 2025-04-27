@@ -100,11 +100,33 @@ export class Renderer {
 		// Update block meshes
 		this.blockMeshRenderer.updateMeshes(visibleChunks, this.player.camera, this.frustum);
 
+		// Make sure chunk meshes are in the scene
+		this.addChunksToScene(visibleChunks);
+
 		// Update frustum
 		this.frustum.update(this.player.camera);
 
 		// Render the scene
 		this.renderer.render(this.scene, this.player.camera);
+	}
+
+	// Add this new method to handle chunk meshes
+	addChunksToScene(chunks) {
+		// First, keep track of chunks already in the scene
+		if (!this.chunksInScene) {
+			this.chunksInScene = new Set();
+		}
+
+		// Add any chunks that aren't already in the scene
+		for (const chunk of chunks) {
+			const chunkId = `${chunk.x},${chunk.z}`;
+
+			if (!this.chunksInScene.has(chunkId) && chunk.mesh) {
+				this.worldGroup.add(chunk.mesh);
+				this.chunksInScene.add(chunkId);
+				// console.log(`Added chunk ${chunkId} to scene`);
+			}
+		}
 	}
 
 	setWorld(world) {
