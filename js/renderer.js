@@ -66,7 +66,7 @@ export class Renderer {
 	// Handle window resizing
 	handleResize() {
 		this.renderer.setSize(window.innerWidth, window.innerHeight);
-		this.player.camera.handleResize();
+		this.player.camera.aspect = window.innerWidth / window.innerHeight;
 	}
 
 	// Render the scene
