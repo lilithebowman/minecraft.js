@@ -80,7 +80,10 @@ export class Renderer {
 
 		// Get visible chunks
 		const visibleChunks = this.world.getVisibleChunks(this.player);
-		if (visibleChunks.length === 0) return;
+		if (visibleChunks.length === 0) {
+			console.warn('No visible chunks!');
+			return;
+		}
 
 		// Distribute chunks among workers
 		const chunksPerWorker = Math.ceil(visibleChunks.length / this.chunkProcessors.length);

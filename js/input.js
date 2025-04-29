@@ -81,7 +81,7 @@ export class Input {
 		this.keys.add(event.code);
 
 		// --- Keyboard Movement Forces ---
-		const moveMagnitude = 10.0; // Increased magnitude for testing
+		const moveMagnitude = 0.01; // Increased magnitude for testing
 		const moveDuration = 0.1;  // Short duration, applied each frame key is held
 
 		// Apply forces using the helper
