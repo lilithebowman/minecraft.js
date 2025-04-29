@@ -3,7 +3,6 @@ import { Framerate } from './framerate.js';
 import { Block } from './blocks.js';
 import { Input } from './input.js';
 import { debug } from './debug.js';
-import { EventEmitter } from './utils/event_emitter.js';
 
 export class Engine {
 	constructor() {
@@ -11,9 +10,7 @@ export class Engine {
 		this.time = new Time();
 		this.framerate = new Framerate();
 		this.block = new Block();
-		this.maxBlocks = 10000;
-		this.eventEmitter = new EventEmitter();
-		
+
 		// Store game objects
 		this.world = null;
 		this.player = null;
@@ -37,7 +34,7 @@ export class Engine {
 			// Initialize block manager first
 			console.log('Initializing block manager and textures...');
 			await this.block.initialize();
-			
+
 			// Set up components
 			this.world = world;
 			this.player = player;
@@ -52,7 +49,7 @@ export class Engine {
 			const centerX = 0;
 			const centerZ = 0;
 			const surfaceY = this.findSurfaceHeight(centerX, centerZ);
-			
+
 			this.player.position.set(
 				centerX,
 				surfaceY + 1, // Place slightly above surface to prevent falling through
@@ -77,7 +74,7 @@ export class Engine {
 			} catch (error) {
 				throw new Error(`Input system initialization failed: ${error.message}`);
 			}
-			
+
 			console.log('Engine initialization complete');
 			return this;
 
@@ -133,7 +130,6 @@ export class Engine {
 
 		// Update time tracking
 		this.time.update();
-		this.framerate.update();
 
 		// Update input first
 		if (this.input) {
@@ -161,9 +157,6 @@ export class Engine {
 			if (this.world) {
 				this.world.update(deltaTime);
 			}
-			
-			// Emit update event
-			this.eventEmitter.emit('update', deltaTime);
 		} catch (error) {
 			console.error('Error in update loop:', error);
 			this.stop();
@@ -178,14 +171,10 @@ export class Engine {
 		return Math.sqrt(dx * dx + dy * dy + dz * dz);
 	}
 
-	getEventEmitter() {
-		return this.eventEmitter;
-	}
-
 	// Add this helper method to find the surface height
 	findSurfaceHeight(x, z) {
 		if (!this.world) return 64; // Default height if world not ready
-		
+
 		// Start from max height and scan down
 		for (let y = 255; y >= 0; y--) {
 			const block = this.world.getBlock(x, y, z);

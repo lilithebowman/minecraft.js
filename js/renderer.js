@@ -1,9 +1,8 @@
 import * as THREE from 'three';
 import { TextureManager } from './modules.js';
 import { Frustum } from './utils/frustum.js';
-import { Skybox } from './skybox.js';
-import { debug } from './debug.js';
 import { BlockMeshRenderer } from './BlockMeshRenderer.js';
+import { Framerate } from './framerate.js';
 
 export class Renderer {
 	constructor() {
@@ -38,6 +37,9 @@ export class Renderer {
 
 		// Initialize frustum for visibility checks
 		this.frustum = new Frustum();
+
+		// Initialize framerate stats
+		this.framerate = new Framerate();
 
 		// Create world group
 		this.worldGroup = new THREE.Group();
@@ -112,6 +114,9 @@ export class Renderer {
 
 		// Update frustum
 		this.frustum.update(this.player.camera);
+
+		// Update framerate stats
+		this.framerate.update();
 
 		// Render the scene
 		this.renderer.render(this.scene, this.player.camera);
