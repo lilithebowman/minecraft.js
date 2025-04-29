@@ -60,9 +60,6 @@ export class Renderer {
 			worker.onmessage = (e) => this.blockMeshRenderer.handleChunkProcessorMessage(e);
 			this.chunkProcessors.push(worker);
 		}
-
-		// Add debug blocks
-		this.addDebugBlocks(this.scene);
 	}
 
 	// Handle window resizing
@@ -81,7 +78,6 @@ export class Renderer {
 		// Get visible chunks
 		const visibleChunks = this.world.getVisibleChunks(this.player);
 		if (visibleChunks.length === 0) {
-			console.warn('No visible chunks!');
 			return;
 		}
 
@@ -96,11 +92,6 @@ export class Renderer {
 				frustum: this.frustum.toJSON()
 			});
 		});
-
-		// Update debug grid
-		if (this.debugGrid) {
-			this.debugGrid.rotation.y += 0.01; // Rotate grid for better visibility
-		}
 
 		// Update block meshes
 		this.blockMeshRenderer.updateMeshes(visibleChunks, this.player.camera, this.frustum);
@@ -167,19 +158,6 @@ export class Renderer {
 		this.player.camera = player.getCamera(); // Use the player's THREE.PerspectiveCamera
 	}
 
-	createCrosshair() {
-		// Create a small black cube in the center of the view
-		const centerCubeGeometry = new THREE.BoxGeometry(0.05, 0.05, 0.05);
-		const centerCubeMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
-		this.centerCube = new THREE.Mesh(centerCubeGeometry, centerCubeMaterial);
-
-		// Add it to the camera, not the scene, so it moves with the camera
-		this.player.camera.add(this.centerCube);
-
-		// Position it slightly in front of the camera
-		this.centerCube.position.set(0, 0, -0.5);
-	}
-
 	async initialize(world, player) {
 		try {
 			// Initialize texture manager first
@@ -196,9 +174,6 @@ export class Renderer {
 			const blockMeshes = this.blockMeshRenderer.createInstancedMeshes(this.textureManager);
 			this.worldGroup.add(blockMeshes);
 
-			// Add crosshair/targeting cube
-			this.createCrosshair();
-
 			console.log('Renderer initialized successfully');
 			return this;
 		} catch (error) {
@@ -208,6 +183,7 @@ export class Renderer {
 	}
 
 	dispose() {
+		return;
 		// Dispose resources
 		if (this.chunkProcessors) {
 			this.chunkProcessors.forEach(worker => worker.terminate());
@@ -231,10 +207,5 @@ export class Renderer {
 			this.centerCube.material.dispose();
 			this.centerCube = null;
 		}
-	}
-
-	addDebugBlocks(scene) {
-		// Use the BlockMeshRenderer to add debug blocks
-		this.blockMeshRenderer.addDebugBlocks(scene);
 	}
 }
