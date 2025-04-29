@@ -46,20 +46,6 @@ export class Renderer {
 
 		// Initialize block mesh renderer
 		this.blockMeshRenderer = new BlockMeshRenderer(['grass', 'dirt', 'stone', 'bedrock']);
-
-		// Use multiple chunk processors
-		this.chunkProcessors = [];
-		const processorCount = navigator.hardwareConcurrency || 4;
-
-		for (let i = 0; i < processorCount; i++) {
-			const worker = new Worker(
-				new URL('./workers/chunkProcessor.js', import.meta.url),
-				{ type: 'module' }
-			);
-
-			worker.onmessage = (e) => this.blockMeshRenderer.handleChunkProcessorMessage(e);
-			this.chunkProcessors.push(worker);
-		}
 	}
 
 	// Handle window resizing
@@ -81,18 +67,6 @@ export class Renderer {
 			return;
 		}
 
-		// Distribute chunks among workers
-		const chunksPerWorker = Math.ceil(visibleChunks.length / this.chunkProcessors.length);
-		this.chunkProcessors.forEach((worker, index) => {
-			const start = index * chunksPerWorker;
-			const chunks = visibleChunks.slice(start, start + chunksPerWorker);
-
-			worker.postMessage({
-				chunks,
-				frustum: this.frustum.toJSON()
-			});
-		});
-
 		// Update block meshes
 		this.blockMeshRenderer.updateMeshes(visibleChunks, this.player.camera, this.frustum);
 
@@ -105,6 +79,18 @@ export class Renderer {
 			this.world.rotation.y,
 			this.world.rotation.z
 		);
+
+		// Render the world group
+		for (const block of this.worldGroup.children) {
+			if (block instanceof THREE.Mesh) {
+				block.visible = this.frustum.contains(block.position);
+				if (block.visible) {
+					block.material.map = this.textureManager.getTexture(block.type);
+					this.scene.add(block);
+				}
+			}
+		}
+		this.scene.add(this.worldGroup);
 
 		// Update frustum
 		this.frustum.update(this.player.camera);
@@ -130,7 +116,6 @@ export class Renderer {
 			if (!this.chunksInScene.has(chunkId) && chunk.mesh) {
 				this.worldGroup.add(chunk.mesh);
 				this.chunksInScene.add(chunkId);
-				// console.log(`Added chunk ${chunkId} to scene`);
 			}
 		}
 	}
@@ -185,11 +170,6 @@ export class Renderer {
 	dispose() {
 		return;
 		// Dispose resources
-		if (this.chunkProcessors) {
-			this.chunkProcessors.forEach(worker => worker.terminate());
-			this.chunkProcessors = [];
-		}
-
 		if (this.blockMeshRenderer) {
 			this.blockMeshRenderer.dispose();
 		}

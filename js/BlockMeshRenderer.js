@@ -5,7 +5,7 @@ import { getSolidBlockTypes } from './BlockTypes.js';
 export class BlockMeshRenderer {
 	constructor(blockTypes = getSolidBlockTypes()) {
 		// Maximum instances per block type
-		this.INSTANCES_PER_TYPE = 5000;
+		this.INSTANCES_PER_TYPE = 10000;
 
 		// Store block types
 		this.blockTypes = blockTypes;
@@ -125,6 +125,14 @@ export class BlockMeshRenderer {
 					data.positions.push(Array.from(matrix.elements));
 					data.count++;
 				}
+			}
+		}
+
+		// Truncate the array at 1000 elements if necessary
+		for (const [type, data] of instanceData.entries()) {
+			if (data.count > this.INSTANCES_PER_TYPE) {
+				data.positions = data.positions.slice(0, this.INSTANCES_PER_TYPE);
+				data.count = this.INSTANCES_PER_TYPE;
 			}
 		}
 
