@@ -81,8 +81,8 @@ export class Input {
 		this.keys.add(event.code);
 
 		// --- Keyboard Movement Forces ---
-		const moveMagnitude = 0.01; // Increased magnitude for testing
-		const moveDuration = 0.1;  // Short duration, applied each frame key is held
+		const moveMagnitude = 0.001;  // Magnitude of the force applied
+		const moveDuration = 0.01;  // Short duration, applied each frame key is held
 
 		// Apply forces using the helper
 		if (this.keys.has('KeyW')) {
@@ -194,7 +194,7 @@ export class Input {
 		// --- Mouse Handling ---
 		if (this.isPointerLocked) {
 			if (this.mouseMovement.x !== 0) {
-				player.rotate(this.mouseMovement.x * this.mouseSensitivity);
+				player.rotate(-this.mouseMovement.x * this.mouseSensitivity);
 			}
 			if (this.mouseMovement.y !== 0) {
 				const newPitch = player.pitch - this.mouseMovement.y * this.mouseSensitivity;

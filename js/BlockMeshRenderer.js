@@ -136,8 +136,8 @@ export class BlockMeshRenderer {
 			}
 		}
 
-		debug.log(`Processing ${visibleChunks.length} chunks`);
-		debug.log(`Total instances: ${Array.from(instanceData.values()).reduce((sum, data) => sum + data.count, 0)}`);
+		// debug.log(`Processing ${visibleChunks.length} chunks`);
+		// debug.log(`Total instances: ${Array.from(instanceData.values()).reduce((sum, data) => sum + data.count, 0)}`);
 
 		return instanceData;
 	}

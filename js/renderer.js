@@ -3,6 +3,7 @@ import { TextureManager } from './modules.js';
 import { Frustum } from './utils/frustum.js';
 import { BlockMeshRenderer } from './BlockMeshRenderer.js';
 import { Framerate } from './framerate.js';
+import { debug } from './debug.js';
 
 export class Renderer {
 	constructor() {
@@ -63,9 +64,6 @@ export class Renderer {
 
 		// Get visible chunks
 		const visibleChunks = this.world.getVisibleChunks(this.player);
-		if (visibleChunks.length === 0) {
-			return;
-		}
 
 		// Update block meshes
 		this.blockMeshRenderer.updateMeshes(visibleChunks, this.player.camera, this.frustum);
@@ -90,13 +88,17 @@ export class Renderer {
 				}
 			}
 		}
-		this.scene.add(this.worldGroup);
+		this.setWorld(this.world);
 
 		// Update frustum
 		this.frustum.update(this.player.camera);
 
 		// Update framerate stats
 		this.framerate.update();
+
+		// Update debug stats with scene object count
+		const objectsInScene = this.scene.children.length;
+		debug.updateStats({ blocks: objectsInScene });
 
 		// Render the scene
 		this.renderer.render(this.scene, this.player.camera);
@@ -168,7 +170,6 @@ export class Renderer {
 	}
 
 	dispose() {
-		return;
 		// Dispose resources
 		if (this.blockMeshRenderer) {
 			this.blockMeshRenderer.dispose();

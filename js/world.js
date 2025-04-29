@@ -19,6 +19,7 @@ export class World {
 		this.workers = [];
 		this.maxWorkers = navigator.hardwareConcurrency || 4;
 		this.visibleBlocks = [];
+		this.visibleChunks = new Set(); // Add this line to initialize the property
 		this.initializeWorkers();
 	}
 
@@ -92,12 +93,12 @@ export class World {
 
 		// Update block manager
 		if (type) {
-			this.block.addBlock(blockId, {
+			this.chunk.addBlock(blockId, {
 				type,
 				position: { x, y, z }
 			});
 		} else {
-			this.block.removeBlock(blockId);
+			this.chunk.removeBlock(blockId);
 		}
 
 		// Update chunk
@@ -200,7 +201,7 @@ export class World {
 			}
 		}
 
-		this.updateBlocksDebugInfo(this.visibleBlocks);
+		this.updateBlocksDebugInfo(this.visibleChunks.size * 256); // Assuming 256 blocks per chunk
 	}
 
 	// Crate a chunk loading display in the middle of the canvas
@@ -233,23 +234,17 @@ export class World {
 
 	// Update blocks debug info
 	updateBlocksDebugInfo(size) {
-		debug.updateStats({ blocks: size });
+		// console.log(size);
 	}
 
 	getVisibleChunks(player) {
-		if (!player || !player.camera) {
-			console.warn('Invalid player object in getVisibleChunks');
-			return [];
-		}
+		// Clear the previous visible chunks
+		this.visibleChunks.clear();
 
-		// Get the camera position directly from the THREE.PerspectiveCamera
 		const cameraPos = player.camera.position;
 		const playerX = Math.floor(cameraPos.x / 16);
 		const playerZ = Math.floor(cameraPos.z / 16);
-
-		// Get chunks in render distance
-		const visibleChunks = [];
-		const renderDistance = 8; // Configurable render distance
+		const renderDistance = 1;
 
 		for (let x = -renderDistance; x <= renderDistance; x++) {
 			for (let z = -renderDistance; z <= renderDistance; z++) {
@@ -258,15 +253,12 @@ export class World {
 				const chunk = this.getChunk(chunkX, chunkZ);
 
 				if (chunk) {
-					visibleChunks.push(chunk);
+					this.visibleChunks.add(chunk);
 				}
 			}
 		}
 
-		// log the number of visible chunks
-		// console.log(`Visible chunks: ${visibleChunks.length}`); // returns 255
-
-		return visibleChunks;
+		return Array.from(this.visibleChunks);
 	}
 
 	getChunkDistanceToCamera(chunk, camera) {
@@ -336,7 +328,7 @@ export class World {
 			allBlocks.push(...chunkBlocks);
 		}
 
-		console.log(`Total blocks to render: ${allBlocks.length}`);
+		// console.log(`Total blocks to render: ${allBlocks.length}`);
 		return allBlocks;
 	}
 
