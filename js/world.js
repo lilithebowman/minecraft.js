@@ -5,6 +5,7 @@ import { Frustum } from './utils/frustum.js';
 import { debug } from './debug.js';
 import { isSolidBlockType } from './BlockTypes.js';
 import { BlockTypes } from './BlockTypes.js';
+import * as THREE from 'three';
 
 export class World {
 	constructor() {
@@ -19,7 +20,8 @@ export class World {
 		this.workers = [];
 		this.maxWorkers = navigator.hardwareConcurrency || 4;
 		this.visibleBlocks = [];
-		this.visibleChunks = new Set(); // Add this line to initialize the property
+		this.visibleChunks = new Set();
+		this.rotation = new THREE.Vector3(0, 0, 0);
 		this.initializeWorkers();
 	}
 
@@ -80,6 +82,10 @@ export class World {
 		}
 
 		console.log('World generation complete');
+	}
+
+	getChunks() {
+		return Array.from(this.chunks.values());
 	}
 
 	getBlock(x, y, z) {

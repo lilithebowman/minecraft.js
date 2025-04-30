@@ -17,7 +17,7 @@ class ChunkCache {
         $filename = $this->getCacheFilename($x, $z);
         $json = json_encode($data);
         
-        if (file_put_contents($filename, gzencode($json)) === false) {
+        if (file_put_contents($filename, $json) === false) {
             http_response_code(500);
             echo json_encode(['error' => 'Failed to save chunk data']);
             return false;

@@ -252,7 +252,7 @@ export class Input {
 
 			// Reset player velocity to prevent momentum after warping
 			player.velocity.set(0, 0, 0);
-			console.log(`Warped to nearest block at ${nearestBlock.position.x}, ${nearestBlock.position.y}, ${nearestBlock.position.z}`);
+			console.log(`Warped to top of nearest block at ${player.position.x}, ${player.position.y}, ${player.position.z}`);
 		} else {
 			console.log("No blocks found nearby");
 		}

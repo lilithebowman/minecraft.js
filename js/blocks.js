@@ -1,90 +1,33 @@
-import { TextureManager } from './modules.js';
-import { BoxCollider } from './physics/boxCollider.js';
+import { BlockTypes, BoxCollider } from './modules.js';
 import * as THREE from 'three';
 import { debug } from './debug.js';
-import { BlockTypes } from './BlockTypes.js';
 
 export class Block {
-    constructor() {
+    constructor(blockType = BlockTypes.GRASS, position = new THREE.Vector3(0, 0, 0)) {
         // Initialize blocks Map
-        this.blocks = new Map();
-        this.textureManager = new TextureManager();
-
-        this.blockTypes = {
-            [BlockTypes.GRASS]: { texture: 'grass_top' },
-            [BlockTypes.DIRT]: { texture: 'dirt' },
-            [BlockTypes.STONE]: { texture: 'stone' },
-            [BlockTypes.BEDROCK]: { texture: 'bedrock', unbreakable: true },
-            [BlockTypes.WATER]: { texture: 'water', liquid: true },
-            [BlockTypes.LAVA]: { texture: 'lava', liquid: true }
-        };
+        this.position = position;
+        this.blockType = blockType;
+        this.boxCollider = new BoxCollider(this.position, 1, 1, 1);
     }
 
     async initialize() {
-        console.log('Initializing block manager...');
-        try {
-            // Wait for texture manager to initialize
-            await this.textureManager.initialize();
-            console.log('Block manager initialized');
-            return this;
-        } catch (error) {
-            console.error('Failed to initialize block manager:', error);
-            throw error;
-        }
-        debug.log('Block initialized');
+        // console.log('Block initialized');
     }
 
-    async addBlock(id, blockData) {
-        if (this.blocks.has(id)) {
-            throw new Error(`Block with ID ${id} already exists.`);
-        }
+    getObject3D() {
+        const geometry = new THREE.BoxGeometry(1, 1, 1);
+        const material = this.getMaterial(this.blockType);
+        const mesh = new THREE.Mesh(geometry, material);
+        const collider = this.boxCollider;
+        mesh.userData.collider = collider; // Attach collider to the mesh
 
-        // Get the block type and its corresponding texture
-        const blockType = blockData.type;
-        if (!this.blockTypes[blockType]) {
-            throw new Error(`Invalid block type: ${blockType}`);
-        }
+        // Set the position of the mesh
+        mesh.position.set(this.position.x, this.position.y, this.position.z);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        mesh.name = this.blockType; // Set the name of the mesh to the block type
+        mesh.userData.type = this.blockType; // Store block type in userData
 
-        // Get material for the block type
-        const material = this.textureManager.getMaterial(this.blockTypes[blockType].texture);
-
-        // Create collider for the block
-        const collider = new BoxCollider(
-            new THREE.Vector3(blockData.position.x + 0.5, blockData.position.y + 0.5, blockData.position.z + 0.5),
-            new THREE.Vector3(1, 1, 1)
-        );
-
-        // Add material and collider to block data
-        const enrichedBlockData = {
-            ...blockData,
-            material,
-            collider
-        };
-    }
-
-    getMaterial(blockType) {
-        if (!this.blockTypes[blockType]) {
-            throw new Error(`Invalid block type: ${blockType}`);
-        }
-        return this.textureManager.getMaterial(this.blockTypes[blockType].texture);
-    }
-
-    removeBlock(id) {
-        if (!this.blocks.has(id)) {
-            throw new Error(`Block with ID ${id} does not exist.`);
-        }
-        this.blocks.delete(id);
-    }
-
-    getBlock(id) {
-        return this.blocks.get(id) || null;
-    }
-
-    getBlockCount() {
-        return this.blocks.count;
-    }
-
-    listBlocks() {
-        return Array.from(this.blocks.entries());
+        return mesh;
     }
 }

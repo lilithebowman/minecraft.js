@@ -130,30 +130,6 @@ export class DebugLog {
             .map(msg => `<div style="margin: 2px 0;"><span style="color: #aaa;">[${msg.time}]</span> ${msg.text}</div>`)
             .join('');
     }
-
-    updateAxes(playerCamera) {
-        if (!playerCamera) return;
-
-        // Position axes camera in a circle around the origin
-        const radius = 100;
-        const cameraX = radius * Math.sin(playerCamera.rotation.y);
-        const cameraZ = radius * Math.cos(playerCamera.rotation.y);
-        this.axesCamera.position.set(cameraX, 30, cameraZ);
-
-        // Make camera look at origin (where axes intersect)
-        this.axesCamera.lookAt(0, 0, 0);
-
-        // Match Y-rotation with player camera for proper orientation
-        this.axesCamera.rotation.y = playerCamera.rotation.y;
-
-        // Render axes
-        this.axesRenderer.render(this.axesScene, this.axesCamera);
-    }
-
-    toggleAxes() {
-        this.axesRenderer.domElement.style.display =
-            this.axesRenderer.domElement.style.display === 'none' ? 'block' : 'none';
-    }
 }
 
 export const debug = new DebugLog();

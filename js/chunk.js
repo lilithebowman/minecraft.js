@@ -1,11 +1,12 @@
 import * as THREE from 'three';
+import { Block } from './modules.js';
 
 export class Chunk {
 	constructor(x, z) {
 		this.x = x;
 		this.z = z;
-		this.size = 16;
-		this.height = 256;
+		this.size = 2;
+		this.height = 16;
 
 		// Initialize 3D array for blocks using explicit loops
 		this.blocks = new Map();
@@ -18,7 +19,7 @@ export class Chunk {
 				this.blocks[x][y] = [];
 				// Create z dimension
 				for (let z = 0; z < this.size; z++) {
-					this.blocks[x][y][z] = null;
+					this.blocks[x][y][z] = new Block();
 				}
 			}
 		}
@@ -34,6 +35,11 @@ export class Chunk {
 		this.mesh = null;
 		this.visibleBlocks = [];
 		this.needsVisibilityUpdate = true;
+	}
+
+	// Get block array
+	getBlocks() {
+		return this.blocks;
 	}
 
 	// Add a block to this chunk
