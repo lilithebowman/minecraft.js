@@ -68,7 +68,7 @@ export class World {
 			// If not in cache, generate a new chunk
 			await this.generateChunkTerrain(chunk);
 			this.chunks.set(`${task.cx},${task.cz}`, chunk);
-			await chunk.saveToCache();
+
 			this.updateChunkLoadingDisplay(index + 1, tasks.length);
 			this.totalBlocks += chunk.getBlockCount();
 		});
@@ -161,6 +161,7 @@ export class World {
 							chunk.blocks.set(x, y, z, null);
 						}
 					}
+					chunk.saveToCache();
 				}
 			}
 			// Mark chunk as dirty to update mesh

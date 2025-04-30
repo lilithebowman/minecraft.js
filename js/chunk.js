@@ -338,6 +338,10 @@ export class Chunk {
 
 	async saveToCache() {
 		try {
+			if (!this.blocks || this.blocks.size === 0) {
+				console.error('No blocks to save');
+				return false;
+			}
 			const response = await fetch('cacheChunk.php', {
 				method: 'POST',
 				headers: {
