@@ -33,16 +33,15 @@ export class Engine {
 	async init() {
 		// Set up the world
 		await this.world.generateWorld();
-		for (const chunk of this.world?.getChunks()) {
+		for (const chunk of this.world.getChunks()) {
 			if (!chunk || !chunk?.getBlocks()) {
 				console.warn('Chunk is empty!');
 				continue;
 			}
 
 			// Add the chunk to the world group
-			for (const block of chunk.blocks) {
+			for (const block of chunk.getBlocks()) {
 				if (!block || typeof block !== Block) {
-					console.warn('Block is empty or not an object!');
 					continue;
 				}
 				this.worldGroup.add(block.getObject3D());

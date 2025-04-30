@@ -2,33 +2,23 @@ import * as THREE from 'three';
 import { Block } from './modules.js';
 
 export class Chunk {
+	blocks = new Map();
+
 	constructor(x, z) {
 		this.x = x;
 		this.z = z;
 		this.size = 2;
 		this.height = 16;
 
-		// Initialize 3D array for blocks using explicit loops
-		this.blocks = new Map();
-
 		// Create x dimension
 		for (let x = 0; x < this.size; x++) {
-			this.blocks[x] = [];
 			// Create y dimension
 			for (let y = 0; y < this.height; y++) {
-				this.blocks[x][y] = [];
 				// Create z dimension
 				for (let z = 0; z < this.size; z++) {
-					this.blocks[x][y][z] = new Block();
+					this.blocks.set({ x, y, z }, new Block());
 				}
 			}
-		}
-
-		// Verify initialization
-		// console.log(`Chunk created at (${x}, ${z}), dimensions: ${this.size}x${this.height}x${this.size}`);
-		if (!this.blocks[0] || !this.blocks[0][0] || this.blocks[0][0][0] === undefined) {
-			console.error('Block array initialization failed');
-			throw new Error('Failed to initialize chunk blocks array');
 		}
 
 		this.isDirty = false;
@@ -37,16 +27,8 @@ export class Chunk {
 		this.needsVisibilityUpdate = true;
 	}
 
-	// Get block array
-	getBlocks() {
-		return this.blocks;
-	}
-
 	// Add a block to this chunk
 	addBlock(x, y, z, type) {
-		if (x < 0 || x >= this.size || y < 0 || y >= this.height || z < 0 || z >= this.size) {
-			return false;
-		}
 		this.blocks.set({ x, y, z }, type);
 		this.isDirty = true;
 		return true;
@@ -54,17 +36,7 @@ export class Chunk {
 
 	// Get block count
 	getBlockCount() {
-		let count = 0;
-		for (let x = 0; x < this.size; x++) {
-			for (let y = 0; y < this.height; y++) {
-				for (let z = 0; z < this.size; z++) {
-					if (this.blocks[x][y][z]) {
-						count++;
-					}
-				}
-			}
-		}
-		return count;
+		return this.blocks.size;
 	}
 
 	// Dispose of the chunk
@@ -153,20 +125,24 @@ export class Chunk {
 	}
 
 	getBlock(x, y, z) {
-		// Validate coordinates
-		if (x < 0 || x >= this.size || y < 0 || y >= this.height || z < 0 || z >= this.size) {
+		if (typeof this.blocks !== Map) {
+			console.error('Blocks array is not initialized');
 			return null;
 		}
-		return this.blocks[x][y][z];
+		return this.blocks.get({ x, y, z });
 	}
 
 	setBlock(x, y, z, type) {
-		// Validate coordinates
-		if (x < 0 || x >= this.size || y < 0 || y >= this.height || z < 0 || z >= this.size) {
+		if (!typeof this.blocks == Map) {
+			console.error('Blocks array is not a Map');
 			return false;
 		}
-
-		this.blocks[x][y][z] = type;
+		const block = this.blocks.get({ x, y, z });
+		if (!block) {
+			this.blocks.set({ x, y, z }, new Block(type));
+			return;
+		}
+		block.blockType = type;
 		this.needsVisibilityUpdate = true;
 		this.isDirty = true;
 		return true;

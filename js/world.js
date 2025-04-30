@@ -141,56 +141,32 @@ export class World {
 			// Generate terrain for this chunk
 			for (let x = 0; x < 16; x++) {
 				for (let z = 0; z < 16; z++) {
-					const worldX = (chunk.x * 16) + x;
-					const worldZ = (chunk.z * 16) + z;
+					const worldX = chunk.x * 16 + x;
+					const worldZ = chunk.z * 16 + z;
 
-					// Generate height using noise
-					let height = baseHeight;
-					height += noiseGen.noise(worldX / scale, 0, worldZ / scale) * amplitude;
-					height = Math.floor(height);
+					// Generate height using Perlin noise
+					const height = Math.floor(
+						noiseGen.noise(worldX / scale, worldZ / scale) * amplitude + baseHeight
+					);
 
-					// Generate column
-					for (let y = 0; y < height; y++) {
-						let blockType;
-						if (y === 0) {
-							blockType = BlockTypes.BEDROCK;
-						} else if (y < height - 4) {
-							blockType = BlockTypes.STONE;
-						} else if (y < height - 1) {
-							blockType = BlockTypes.DIRT;
+					// Set blocks based on height
+					for (let y = 0; y < 256; y++) {
+						if (y < height - 1) {
+							chunk.blocks.set(x, y, z, BlockTypes.GRASS);
+						} else if (y === height - 1) {
+							chunk.blocks.set(x, y, z, BlockTypes.DIRT);
+						} else if (y === height) {
+							chunk.blocks.set(x, y, z, BlockTypes.STONE);
 						} else {
-							blockType = BlockTypes.GRASS;
+							chunk.blocks.set(x, y, z, null);
 						}
-
-						// Add block to chunk
-						chunk.setBlock(x, y, z, blockType);
-
-						// Register block with block manager
-						const blockId = `${worldX},${y},${worldZ}`;
-						chunk.addBlock(blockId, {
-							type: blockType,
-							position: { x: worldX, y, z: worldZ }
-						});
 					}
 				}
 			}
-
 			// Mark chunk as dirty to update mesh
 			chunk.isDirty = true;
 		} catch (error) {
 			console.error(`Failed to generate chunk at ${chunk.x},${chunk.z}:`, error);
-			// Add fallback terrain generation
-			this.generateFallbackTerrain(chunk);
-		}
-	}
-
-	generateFallbackTerrain(chunk) {
-		// Simple flat terrain as fallback
-		for (let x = 0; x < 16; x++) {
-			for (let z = 0; z < 16; z++) {
-				chunk.setBlock(x, 0, z, 'bedrock');
-				chunk.setBlock(x, 1, z, 'dirt');
-			}
 		}
 	}
 
@@ -206,8 +182,6 @@ export class World {
 				chunk.needsUpdate = false;
 			}
 		}
-
-		this.updateBlocksDebugInfo(this.visibleChunks.size * 256); // Assuming 256 blocks per chunk
 	}
 
 	// Crate a chunk loading display in the middle of the canvas
@@ -238,32 +212,22 @@ export class World {
 		}
 	}
 
-	// Update blocks debug info
-	updateBlocksDebugInfo(size) {
-		// console.log(size);
-	}
-
 	getVisibleChunks(player) {
-		// Clear the previous visible chunks
-		this.visibleChunks.clear();
-
-		const cameraPos = player.camera.position;
-		const playerX = Math.floor(cameraPos.x / 16);
-		const playerZ = Math.floor(cameraPos.z / 16);
-		const renderDistance = 1;
-
-		for (let x = -renderDistance; x <= renderDistance; x++) {
-			for (let z = -renderDistance; z <= renderDistance; z++) {
-				const chunkX = playerX + x;
-				const chunkZ = playerZ + z;
-				const chunk = this.getChunk(chunkX, chunkZ);
-
-				if (chunk) {
-					this.visibleChunks.add(chunk);
-				}
+		this.chunks.forEach(chunk => {
+			const distance = this.getChunkDistanceToCamera(chunk, player);
+			if (distance < this.renderDistance * this.renderDistance) {
+				this.visibleChunks.add(chunk);
+			} else {
+				this.visibleChunks.delete(chunk);
 			}
-		}
-
+		});
+		// Update frustum and remove chunks that are not visible
+		this.frustum.update(player);
+		this.visibleChunks.forEach(chunk => {
+			if (!this.frustum.isVisible(chunk)) {
+				this.visibleChunks.delete(chunk);
+			}
+		});
 		return Array.from(this.visibleChunks);
 	}
 
@@ -275,67 +239,6 @@ export class World {
 		const dx = chunkCenter.x - camera.position.x;
 		const dz = chunkCenter.z - camera.position.z;
 		return dx * dx + dz * dz;
-	}
-
-	/**
-	 * Gets blocks that are visible to the player within render distance
-	 * @param {Position} playerPosition - Current player position
-	 * @param {number} maxBlocks - Maximum number of blocks to return
-	 * @returns {Array} Array of visible blocks sorted by distance to player
-	 */
-	getVisibleBlocks(playerPosition, playerCamera, maxBlocks) {
-		const blocks = [];
-		const visibleChunks = this.getLocalBlocks(playerCamera);
-
-		this.visibleBlocks = visibleChunks
-
-		// Get blocks from visible chunks
-		for (const chunk of visibleChunks) {
-			for (let x = 0; x < 16; x++) {
-				for (let y = 0; y < 256; y++) {
-					for (let z = 0; z < 16; z++) {
-						const blockType = chunk.getBlock(x, y, z);
-						if (blockType) {
-							const worldX = chunk.x * 16 + x;
-							const worldZ = chunk.z * 16 + z;
-
-							// Calculate distance to player
-							const dx = worldX - playerPosition.x;
-							const dy = y - playerPosition.y;
-							const dz = worldZ - playerPosition.z;
-							const distanceSquared = dx * dx + dy * dy + dz * dz;
-
-							blocks.push({
-								type: blockType,
-								position: { x: worldX, y, z: worldZ },
-								distanceSquared
-							});
-						}
-					}
-				}
-			}
-		}
-
-		// Sort blocks by distance to player
-		blocks.sort((a, b) => a.distanceSquared - b.distanceSquared);
-
-		// Return only the closest blocks up to maxBlocks
-		return blocks.slice(0, maxBlocks);
-	}
-
-	getLocalBlocks(camera) {
-		// Get visible chunks
-		const visibleChunks = this.getVisibleChunks(camera);
-		const allBlocks = [];
-
-		// Collect blocks from each chunk
-		for (const chunk of visibleChunks) {
-			const chunkBlocks = chunk.getLocalBlocks(camera);
-			allBlocks.push(...chunkBlocks);
-		}
-
-		// console.log(`Total blocks to render: ${allBlocks.length}`);
-		return allBlocks;
 	}
 
 	findNearestBlock(position) {
