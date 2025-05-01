@@ -1,17 +1,37 @@
 <?php
 
+function perlinNoise($x, $y) {
+    // Simple Perlin noise function for terrain generation
+    return sin($x * 0.1) * cos($y * 0.1);
+}
+
 function generateChunk($chunkX, $chunkZ) {
     $chunk = array();
-    
+
     // Generate 16x256x16 blocks
     for ($x = 0; $x < 16; $x++) {
         for ($z = 0; $z < 16; $z++) {
             for ($y = 0; $y < 256; $y++) {
+                // Generate height based on Perlin noise
+                $height = (int)(perlinNoise($chunkX * 16 + $x, $chunkZ * 16 + $z) * 10 + 50);
+
+                // Set block type based on height
+                if ($y < $height) {
+                    if ($y < $height - 5) {
+                        $chunk[$x][$y][$z] = "STONE"; // Stone layer
+                    } elseif ($y < $height - 1) {
+                        $chunk[$x][$y][$z] = "DIRT"; // Dirt layer
+                    } else {
+                        $chunk[$x][$y][$z] = "GRASS"; // Grass layer
+                    }
+                } elseif ($y === $height) {
+                    $chunk[$x][$y][$z] = "GRASS"; // Grass surface
+                } else {
+                    $chunk[$x][$y][$z] = "AIR"; // Air above the surface
+                }
                 // Bottom layer is bedrock
                 if ($y === 0) {
                     $chunk[$x][$y][$z] = "BEDROCK";
-                } else {
-                    $chunk[$x][$y][$z] = "AIR";
                 }
             }
         }
