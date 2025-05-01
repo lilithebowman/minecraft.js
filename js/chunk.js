@@ -25,7 +25,11 @@ export class Chunk {
 		this.mesh = null;
 		this.visibleBlocks = [];
 		this.needsVisibilityUpdate = true;
+		this.initBedrock();
+	}
 
+	// Initialize bedrock layer
+	initBedrock() {
 		// Always default the bottom to BEDROCK
 		for (let x = 0; x < this.size; x++) {
 			for (let z = 0; z < this.size; z++) {
@@ -128,12 +132,17 @@ export class Chunk {
 	}
 
 	getBlocks() {
-		return this.blocks;
+		const blocks = this.blocks || new Map();
+		if (blocks.size === 0) {
+			this.initBedrock();
+		}
+		return this.blocks || new Map();
 	}
 
 	getBlock(x, y, z) {
 		if (!this.blocks) {
-			console.error('Blocks array is not initialized');
+			this.blocks = new Map();
+			this.initBedrock();
 			return null;
 		}
 		return this.blocks.get({ x, y, z });
