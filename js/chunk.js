@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Block } from './modules.js';
+import { Block, BlockTypes } from './modules.js';
 
 export class Chunk {
 	blocks = new Map();
@@ -25,7 +25,13 @@ export class Chunk {
 		this.mesh = null;
 		this.visibleBlocks = [];
 		this.needsVisibilityUpdate = true;
-		this.blocks = new Map();
+
+		// Always default the bottom to BEDROCK
+		for (let x = 0; x < this.size; x++) {
+			for (let z = 0; z < this.size; z++) {
+				this.blocks.set({ x: x, y: 0, z: z }, new Block(BlockTypes.BEDROCK), new THREE.Vector3(0, 0, 0));
+			}
+		}
 	}
 
 	// Add a block to this chunk
@@ -126,7 +132,7 @@ export class Chunk {
 	}
 
 	getBlock(x, y, z) {
-		if (typeof this.blocks !== Map) {
+		if (!this.blocks) {
 			console.error('Blocks array is not initialized');
 			return null;
 		}
