@@ -17,16 +17,7 @@ export class Engine {
 		this.input = new Input(this);
 		this.playerStartPosition = new THREE.Vector3(0, 100, 0);
 		this.player = new Player(this.playerStartPosition);
-
-		this.scene = new THREE.Scene();
-		this.scene.fog = new THREE.Fog(0x87ceeb, 0, 500);
-		this.scene.background = new THREE.Color(0x87ceeb);
-
 		this.renderer = new Renderer(this);
-		this.renderer.threeRenderer.setSize(window.innerWidth, window.innerHeight);
-		this.renderer.threeRenderer.setPixelRatio(window.devicePixelRatio / 2);
-
-		window.addEventListener('resize', () => this.handleResize());
 	}
 
 	async init() {
@@ -37,26 +28,23 @@ export class Engine {
 	start() {
 		console.log('Starting engine...');
 		this.clock = new THREE.Clock();
-		this.render(0);
+		this.gameLoop(0);
 	}
 
-	handleResize() {
-		this.renderer.threeRenderer.setSize(window.innerWidth, window.innerHeight);
-		this.player.camera.aspect = window.innerWidth / window.innerHeight;
-	}
-
-	render(deltaTime) {
+	gameLoop(deltaTime) {
 		// Update timing
 		this.lastRenderTime = Date.now();
 
+		this.update(deltaTime);
 		this.renderer.render(deltaTime);
 		this.framesRendered++;
 
 		// Queue next frame
-		requestAnimationFrame(() => this.render(deltaTime));
+		requestAnimationFrame(() => this.gameLoop(deltaTime));
 	}
 
 	update(deltaTime) {
+		this.input?.update(deltaTime);
 		this.player?.update(deltaTime);
 		this.world?.update(deltaTime);
 		this.framerate?.update();

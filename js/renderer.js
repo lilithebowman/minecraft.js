@@ -20,8 +20,13 @@ export class Renderer {
 
 		// Create the scene
 		this.scene = new THREE.Scene();
-		this.sceneDefaults = new SceneDefaults(this.engine?.player);
-		this.threeRenderer = this.sceneDefaults.getRenderer();
+		this.sceneDefaults = new SceneDefaults(this.engine?.player)
+		while (!this.sceneDefaults) {
+			this.scene = this.sceneDefaults.getScene();
+			this.scene.children = [];
+			this.sceneDefaults.setupScene();
+			this.threeRenderer = this.sceneDefaults.getRenderer();
+		}
 
 		// Handle window resizing
 		window.addEventListener('resize', () => this.handleResize());
@@ -56,8 +61,6 @@ export class Renderer {
 		}
 
 		// console.log('Rendering...');
-		this.scene.children = [];
-		this.scene = this.sceneDefaults.setupScene();
 		this.scene.add(this.worldGroup);
 
 		// Update framerate stats
@@ -66,8 +69,13 @@ export class Renderer {
 		// Update debug stats with scene object count
 		const objectsInScene = this.scene.children.length;
 		debug.updateStats({ blocks: objectsInScene });
+		if (!objectsInScene) {
+			this.dumpScene();
+			debugger;
+		}
 
 		// Render the scene
+		this.threeRenderer = this.sceneDefaults.getRenderer();
 		this.threeRenderer.render(this.scene, this.player.camera);
 		return true;
 	}

@@ -2,6 +2,8 @@ import * as THREE from "three";
 
 export class SceneDefaults {
 	constructor() {
+		console.log("Initializing scene defaults...");
+
 		// setup //
 		this.renderer = new THREE.WebGLRenderer({ alpha: true });
 		this.renderer.setSize(window.innerWidth, window.innerHeight);
@@ -16,6 +18,10 @@ export class SceneDefaults {
 			10000
 		);
 		this.light = null;
+
+		// Attach the renderer to the DOM
+		this.container = document.getElementById('gameCanvas');
+		this.container.appendChild(this.renderer.domElement);
 	}
 
 	handleResize = () => {
@@ -25,6 +31,8 @@ export class SceneDefaults {
 	}
 
 	setupScene = () => {
+		console.log("Setting up scene...");
+
 		/// lighting ///
 		this.light = new THREE.AmbientLight(0xffaaff);
 		this.light.position.set(10, 10, 10);
