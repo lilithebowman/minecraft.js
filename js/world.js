@@ -226,9 +226,8 @@ export class World {
 		}
 	}
 
-	async initialize(block) {
+	async initialize() {
 		try {
-			this.block = block;
 			await this.generateWorld();
 			return true;
 		} catch (error) {

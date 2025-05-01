@@ -1,12 +1,9 @@
 import * as THREE from 'three';
-import { TextureManager } from './modules.js';
-import { Frustum } from './utils/frustum.js';
-import { BlockMeshRenderer } from './BlockMeshRenderer.js';
-import { Framerate } from './framerate.js';
+import { BlockMeshRenderer, Framerate, Frustum, SceneDefaults, TextureManager } from './modules.js';
 import { debug } from './debug.js';
 
 export class Renderer {
-	constructor() {
+	constructor(engine) {
 		// Maximum number of chunks to render
 		this.minChunks = 1;
 		this.maxChunks = 4;
@@ -16,19 +13,14 @@ export class Renderer {
 		this.fpsInterval = 1000 / this.fpsLimit;
 		this.lastRenderTime = 0;
 
+		// Initialize the engine
+		this.engine = engine;
+		this.world = this.engine?.world;
+
 		// Create the scene
 		this.scene = new THREE.Scene();
-
-		// Add fog to scene for depth
-		this.scene.fog = new THREE.Fog(0x87ceeb, 0, 500);
-		this.scene.background = new THREE.Color(0x87ceeb);
-
-		this.renderer = new THREE.WebGLRenderer({
-			canvas: document.getElementById('gameCanvas'),
-			antialias: true
-		});
-		this.renderer.setSize(window.innerWidth, window.innerHeight);
-		this.renderer.setPixelRatio(window.devicePixelRatio / 2);
+		this.sceneDefaults = new SceneDefaults(this.engine?.player);
+		this.threeRenderer = this.sceneDefaults.renderer;
 
 		// Handle window resizing
 		window.addEventListener('resize', () => this.handleResize());
@@ -51,16 +43,14 @@ export class Renderer {
 
 	// Handle window resizing
 	handleResize() {
-		this.renderer.setSize(window.innerWidth, window.innerHeight);
+		this.threeRenderer.setSize(window.innerWidth, window.innerHeight);
 		this.player.camera.aspect = window.innerWidth / window.innerHeight;
 	}
 
 	// Render the scene
 	render(deltaTime) {
-		// Check if enough time has passed since the last render
-		if (this.lastRenderTime + this.fpsInterval > Date.now()) return;
-
-		this.lastRenderTime = Date.now();
+		console.log('Rendering...');
+		this.sceneDefaults.showScene(this.engine.player);
 
 		// Get visible chunks
 		const visibleChunks = this.world.getVisibleChunks(this.player);
@@ -100,8 +90,30 @@ export class Renderer {
 		const objectsInScene = this.scene.children.length;
 		debug.updateStats({ blocks: objectsInScene });
 
+		// Check if scene contains any objects
+		if (objectsInScene === 0) {
+			console.warn('No objects in scene');
+			this.dumpScene();
+			debugger;
+		}
+
+		// If there are no materials in the scene, log a warning
+		if (this.scene.children.length === 0) {
+			console.warn('No materials in scene');
+			this.dumpScene();
+			debugger;
+		}
+
 		// Render the scene
-		this.renderer.render(this.scene, this.player.camera);
+		this.threeRenderer.render(this.scene, this.player.camera);
+		return true;
+	}
+
+	dumpScene() {
+		console.log(this.scene);
+		console.log(this.worldGroup);
+		console.log(this.player);
+		console.log(this.world.chunks);
 	}
 
 	// Add this new method to handle chunk meshes

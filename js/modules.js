@@ -1,4 +1,5 @@
 export { Block } from './blocks.js';
+export { BlockMeshRenderer } from './BlockMeshRenderer.js';
 export { BlockTypes, getAllBlockTypes, getSolidBlockTypes, getLiquidBlockTypes } from './BlockTypes.js';
 export { BoxCollider } from './physics/boxCollider.js';
 export { Chunk } from './chunk.js';
@@ -10,6 +11,7 @@ export { Input } from './input.js';
 export { NoiseGenerator } from './utils/noise.js';
 export { Player } from './player.js';
 export { Renderer } from './renderer.js';
+export { SceneDefaults } from './sceneDefaults.js';
 export { TextureManager } from './textures.js';
 export { Time } from './time.js';
 export { World } from './world.js';

@@ -45,20 +45,17 @@
 		<div>Right click: Place block</div>
 	</div>
 	<script type="module">
-    import { Engine, World, Player, Renderer, Block } from './js/modules.js';
+    import { Engine } from './js/modules.js';
     
     async function initGame() {
         try {
             console.log('Starting game initialization...');
             
-            // Create components
-            const renderer = new Renderer();
-            const engine = new Engine();
-            const world = new World();
-            const player = new Player();
-
+			// Instantiate the engine - it will instantiate everything else
+			const engine = new Engine();
+            
             // Initialize engine with dependencies
-            await engine.init(world, player, renderer);
+            await engine.init();
             
             // Start the game loop only after successful initialization
             console.log('Starting game loop...');
