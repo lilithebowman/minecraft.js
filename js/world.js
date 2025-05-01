@@ -158,10 +158,15 @@ export class World {
 						} else if (y === height) {
 							chunk.blocks.set(x, y, z, BlockTypes.STONE);
 						} else {
-							chunk.blocks.set(x, y, z, null);
+							chunk.blocks.set(x, y, z, BlockTypes.LAVA);
 						}
 					}
-					chunk.saveToCache();
+					chunk.blocks.set(x, 0, z, BlockTypes.BEDROCK);
+					chunk.blocks.set(x, 1, z, BlockTypes.LAVA);
+					if (!chunk.saveToCache(chunk.x, chunk.z, chunk.blocks)) {
+						console.error(`Failed to save chunk ${chunk.x},${chunk.z} to cache`);
+						return;
+					}
 				}
 			}
 			// Mark chunk as dirty to update mesh
