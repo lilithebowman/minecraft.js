@@ -53,6 +53,30 @@ export class Renderer {
 		this.player.camera.aspect = window.innerWidth / window.innerHeight;
 	}
 
+	async initialize(world, player) {
+		try {
+			// Initialize texture manager first
+			await this.textureManager.initialize();
+
+			// Set world and player
+			this.setWorld(world);
+			this.setPlayer(player);
+
+			// Create block manager reference
+			this.block = world.block;
+
+			// Initialize block mesh renderer and add to world group
+			const blockMeshes = this.blockMeshRenderer.createInstancedMeshes(this.textureManager);
+			this.worldGroup.add(blockMeshes);
+
+			console.log('Renderer initialized successfully');
+			return this;
+		} catch (error) {
+			console.error('Failed to initialize renderer:', error);
+			throw error;
+		}
+	}
+
 	// Render the scene
 	render(deltaTime) {
 		if (!this.engine || !this.engine.player) {
@@ -87,24 +111,6 @@ export class Renderer {
 		console.log(this.world.chunks);
 	}
 
-	// Add this new method to handle chunk meshes
-	addChunksToScene(chunks) {
-		// First, keep track of chunks already in the scene
-		if (!this.chunksInScene) {
-			this.chunksInScene = new Set();
-		}
-
-		// Add any chunks that aren't already in the scene
-		for (const chunk of chunks) {
-			const chunkId = `${chunk.x},${chunk.z}`;
-
-			if (!this.chunksInScene.has(chunkId) && chunk.mesh) {
-				this.worldGroup.add(chunk.mesh);
-				this.chunksInScene.add(chunkId);
-			}
-		}
-	}
-
 	setWorld(world) {
 		this.world = world;
 		this.world.position = {
@@ -126,50 +132,5 @@ export class Renderer {
 	setPlayer(player) {
 		this.player = player;
 		this.player.camera = player.getCamera(); // Use the player's THREE.PerspectiveCamera
-	}
-
-	async initialize(world, player) {
-		try {
-			// Initialize texture manager first
-			await this.textureManager.initialize();
-
-			// Set world and player
-			this.setWorld(world);
-			this.setPlayer(player);
-
-			// Create block manager reference
-			this.block = world.block;
-
-			// Initialize block mesh renderer and add to world group
-			const blockMeshes = this.blockMeshRenderer.createInstancedMeshes(this.textureManager);
-			this.worldGroup.add(blockMeshes);
-
-			console.log('Renderer initialized successfully');
-			return this;
-		} catch (error) {
-			console.error('Failed to initialize renderer:', error);
-			throw error;
-		}
-	}
-
-	dispose() {
-		// Dispose resources
-		if (this.blockMeshRenderer) {
-			this.blockMeshRenderer.dispose();
-		}
-
-		if (this.debugGrid) {
-			this.scene.remove(this.debugGrid);
-			this.debugGrid.geometry.dispose();
-			this.debugGrid.material.dispose();
-			this.debugGrid = null;
-		}
-
-		if (this.centerCube) {
-			this.player.camera.getCamera().remove(this.centerCube);
-			this.centerCube.geometry.dispose();
-			this.centerCube.material.dispose();
-			this.centerCube = null;
-		}
 	}
 }
