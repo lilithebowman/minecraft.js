@@ -383,4 +383,27 @@ export class Chunk {
 			return false;
 		}
 	}
+
+	static async loadAllFromCache() {
+		try {
+			for (let x = -2; x < 2; x++) {
+				for (let z = -2; z < 2; z++) {
+					const response = await fetch(`cache/chunks/chunk-${x}-${z}.json`);
+					if (!response.ok) {
+						throw new Error('Failed to load chunks from cache');
+					}
+
+					const chunks = await response.json();
+					return chunks.map(chunkData => ({
+						x: parseInt(chunkData.x),
+						z: parseInt(chunkData.z),
+						blocks: new Map(Object.entries(chunkData.blocks))
+					}));
+				}
+			}
+		} catch (error) {
+			console.error('Error loading chunks from cache:', error);
+			return [];
+		}
+	}
 }

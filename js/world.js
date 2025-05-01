@@ -43,39 +43,16 @@ export class World {
 
 		this.loadingDiv = this.createChunkLoadingDisplay();
 
-		// Create an array of chunk generation tasks
-		const tasks = [];
-		for (let cx = -this.renderDistance; cx < this.renderDistance; cx++) {
-			for (let cz = -this.renderDistance; cz < this.renderDistance; cz++) {
-				tasks.push({ cx, cz });
+		// Check for existing chunks
+		const existingChunks = await Chunk.loadAllFromCache();
+		if (existingChunks.length > 0) {
+			for (const chunkData of existingChunks) {
+				const chunk = new Chunk(chunkData.x, chunkData.z);
+				chunk.blocks = chunkData.blocks;
+				this.chunks.set(`${chunk.x},${chunk.z}`, chunk);
 			}
+			this.updateChunkLoadingDisplay(existingChunks.length, existingChunks.length);
 		}
-
-		// Process chunks in parallel using workers
-		const chunkPromises = tasks.map(async (task, index) => {
-			const worker = this.workers[index % this.maxWorkers];
-
-			// Try loading from cache first
-			const chunk = new Chunk(task.cx, task.cz);
-			const loaded = await chunk.loadFromCache();
-
-			if (loaded) {
-				this.chunks.set(`${task.cx},${task.cz}`, chunk);
-				this.updateChunkLoadingDisplay(index, tasks.length);
-				return;
-			}
-
-			// If not in cache, generate a new chunk
-			await this.generateChunkTerrain(chunk);
-			this.chunks.set(`${task.cx},${task.cz}`, chunk);
-
-			this.updateChunkLoadingDisplay(index + 1, tasks.length);
-			this.totalBlocks += chunk.getBlockCount();
-		});
-
-		// Wait for all chunks to be generated
-		await Promise.all(chunkPromises);
-		console.log(`Total chunks generated: ${this.chunks.size}`);
 
 		if (this.loadingDiv) {
 			this.loadingDiv.remove();
@@ -110,70 +87,6 @@ export class World {
 		// Update chunk
 		chunk.setBlock(x & 15, y, z & 15, type);
 		chunk.needsUpdate = true;
-	}
-
-	async getOrCreateChunk(chunkX, chunkZ) {
-		const key = `${chunkX},${chunkZ}`;
-		if (!this.chunks.has(key)) {
-			const chunk = new Chunk(chunkX, chunkZ);
-			chunk.block = this.block;
-
-			// Try to load from cache first
-			const loaded = await chunk.loadFromCache();
-			if (!loaded) {
-				// Generate new chunk if not in cache
-				this.generateChunkTerrain(chunk);
-				await chunk.saveToCache();
-			}
-
-			this.chunks.set(key, chunk);
-		}
-		return this.chunks.get(key);
-	}
-
-	async generateChunkTerrain(chunk) {
-		const noiseGen = new NoiseGenerator();
-		try {
-			const scale = 50;
-			const amplitude = 32;
-			const baseHeight = 64;
-
-			// Generate terrain for this chunk
-			for (let x = 0; x < 16; x++) {
-				for (let z = 0; z < 16; z++) {
-					const worldX = chunk.x * 16 + x;
-					const worldZ = chunk.z * 16 + z;
-
-					// Generate height using Perlin noise
-					const height = Math.floor(
-						noiseGen.noise(worldX / scale, worldZ / scale) * amplitude + baseHeight
-					);
-
-					// Set blocks based on height
-					for (let y = 0; y < 256; y++) {
-						if (y < height - 1) {
-							chunk.blocks.set(x, y, z, BlockTypes.GRASS);
-						} else if (y === height - 1) {
-							chunk.blocks.set(x, y, z, BlockTypes.DIRT);
-						} else if (y === height) {
-							chunk.blocks.set(x, y, z, BlockTypes.STONE);
-						} else {
-							chunk.blocks.set(x, y, z, BlockTypes.LAVA);
-						}
-					}
-					chunk.blocks.set(x, 0, z, BlockTypes.BEDROCK);
-					chunk.blocks.set(x, 1, z, BlockTypes.LAVA);
-					if (!chunk.saveToCache(chunk.x, chunk.z, chunk.blocks)) {
-						console.error(`Failed to save chunk ${chunk.x},${chunk.z} to cache`);
-						return;
-					}
-				}
-			}
-			// Mark chunk as dirty to update mesh
-			chunk.isDirty = true;
-		} catch (error) {
-			console.error(`Failed to generate chunk at ${chunk.x},${chunk.z}:`, error);
-		}
 	}
 
 	getChunk(chunkX, chunkZ) {
