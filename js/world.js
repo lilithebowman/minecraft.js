@@ -134,8 +134,12 @@ export class World {
 	}
 
 	getVisibleChunks(player) {
+		if (!player) {
+			console.error('Player is not defined in world');
+			debugger;
+		}
 		this.chunks.forEach(chunk => {
-			const distance = this.getChunkDistanceToCamera(chunk, player);
+			const distance = this.getChunkDistanceToCamera(chunk, player.getCamera());
 			if (distance < this.renderDistance * this.renderDistance) {
 				this.visibleChunks.add(chunk);
 			} else {

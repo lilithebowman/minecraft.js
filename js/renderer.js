@@ -15,12 +15,13 @@ export class Renderer {
 
 		// Initialize the engine
 		this.engine = engine;
+		this.player = this.engine?.player;
 		this.world = this.engine?.world;
 
 		// Create the scene
 		this.scene = new THREE.Scene();
 		this.sceneDefaults = new SceneDefaults(this.engine?.player);
-		this.threeRenderer = this.sceneDefaults.renderer;
+		this.threeRenderer = this.sceneDefaults.getRenderer();
 
 		// Handle window resizing
 		window.addEventListener('resize', () => this.handleResize());
@@ -49,39 +50,15 @@ export class Renderer {
 
 	// Render the scene
 	render(deltaTime) {
-		console.log('Rendering...');
-		this.sceneDefaults.showScene(this.engine.player);
-
-		// Get visible chunks
-		const visibleChunks = this.world.getVisibleChunks(this.player);
-
-		// Update block meshes
-		this.blockMeshRenderer.updateMeshes(visibleChunks, this.player.camera, this.frustum);
-
-		// Make sure chunk meshes are in the scene
-		this.addChunksToScene(visibleChunks);
-
-		// Render world group
-		this.worldGroup.rotation.set(
-			this.world.rotation.x,
-			this.world.rotation.y,
-			this.world.rotation.z
-		);
-
-		// Render the world group
-		for (const block of this.worldGroup.children) {
-			if (block instanceof THREE.Mesh) {
-				block.visible = this.frustum.contains(block.position);
-				if (block.visible) {
-					block.material.map = this.textureManager.getTexture(block.type);
-					this.scene.add(block);
-				}
-			}
+		if (!this.engine || !this.engine.player) {
+			console.error('Engine or player is not defined in render');
+			debugger;
 		}
-		this.setWorld(this.world);
 
-		// Update frustum
-		this.frustum.update(this.player.camera);
+		// console.log('Rendering...');
+		this.scene.children = [];
+		this.scene = this.sceneDefaults.setupScene();
+		this.scene.add(this.worldGroup);
 
 		// Update framerate stats
 		this.framerate.update();
@@ -89,20 +66,6 @@ export class Renderer {
 		// Update debug stats with scene object count
 		const objectsInScene = this.scene.children.length;
 		debug.updateStats({ blocks: objectsInScene });
-
-		// Check if scene contains any objects
-		if (objectsInScene === 0) {
-			console.warn('No objects in scene');
-			this.dumpScene();
-			debugger;
-		}
-
-		// If there are no materials in the scene, log a warning
-		if (this.scene.children.length === 0) {
-			console.warn('No materials in scene');
-			this.dumpScene();
-			debugger;
-		}
 
 		// Render the scene
 		this.threeRenderer.render(this.scene, this.player.camera);

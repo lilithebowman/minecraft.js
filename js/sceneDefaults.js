@@ -15,8 +15,7 @@ export class SceneDefaults {
 			1,
 			10000
 		);
-
-		this.setupScene();
+		this.light = null;
 	}
 
 	handleResize = () => {
@@ -25,41 +24,45 @@ export class SceneDefaults {
 		this.camera.updateProjectionMatrix();
 	}
 
-	setupScene = (player) => {
-		if (!player) {
-			console.error("Player is not defined");
-			return false;
-		}
-		if (!player?.camera) {
-			// Set up a new camera if one doesn't exist
-			player.camera = new THREE.PerspectiveCamera(
-				45,
-				window.innerWidth / window.innerHeight,
-				1,
-				10000
-			);
-			player.camera.position.set(0, 0, 0);
-			player.camera.lookAt(0, 0, 0);
-			player.forward = new THREE.Vector3(0, 0, -1);
-			player.camera.updateProjectionMatrix();
-		}
-		camera.position.set(player.camera.position.x, player.camera.position.y, player.camera.position.z);
-		camera.lookAt(player.forward.x, player.forward.y, player.forward.z);
-
-		this.renderer.render(scene, camera);
-
+	setupScene = () => {
 		/// lighting ///
-
 		this.light = new THREE.AmbientLight(0xffaaff);
 		this.light.position.set(10, 10, 10);
-		this.scene.add(light);
+		this.scene.add(this.light);
 
-		/// geometry ///
+		/// fog ///
+		this.scene.fog = new THREE.Fog(0x87ceeb, 0, 500);
 
-		this.boxGeometry = new THREE.Mesh(
-			new THREE.BoxGeometry(100, 100, 100),
-			new THREE.MeshBasicMaterial({ color: 0xff0000 })
-		);
-		this.scene.add(boxGeometry);
+		/// background ///
+		this.scene.background = new THREE.Color(0x87ceeb);
+
+		/// skybox ///
+		const skyboxGeometry = new THREE.BoxGeometry(1000, 1000, 1000);
+		const skyboxMaterial = new THREE.MeshBasicMaterial({
+			color: 0x87ceeb,
+			side: THREE.BackSide,
+		});
+		const skybox = new THREE.Mesh(skyboxGeometry, skyboxMaterial);
+		this.scene.add(skybox);
+		this.scene.add(this.light);
+
+		return this.scene;
+	}
+
+	/* Getters and setters */
+	getRenderer() {
+		return this.renderer;
+	}
+
+	getCamera() {
+		return this.camera;
+	}
+
+	getScene() {
+		return this.scene;
+	}
+
+	getLight() {
+		return this.light;
 	}
 }

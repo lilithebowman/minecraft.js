@@ -34,6 +34,10 @@ export class Player {
 		window.addEventListener('resize', () => this.handleResize());
 	}
 
+	getCamera() {
+		return this.camera;
+	}
+
 	handleResize() {
 		if (this.camera) {
 			this.camera.aspect = window.innerWidth / window.innerHeight;
