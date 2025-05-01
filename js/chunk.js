@@ -25,6 +25,7 @@ export class Chunk {
 		this.mesh = null;
 		this.visibleBlocks = [];
 		this.needsVisibilityUpdate = true;
+		this.blocks = new Map();
 	}
 
 	// Add a block to this chunk
@@ -397,7 +398,7 @@ export class Chunk {
 					return chunks.map(chunkData => ({
 						x: parseInt(chunkData.x),
 						z: parseInt(chunkData.z),
-						blocks: new Map(Object.entries(chunkData.blocks))
+						blocks: chunkData.blocks
 					}));
 				}
 			}

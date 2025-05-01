@@ -33,26 +33,6 @@ export class Engine {
 	async init() {
 		// Set up the world
 		await this.world.generateWorld();
-		for (const chunk of this.world.getChunks()) {
-			if (!chunk || !chunk?.getBlocks()) {
-				console.warn('Chunk is empty!');
-				continue;
-			}
-
-			// Add the chunk to the world group
-			for (const block of chunk.getBlocks()) {
-				if (!block || typeof block !== Block) {
-					continue;
-				}
-				this.worldGroup.add(block.getObject3D());
-			}
-		}
-		this.worldGroup.rotation.set(
-			this.world.rotation.x,
-			this.world.rotation.y,
-			this.world.rotation.z
-		);
-		this.scene.add(this.worldGroup);
 
 		this.renderer.setAnimationLoop(() => {
 			const deltaTime = this.clock.getDelta();

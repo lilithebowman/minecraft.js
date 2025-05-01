@@ -43,6 +43,8 @@ export class World {
 
 		this.loadingDiv = this.createChunkLoadingDisplay();
 
+		await fetch('./generateTerrain.php');
+
 		// Check for existing chunks
 		const existingChunks = await Chunk.loadAllFromCache();
 		if (existingChunks.length > 0) {
