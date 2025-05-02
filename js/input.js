@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { Block, BlockTypes } from './modules.js';
 
 export class Input {
 	constructor(engine) {
@@ -30,6 +31,9 @@ export class Input {
 		this.onKeyUp = this.onKeyUp.bind(this);
 		this.onMouseMove = this.onMouseMove.bind(this);
 		this.onPointerLockChange = this.onPointerLockChange.bind(this);
+
+		// Create a block instance
+		this.block = new Block();
 
 		// Initialize input handlers
 		this.init();
@@ -138,10 +142,9 @@ export class Input {
 	}
 
 	// Create a block at the player's position
-	createBlock() {
-		const player = this.engine.player;
-		const blockPosition = player.position.clone().add(player.forward.clone().multiplyScalar(2));
-		const block = this.engine.block.createBlock(blockPosition, 'stone');
+	createBlock(position = new THREE.Vector3()) {
+		const blockPosition = position.clone();
+		const block = this.block.createBlock(BlockTypes.STONE, blockPosition);
 		this.engine.world.addBlock(block);
 		console.log(`Block created at ${blockPosition.x}, ${blockPosition.y}, ${blockPosition.z}`);
 	}
@@ -210,6 +213,7 @@ export class Input {
 		this.mouseMovement.y = 0;
 		this.updateMouseDisplay(); // Update display even if reset
 
+		this.handleDirectionalMovement();
 
 		// --- Key Display ---
 		if (this.keyRow) {
@@ -234,6 +238,35 @@ export class Input {
 		}
 	}
 
+	handleDirectionalMovement() {
+		const player = this.engine.player;
+		if (!player) return;
+
+		// Handle WASD movement
+		if (this.keys.has('KeyW')) {
+			player.addForce(player.forward.clone());
+		}
+		if (this.keys.has('KeyS')) {
+			player.addForce(player.forward.clone().negate());
+		}
+		if (this.keys.has('KeyA')) {
+			player.addForce(player.right.clone().negate());
+		}
+		if (this.keys.has('KeyD')) {
+			player.addForce(player.right.clone());
+		}
+
+		// Handle flying states
+		if (this.isFlying) {
+			if (this.keys.has('ArrowUp')) {
+				player.addForce(new THREE.Vector3(0, 1, 0));
+			}
+			if (this.keys.has('ArrowDown')) {
+				player.addForce(new THREE.Vector3(0, -1, 0));
+			}
+		}
+	}
+
 	// Add this new method to the Input class
 	warpToNearestBlock() {
 		const player = this.engine.player;
@@ -254,7 +287,12 @@ export class Input {
 			player.velocity.set(0, 0, 0);
 			console.log(`Warped to top of nearest block at ${player.position.x}, ${player.position.y}, ${player.position.z}`);
 		} else {
-			console.log("No blocks found nearby");
+			// Create a new block in front of the player if no blocks are found
+			this.createBlock(new THREE.Vector3(
+				player.position.x + player.forward.x,
+				player.position.y,
+				player.position.z + player.forward.z
+			));
 		}
 	}
 }

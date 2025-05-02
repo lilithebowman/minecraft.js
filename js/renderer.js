@@ -49,8 +49,10 @@ export class Renderer {
 
 	// Handle window resizing
 	handleResize() {
-		this.threeRenderer.setSize(window.innerWidth, window.innerHeight);
-		this.player.camera.aspect = window.innerWidth / window.innerHeight;
+		if (this.threeRenderer) {
+			this.threeRenderer.setSize(window.innerWidth, window.innerHeight);
+			this.player.camera.aspect = window.innerWidth / window.innerHeight;
+		}
 	}
 
 	async initialize(world, player) {

@@ -164,6 +164,21 @@ export class Chunk {
 		return true;
 	}
 
+	removeBlock(x, y, z) {
+		if (!this.blocks) {
+			this.blocks = new Map();
+			this.initBedrock();
+			return false;
+		}
+		const block = this.blocks.get({ x, y, z });
+		if (block) {
+			this.blocks.delete({ x, y, z });
+			this.isDirty = true;
+			return true;
+		}
+		return false;
+	}
+
 	rebuildMesh() {
 		if (!this.block) {
 			return;

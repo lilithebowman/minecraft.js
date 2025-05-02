@@ -63,6 +63,40 @@ export class World {
 		console.log('World generation complete');
 	}
 
+	addBlock(x, y, z, type) {
+		const chunk = this.getOrCreateChunk(Math.floor(x / 16), Math.floor(z / 16));
+		const blockId = `${x},${y},${z}`;
+
+		// Update block manager
+		if (type) {
+			chunk.addBlock(blockId, {
+				type,
+				position: { x, y, z }
+			});
+		} else {
+			chunk.removeBlock(blockId);
+		}
+
+		// Update chunk
+		chunk.setBlock(x & 15, y, z & 15, type);
+		chunk.needsUpdate = true;
+		this.chunks.set(`${chunk.x},${chunk.z}`, chunk);
+		this.totalBlocks += chunk.size * chunk.size * chunk.height;
+	}
+
+	getOrCreateChunk(chunkX, chunkZ) {
+		let chunk = this.getChunk(chunkX, chunkZ);
+		if (!chunk) {
+			chunk = new Chunk(chunkX, chunkZ);
+			this.chunks.set(`${chunkX},${chunkZ}`, chunk);
+			this.chunkLoadQueue.push(chunk);
+			this.totalBlocks += chunk.size * chunk.size * chunk.height;
+		}
+		return chunk;
+	}
+	getChunk(chunkX, chunkZ) {
+		return this.chunks.get(`${chunkX},${chunkZ}`);
+	}
 	getChunks() {
 		return Array.from(this.chunks.values());
 	}
@@ -71,7 +105,6 @@ export class World {
 		const chunk = this.getChunk(Math.floor(x / 16), Math.floor(z / 16));
 		return chunk?.getBlock(x & 15, y, z & 15);
 	}
-
 	setBlock(x, y, z, type) {
 		const chunk = this.getOrCreateChunk(Math.floor(x / 16), Math.floor(z / 16));
 		const blockId = `${x},${y},${z}`;
@@ -89,10 +122,6 @@ export class World {
 		// Update chunk
 		chunk.setBlock(x & 15, y, z & 15, type);
 		chunk.needsUpdate = true;
-	}
-
-	getChunk(chunkX, chunkZ) {
-		return this.chunks.get(`${chunkX},${chunkZ}`);
 	}
 
 	update(deltaTime) {
