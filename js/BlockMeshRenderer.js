@@ -55,6 +55,18 @@ export class BlockMeshRenderer {
 		};
 	}
 
+	getBlockMesh() {
+		// Create instanced meshes for each block type
+		this.blockTypes.forEach(type => {
+			const mesh = this.instancedMeshes.get(type);
+			if (mesh) {
+				mesh.count = 0; // Start with 0 instances
+			}
+		});
+
+		return this.meshGroup;
+	}
+
 	createInstancedMeshes(textureManager) {
 		// Create instanced mesh for each block type
 		for (const type of this.blockTypes) {

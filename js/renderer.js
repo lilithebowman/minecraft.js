@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { BlockMeshRenderer, Framerate, Frustum, SceneDefaults, TextureManager } from './modules.js';
+import { BlockMeshRenderer, Chunk, Framerate, Frustum, SceneDefaults, TextureManager } from './modules.js';
 import { debug } from './debug.js';
 
 export class Renderer {
@@ -44,7 +44,7 @@ export class Renderer {
 		this.worldGroup = new THREE.Group();
 
 		// Initialize block mesh renderer
-		this.blockMeshRenderer = new BlockMeshRenderer(['grass', 'dirt', 'stone', 'bedrock']);
+		this.blockMeshRenderer = new BlockMeshRenderer();
 
 		// Create another canvas for rendering a PIP in the corner
 		this.pipCanvas = document.createElement('canvas', { className: 'pipCanvas' });
@@ -104,24 +104,22 @@ export class Renderer {
 
 		// Update worldGroup with visible chunks
 		this.worldGroup.children = [];
-		for (const chunk of this.world.chunks) {
-			console.log('chunk');
-			for (const block of chunk.getBlocks()) {
-				console.log('block');
+		for (let chunk of this.world.chunks) {
+			if (!chunk?.blocks) {
+				chunk = new Chunk(this.player.position.x, this.player.position.z);
+			}
+			for (let block of chunk.getBlocks()) {
 				const blockMesh = this.blockMeshRenderer.getBlockMesh(block);
 				if (blockMesh) {
 					this.worldGroup.add(blockMesh);
-					console.log(blockMesh);
-					debugger;
 				}
 			}
 		}
 
-		console.warn(this.worldGroup.children);
-		debugger;
-
 		// Add worldGroup to the scene
-		this.scene.add(this.worldGroup);
+		for (let mesh of this.worldGroup.children) {
+			this.scene.add(mesh);
+		}
 
 		// Render the scene
 		this.threeRenderer = this.sceneDefaults.getRenderer();
