@@ -99,33 +99,26 @@ export class Renderer {
 			debugger;
 		}
 
-		// console.log('Rendering...');
-		this.scene.add(this.worldGroup);
-
 		// Update framerate stats
 		this.framerate.update();
-
-		// Update debug stats with scene object count
-		const objectsInScene = this.scene.children.length;
-		debug.updateStats({ blocks: objectsInScene });
-		if (!objectsInScene) {
-			this.dumpScene();
-			debugger;
-		}
 
 		// Update worldGroup with visible chunks
 		this.worldGroup.children = [];
 		for (const chunk of this.world.chunks) {
-			const distance = this.frustum.getChunkDistanceToCamera(chunk, this.player.camera);
-			if (distance < this.maxChunks * this.maxChunks) {
-				for (const block of chunk.blocks) {
-					const blockMesh = this.blockMeshRenderer.getBlockMesh(block);
-					if (blockMesh) {
-						this.worldGroup.add(blockMesh);
-					}
+			console.log('chunk');
+			for (const block of chunk.getBlocks()) {
+				console.log('block');
+				const blockMesh = this.blockMeshRenderer.getBlockMesh(block);
+				if (blockMesh) {
+					this.worldGroup.add(blockMesh);
+					console.log(blockMesh);
+					debugger;
 				}
 			}
 		}
+
+		console.warn(this.worldGroup.children);
+		debugger;
 
 		// Add worldGroup to the scene
 		this.scene.add(this.worldGroup);
