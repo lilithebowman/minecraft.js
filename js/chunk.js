@@ -30,6 +30,9 @@ export class Chunk {
 
 	// Initialize bedrock layer
 	initBedrock() {
+		if (!this.blocks || this.blocks.size === 0) {
+			this.blocks = new Map();
+		}
 		// Always default the bottom to BEDROCK
 		for (let x = 0; x < this.size; x++) {
 			for (let z = 0; z < this.size; z++) {

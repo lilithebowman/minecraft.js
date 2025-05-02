@@ -9,6 +9,7 @@ import * as THREE from 'three';
 
 export class World {
 	constructor() {
+		this.block = new Block();
 		this.chunks = new Map();
 		this.noiseGen = new NoiseGenerator();
 		this.frustum = new Frustum();

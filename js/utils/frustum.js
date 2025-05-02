@@ -7,9 +7,8 @@ export class Frustum {
     }
 
     update(camera) {
-        // Get the actual THREE.Camera object if we're passed our Camera wrapper
-        const threeCamera = camera.getCamera ? camera.getCamera() : camera;
-        
+        const threeCamera = camera;
+
         this.projScreenMatrix.multiplyMatrices(
             threeCamera.projectionMatrix,
             threeCamera.matrixWorldInverse
@@ -30,6 +29,24 @@ export class Frustum {
 
         // Check if box intersects frustum
         return this.frustum.intersectsBox(box);
+    }
+
+    getChunkDistanceToCamera(chunk, camera) {
+        if (!chunk) return Infinity;
+
+        // Calculate the center of the chunk
+        const chunkCenter = {
+            x: chunk.x * 16 + 8,
+            z: chunk.z * 16 + 8
+        };
+
+        // Get camera position
+        const cameraPosition = camera.position;
+
+        // Calculate distance squared
+        const dx = chunkCenter.x - cameraPosition.x;
+        const dz = chunkCenter.z - cameraPosition.z;
+        return dx * dx + dz * dz;
     }
 
     // toJSON method to serialize the frustum
