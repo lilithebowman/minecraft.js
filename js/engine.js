@@ -12,8 +12,8 @@ export class Engine {
 
 		this.frustum = new Frustum();
 		this.framerate = new Framerate();
-		this.world = new World();
 		this.worldGroup = new THREE.Group();
+		this.world = new World(this.worldGroup);
 		this.input = new Input(this);
 		this.playerStartPosition = new THREE.Vector3(0, 100, 0);
 		this.player = new Player(this.playerStartPosition);

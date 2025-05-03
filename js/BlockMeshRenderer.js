@@ -1,14 +1,14 @@
 import * as THREE from 'three';
 import { debug } from './debug.js';
-import { getSolidBlockTypes } from './BlockTypes.js';
+import { getSolidBlockTypes, TextureManager } from './modules.js';
 
 export class BlockMeshRenderer {
-	constructor(blockTypes = getSolidBlockTypes()) {
+	constructor(textureManager = new TextureManager()) {
 		// Maximum instances per block type
 		this.INSTANCES_PER_TYPE = 10000;
 
 		// Store block types
-		this.blockTypes = blockTypes;
+		this.blockTypes = this.getBlockTypes();
 
 		// Create block geometry once to be reused
 		this.blockGeometry = new THREE.BoxGeometry(1, 1, 1);
@@ -24,6 +24,8 @@ export class BlockMeshRenderer {
 				count: 0
 			});
 		});
+
+		this.textureManager = textureManager;
 
 		// Create a group for all block meshes
 		this.meshGroup = new THREE.Group();
@@ -66,6 +68,37 @@ export class BlockMeshRenderer {
 
 		return this.meshGroup;
 	}
+
+	getSolidBlockTypes() {
+		// Get all solid block types
+		return {
+			['grass']: true,
+			['dirt']: true,
+			['stone']: true,
+			['water']: true,
+			['sand']: true,
+			['wood']: true,
+			['leaves']: true,
+			['bedrock']: true,
+			['air']: false,
+		}
+	}
+
+	getBlockTypes() {
+		// Get all block types
+		return [
+			'grass',
+			'dirt',
+			'stone',
+			'water',
+			'sand',
+			'wood',
+			'leaves',
+			'bedrock',
+			'air',
+		];
+	}
+
 
 	createInstancedMeshes(textureManager) {
 		// Create instanced mesh for each block type

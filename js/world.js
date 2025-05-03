@@ -1,14 +1,9 @@
-import { Block } from './blocks.js';
-import { Chunk } from './chunk.js';
-import { NoiseGenerator } from './utils/noise.js';
-import { Frustum } from './utils/frustum.js';
-import { debug } from './debug.js';
-import { isSolidBlockType } from './BlockTypes.js';
-import { BlockTypes } from './BlockTypes.js';
+import { Block, Chunk, NoiseGenerator, Frustum, isSolidBlockType } from './modules.js';
 import * as THREE from 'three';
+import { debug } from './debug.js';
 
 export class World {
-	constructor() {
+	constructor(worldGroup = new THREE.Group()) {
 		this.block = new Block();
 		this.chunks = new Map();
 		this.noiseGen = new NoiseGenerator();
@@ -24,6 +19,8 @@ export class World {
 		this.visibleChunks = new Set();
 		this.rotation = new THREE.Vector3(0, 0, 0);
 		this.initializeWorkers();
+		this.worldGroup = worldGroup;
+		this.debugMode = true;
 	}
 
 	initializeWorkers() {

@@ -41,47 +41,10 @@ export class Renderer {
 		this.framerate = new Framerate();
 
 		// Create world group
-		this.worldGroup = new THREE.Group();
+		this.worldGroup = engine.worldGroup || new THREE.Group();
 
 		// Initialize block mesh renderer
-		this.blockMeshRenderer = new BlockMeshRenderer();
-
-		// Create another canvas for rendering a PIP in the corner
-		this.pipCanvas = document.createElement('canvas', { className: 'pipCanvas' });
-		this.pipCanvas.style.position = 'absolute';
-		this.pipCanvas.style.bottom = '10px';
-		this.pipCanvas.style.right = '10px';
-		this.pipCanvas.style.zIndex = '9000';
-		this.pipCanvas.style.pointerEvents = 'none'; // Prevent mouse events
-		this.pipCanvas.style.border = '2px solid white';
-		this.pipCanvas.style.borderRadius = '5px';
-		this.pipCanvas.style.backgroundColor = 'rgba(0, 0, 0, 0.5)'; // Semi-transparent background
-		this.pipCanvas.style.boxShadow = '0 0 10px rgba(0, 0, 0, 0.5)'; // Shadow effect
-		this.pipCanvas.style.width = '200px';
-		this.pipCanvas.style.height = '200px';
-		this.pipCanvas.width = 200;
-		this.pipCanvas.height = 200;
-		this.pipContext = this.pipCanvas.getContext('2d');
-		this.pipTexture = new THREE.Texture(this.pipCanvas);
-		this.pipTexture.needsUpdate = true;
-		this.pipCamera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
-		this.pipCamera.position.set(0, 0, 5);
-		this.pipCamera.lookAt(0, 0, 0);
-		this.pipScene = new THREE.Scene();
-		this.pipScene.add(this.pipCamera);
-		this.pipMesh = new THREE.Mesh(
-			new THREE.PlaneGeometry(2, 2),
-			new THREE.MeshBasicMaterial({ map: this.pipTexture })
-		);
-		this.pipMesh.position.set(0, 0, -5);
-		this.pipScene.add(this.pipMesh);
-		this.pipCamera.updateProjectionMatrix();
-		this.pipRenderer = new THREE.WebGLRenderer({ alpha: true });
-		this.pipRenderer.setSize(this.pipCanvas.width, this.pipCanvas.height);
-		this.pipRenderer.setPixelRatio(window.devicePixelRatio);
-		this.pipRenderer.setClearColor(0x000000, 0); // Transparent background
-		this.pipRenderer.render(this.pipScene, this.pipCamera);
-		document.body.appendChild(this.pipCanvas);
+		this.blockMeshRenderer = new BlockMeshRenderer(this.textureManager);
 	}
 
 	// Handle window resizing
@@ -125,8 +88,6 @@ export class Renderer {
 		this.threeRenderer = this.sceneDefaults.getRenderer();
 		this.threeRenderer.render(this.scene, this.player.camera);
 
-		this.pipScene.add(this.worldGroup);
-		this.pipRenderer.render(this.pipScene, this.pipCamera);
 		return true;
 	}
 
