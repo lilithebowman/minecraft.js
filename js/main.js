@@ -16,14 +16,6 @@ async function initGame() {
 		console.log('*****CAMERA*****');
 		console.log(engine?.player?.getCamera());
 
-		// Final camera check
-		if (!engine?.player?.getCamera()) {
-			throw new Error('Camera failed to initialize after multiple attempts');
-		}
-
-		// Ensure camera matrices are updated
-		camera.log('Camera initialized successfully');
-
 		// Start game loop only after confirmed camera initialization
 		engine?.start();
 
