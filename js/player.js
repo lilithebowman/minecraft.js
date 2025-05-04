@@ -156,22 +156,14 @@ export class Player {
 	 * @param {number} angle - Rotation angle in radians
 	 */
 	rotate(angle) {
-		// Update yaw rotation
+		// Update rotation (yaw)
 		this.rotation += angle;
 
-		// Update forward vector with pitch included
-		this.forward.x = Math.sin(this.rotation) * Math.cos(this.pitch);
-		this.forward.y = Math.sin(this.pitch);
-		this.forward.z = -Math.cos(this.rotation) * Math.cos(this.pitch);
-		this.forward.normalize();
-
-		// Update right vector
-		const up = new THREE.Vector3(0, 1, 0);
-		this.right.crossVectors(this.forward, up);
-		this.right.normalize();
-
 		// Update camera
-		this.updateCameraPosition();
+		if (this.camera) {
+			this.camera.rotation.y = this.rotation;
+			this.camera.updateMatrixWorld();
+		}
 	}
 
 	/**
@@ -182,14 +174,11 @@ export class Player {
 		// Clamp pitch to prevent camera flipping
 		this.pitch = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, angle));
 
-		// Update forward vector with new pitch
-		this.forward.x = Math.sin(this.rotation) * Math.cos(this.pitch);
-		this.forward.y = Math.sin(this.pitch);
-		this.forward.z = -Math.cos(this.rotation) * Math.cos(this.pitch);
-		this.forward.normalize();
-
 		// Update camera
-		this.updateCameraPosition();
+		if (this.camera) {
+			this.camera.rotation.x = this.pitch;
+			this.camera.updateMatrixWorld();
+		}
 	}
 
 	/**

@@ -12,6 +12,9 @@ export class Renderer {
 		this.scene = new THREE.Scene();
 		this.worldGroup = new THREE.Group();
 		this.scene.add(this.worldGroup);
+
+		// Create debug orientation cube
+		this.createDebugCube();
 	}
 
 	async initialize(world, player) {
@@ -27,6 +30,22 @@ export class Renderer {
 			this.isAnimating = true;
 			this.animate();
 		}
+	}
+
+	createDebugCube() {
+		// Create a small cube
+		const geometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+		const material = new THREE.MeshBasicMaterial({
+			color: 0xff0000,
+			wireframe: true
+		});
+		this.debugCube = new THREE.Mesh(geometry, material);
+
+		// Position in bottom-right corner
+		this.debugCube.position.set(2, 2, -5);
+
+		// Add to scene
+		this.scene.add(this.debugCube);
 	}
 
 	animate() {
@@ -45,8 +64,19 @@ export class Renderer {
 			// Update world state
 			this.updateWorld();
 
+			if (this.debugCube && this.engine?.player?.camera) {
+				// Update debug cube rotation to match camera
+				this.debugCube.rotation.x = this.engine.player.pitch;
+				this.debugCube.rotation.y = this.engine.player.rotation;
+
+				// Position cube relative to camera
+				const cam = this.engine.player.camera;
+				this.debugCube.position.copy(cam.position)
+					.add(new THREE.Vector3(2, -1, -3)); // Offset from camera
+			}
+
 			// Render scene
-			this.renderer.render(this.scene, this.player.camera);
+			this.renderer.render(this.scene, this.engine.player.camera);
 
 			// Request next frame
 			requestAnimationFrame(() => this.animate());
