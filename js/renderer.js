@@ -73,6 +73,9 @@ export class Renderer {
 				this.debugCube.position.copy(this.worldGroup.position);
 			}
 
+			// Add blocks from chunks to the scene
+			this.addBlocksToScene(this.worldGroup, this.world.chunks);
+
 			// Render scene
 			this.renderer.render(this.scene, this.engine.player.camera);
 
@@ -82,6 +85,27 @@ export class Renderer {
 		} catch (error) {
 			console.error('Render loop error:', error);
 			this.isAnimating = false;
+		}
+	}
+
+	addBlocksToScene(worldGroup, chunks) {
+		debugger;
+		if (!chunks || !worldGroup) return;
+
+		// Clear previous blocks
+		while (worldGroup.children.length > 0) {
+			worldGroup.remove(worldGroup.children[0]);
+		}
+
+		// Add blocks from each chunk to the world group
+		for (const chunk of chunks) {
+			if (chunk && chunk.blocks) {
+				for (const block of chunk.blocks) {
+					if (block && block.mesh) {
+						worldGroup.add(block.mesh);
+					}
+				}
+			}
 		}
 	}
 
