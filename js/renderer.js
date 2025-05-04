@@ -89,7 +89,6 @@ export class Renderer {
 	}
 
 	addBlocksToScene(worldGroup, chunks) {
-		debugger;
 		if (!chunks || !worldGroup) return;
 
 		// Clear previous blocks
@@ -104,19 +103,32 @@ export class Renderer {
 					// If the blockList is not empty, add the blocks in the 3 dimensional array to the worldGroup
 					if (blockList) {
 						for (const x of blockList) {
-							for (const y of x) {
-								for (const z of y) {
-									if (z) {
-										const blockMesh = new BlockMeshRenderer(
-											this.engine,
-											this.world,
-											this.player,
-											chunk[1].blockType,
-											x,
-											y,
-											z
-										);
-										worldGroup.add(blockMesh);
+							debugger;
+							if (y) {
+								for (const y of x) {
+									for (const z of y) {
+										if (z) {
+											const blockMesh = new THREE.Mesh(
+												new THREE.BoxGeometry(1, 1, 1),
+												new THREE.MeshBasicMaterial({
+													color: 0x00ff00,
+													wireframe: true
+												})
+											);
+											blockMesh.position.set(
+												x[0] + chunk[0] * this.world.chunkSize,
+												y[0] + chunk[1] * this.world.chunkSize,
+												z[0] + chunk[2] * this.world.chunkSize
+											);
+											blockMesh.scale.set(0.5, 0.5, 0.5);
+											blockMesh.updateMatrix();
+											blockMesh.matrixAutoUpdate = false;
+											blockMesh.matrixWorldNeedsUpdate = true;
+											blockMesh.castShadow = true;
+											blockMesh.receiveShadow = true;
+											blockMesh.frustumCulled = false; // Disable frustum culling for debugging
+											worldGroup.add(blockMesh);
+										}
 									}
 								}
 							}
