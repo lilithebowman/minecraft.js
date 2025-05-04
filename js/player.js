@@ -1,6 +1,5 @@
 import * as THREE from 'three';
-import { Position } from './physics/position.js';
-import { Velocity } from './physics/velocity.js';
+import { OrientationCube, Position, Velocity } from './modules.js';
 import { debug } from './debug.js';
 
 export class Player {
@@ -89,6 +88,9 @@ export class Player {
 
 		// Create crosshair
 		this.createCrosshair();
+
+		// Create debug orientation cube
+		this.debugCube = new OrientationCube(this);
 
 		return true;
 	}
@@ -230,6 +232,10 @@ export class Player {
 			this.centerCube.material.dispose();
 			this.centerCube = null;
 		}
+
+		// Dispose debug cube
+		this.debugCube?.dispose();
+		this.debugCube = null;
 	}
 }
 

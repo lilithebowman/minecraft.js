@@ -31,6 +31,16 @@
 			font-family: monospace;
 			pointer-events: none;
 			z-index: 100;
+		 }
+		#debugCanvas {
+			position: fixed;
+			bottom: 10px;
+			right: 10px;
+			width: 100px;
+			height: 100px;
+			background: rgba(0, 0, 0, 0.2);
+			border: 1px solid #666;
+			z-index: 1000;
 		}
 	</style>
     <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
@@ -54,6 +64,7 @@
 		<div>Click: Break block</div>
 		<div>Right click: Place block</div>
 	</div>
+	<div id="debugCanvas"></div>
 	<script type="module" src="js/main.js"></script>
 </body>
 </html>
