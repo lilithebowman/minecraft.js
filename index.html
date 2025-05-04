@@ -3,7 +3,7 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>JavaScript Minecraft Client</title>
+	<title>Minecraft Clone</title>
 	<style>
 		body {
 			margin: 0;
@@ -16,6 +16,12 @@
 			display: block;
 			position: relative;
 			z-index: 1;
+		}
+		#debug {
+			position: fixed;
+			top: 10px;
+			left: 10px;
+			color: white;
 		}
 		.controls {
 			position: fixed;
@@ -38,7 +44,8 @@
     </script>
 </head>
 <body>
-	<canvas id="gameCanvas"></canvas>
+	<div id="gameCanvas"></div>
+	<div id="debug"></div>
 	<div class="controls">
 		<div>WASD: Move</div>
 		<div>F: Freeze in Space</div>
@@ -47,31 +54,6 @@
 		<div>Click: Break block</div>
 		<div>Right click: Place block</div>
 	</div>
-	<script type="module">
-    import { Engine } from './js/modules.js';
-    
-    async function initGame() {
-        try {
-            console.log('Starting game initialization...');
-            
-			// Instantiate the engine - it will instantiate everything else
-			const engine = new Engine();
-            
-            // Initialize engine with dependencies
-            await engine.init();
-            
-            // Start the game loop only after successful initialization
-            console.log('Starting game loop...');
-            engine.start();
-            
-        } catch (error) {
-            console.error('Game initialization failed:', error);
-			debugger;
-        }
-    }
-
-    // Start the game
-    initGame();
-</script>
+	<script type="module" src="js/main.js"></script>
 </body>
 </html>

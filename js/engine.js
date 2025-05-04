@@ -21,27 +21,54 @@ export class Engine {
 	}
 
 	async init() {
-		// Set up the world
-		await this.world.generateWorld();
+		console.log('Initializing engine...');
+
+		try {
+			// Initialize components in order
+			await this.blockManager.initialize();
+			console.log('Block manager initialized');
+
+			// Initialize player first (creates camera)
+			await this.player.initialize();
+			console.log('Player initialized');
+
+			// Initialize world after player
+			await this.world.generateWorld();
+			console.log('World generated');
+
+			// Initialize renderer last
+			await this.renderer.initialize(this.world, this.player);
+			console.log('Renderer initialized');
+
+			// Set initial player position
+			this.player.position.y = 100;
+			this.player.updateCameraPosition();
+
+			console.log('Engine initialization complete');
+			return true;
+
+		} catch (error) {
+			console.error('Failed to initialize engine:', error);
+			throw error;
+		}
 	}
 
 	start() {
-		console.log('Starting engine...');
-		this.clock = new THREE.Clock();
-		this.gameLoop(0);
+		this.isRunning = true;
+		this.lastTime = performance.now();
+		this.gameLoop();
 	}
 
-	gameLoop(deltaTime) {
-		// Update timing
-		this.lastRenderTime = Date.now();
+	gameLoop() {
+		if (!this.isRunning) return;
+
+		const currentTime = performance.now();
+		const deltaTime = (currentTime - this.lastTime) / 1000;
+		this.lastTime = currentTime;
 
 		this.update(deltaTime);
-		this.renderer.populateScene(deltaTime);
-		this.renderer.animate();
-		this.framesRendered++;
 
-		// Queue next frame
-		requestAnimationFrame(() => this.gameLoop(deltaTime));
+		requestAnimationFrame(() => this.gameLoop());
 	}
 
 	update(deltaTime) {

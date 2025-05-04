@@ -7,13 +7,22 @@ export class Frustum {
     }
 
     update(camera) {
-        const threeCamera = camera;
+        if (!camera || !camera.projectionMatrix || !camera.matrixWorldInverse) {
+            console.warn('Camera not ready for frustum update');
+            return false;
+        }
 
-        this.projScreenMatrix.multiplyMatrices(
-            threeCamera.projectionMatrix,
-            threeCamera.matrixWorldInverse
-        );
-        this.frustum.setFromProjectionMatrix(this.projScreenMatrix);
+        try {
+            this.projScreenMatrix.multiplyMatrices(
+                camera.projectionMatrix,
+                camera.matrixWorldInverse
+            );
+            this.frustum.setFromProjectionMatrix(this.projScreenMatrix);
+            return true;
+        } catch (error) {
+            console.error('Error updating frustum:', error);
+            return false;
+        }
     }
 
     isChunkVisible(chunk) {
