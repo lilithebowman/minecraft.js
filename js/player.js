@@ -86,9 +86,6 @@ export class Player {
 		this.camera.updateProjectionMatrix();
 		this.camera.updateMatrixWorld();
 
-		// Create crosshair
-		this.createCrosshair();
-
 		// Create debug orientation cube
 		this.debugCube = new OrientationCube(this);
 
@@ -199,23 +196,6 @@ export class Player {
 		const direction = new THREE.Vector3(0, 0, -1);
 		direction.applyQuaternion(this.camera.quaternion);
 		return direction;
-	}
-
-	/**
-	 * Creates a crosshair at the center of the view
-	 * @param {THREE.Material} material - Material to use for the crosshair
-	 */
-	createCrosshair(material) {
-		// Create a small cube in the center of view
-		const centerCubeGeometry = new THREE.BoxGeometry(0.01, 0.01, 0.01);
-		const centerCubeMaterial = material || new THREE.MeshBasicMaterial({ color: 0x000000 });
-		this.centerCube = new THREE.Mesh(centerCubeGeometry, centerCubeMaterial);
-
-		// Add it to the camera
-		this.camera.add(this.centerCube);
-
-		// Position it slightly in front of the camera
-		this.centerCube.position.set(0, 0, -0.5);
 	}
 
 	/**

@@ -65,14 +65,12 @@ export class Renderer {
 			this.updateWorld();
 
 			if (this.debugCube && this.engine?.player?.camera) {
-				// Update debug cube rotation to match camera
-				this.debugCube.rotation.x = this.engine.player.pitch;
-				this.debugCube.rotation.y = this.engine.player.rotation;
-
-				// Position cube relative to camera
-				const cam = this.engine.player.camera;
-				this.debugCube.position.copy(cam.position)
-					.add(new THREE.Vector3(2, -1, -3)); // Offset from camera
+				// Update debug cube rotation to match worldGroup
+				this.debugCube.rotation.x = this.worldGroup.rotation.x;
+				this.debugCube.rotation.y = this.worldGroup.rotation.y;
+				this.debugCube.rotation.z = this.worldGroup.rotation.z;
+				// Update debug cube position to match worldGroup
+				this.debugCube.position.copy(this.worldGroup.position);
 			}
 
 			// Render scene
