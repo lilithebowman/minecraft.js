@@ -1,7 +1,7 @@
 import * as THREE from "three";
 
 export class SceneDefaults {
-	constructor() {
+	constructor(player) {
 		// Create renderer
 		this.renderer = new THREE.WebGLRenderer({
 			antialias: true,

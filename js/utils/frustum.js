@@ -4,11 +4,15 @@ export class Frustum {
     constructor() {
         this.frustum = new THREE.Frustum();
         this.projScreenMatrix = new THREE.Matrix4();
+        this.cameraReady = false;
     }
 
     update(camera) {
-        if (!camera || !camera.projectionMatrix || !camera.matrixWorldInverse) {
-            console.warn('Camera not ready for frustum update');
+        if (!camera?.projectionMatrix || !camera?.matrixWorldInverse) {
+            if (!this.cameraReady) {
+                console.warn('Waiting for camera initialization...');
+                this.cameraReady = false;
+            }
             return false;
         }
 
@@ -18,15 +22,17 @@ export class Frustum {
                 camera.matrixWorldInverse
             );
             this.frustum.setFromProjectionMatrix(this.projScreenMatrix);
+            this.cameraReady = true;
             return true;
         } catch (error) {
             console.error('Error updating frustum:', error);
+            this.cameraReady = false;
             return false;
         }
     }
 
     isChunkVisible(chunk) {
-        if (!chunk) return false;
+        if (!this.cameraReady || !chunk) return true; // Show all chunks if camera not ready
 
         // Create chunk bounding box
         const minX = chunk.x * 16;

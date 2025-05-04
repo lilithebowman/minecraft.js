@@ -5,33 +5,92 @@ import { debug } from './debug.js';
 
 export class Player {
 	constructor(position = new Position(0, 100, 0)) {
+		// Initialize properties
 		this.position = position;
 		this.velocity = new Velocity();
 		this.size = { x: 0.6, y: 1.8, z: 0.6 };
-		this.eyeHeight = 1.6; // Eye level height from feet
+		this.eyeHeight = 1.6;
 		this.rotation = 0;
 		this.pitch = 0;
+
+		// Initialize direction vectors
 		this.forward = new THREE.Vector3(0, 0, -1);
 		this.right = new THREE.Vector3(1, 0, 0);
-		this.backward = new THREE.Vector3(0, 0, 1);
-		this.left = new THREE.Vector3(-1, 0, 0);
-		this.isGrounded = false;
-		this.isFrozen = true;
-		this.isFlying = false;
 
-		// Initialize camera directly with Three.js
-		this.camera = new THREE.PerspectiveCamera(
-			75, // Field of view
-			window.innerWidth / window.innerHeight, // Aspect ratio
-			0.1, // Near clipping plane
-			1000 // Far clipping plane
+		// Initialize states
+		this.isGrounded = false;
+		this.isFrozen = false;
+		this.isFlying = false;
+	}
+
+	getCamera() {
+		if (typeof this.camera !== THREE.PerspectiveCamera) {
+			this.camera = new THREE.PerspectiveCamera(
+				75, // FOV
+				window.innerWidth / window.innerHeight,
+				0.1, // Near plane
+				1000 // Far plane
+			);
+			this.camera.position.set(
+				this.position.x,
+				this.position.y + this.eyeHeight,
+				this.position.z
+			);
+			this.camera.rotation.set(
+				this.pitch,
+				this.rotation,
+				0,
+				'YXZ' // Rotation order
+			);
+			this.camera.updateProjectionMatrix();
+			this.camera.updateMatrixWorld();
+		}
+		return this.camera;
+	}
+
+	updateCameraPosition() {
+		if (!this.camera) return;
+
+		// Set camera position at eye level
+		this.camera.position.set(
+			this.position.x,
+			this.position.y + this.eyeHeight,
+			this.position.z
 		);
 
-		// Set initial camera position
+		// Update camera rotation
+		this.camera.rotation.set(
+			this.pitch,
+			this.rotation,
+			0,
+			'YXZ' // Rotation order
+		);
+
+		// Force matrix updates
+		this.camera.updateProjectionMatrix();
+		this.camera.updateMatrixWorld();
+	}
+
+	async initialize() {
+		// Create camera
+		this.camera = new THREE.PerspectiveCamera(
+			75, // FOV
+			window.innerWidth / window.innerHeight,
+			0.1, // Near plane
+			1000 // Far plane
+		);
+
+		// Set initial camera position and rotation
 		this.updateCameraPosition();
 
-		// Handle window resize
-		window.addEventListener('resize', () => this.handleResize());
+		// Force matrix updates
+		this.camera.updateProjectionMatrix();
+		this.camera.updateMatrixWorld();
+
+		// Create crosshair
+		this.createCrosshair();
+
+		return true;
 	}
 
 	getCamera() {
@@ -39,10 +98,10 @@ export class Player {
 	}
 
 	handleResize() {
-		if (this.camera) {
-			this.camera.aspect = window.innerWidth / window.innerHeight;
-			this.camera.updateProjectionMatrix();
-		}
+		if (!this.camera) return;
+
+		this.camera.aspect = window.innerWidth / window.innerHeight;
+		this.camera.updateProjectionMatrix();
 	}
 
 	// Clear all forces
@@ -90,25 +149,6 @@ export class Player {
 				z: 0
 			}
 		});
-	}
-
-	/**
-	 * Update camera position to match player's eyes
-	 */
-	updateCameraPosition() {
-		if (!this.camera) return;
-
-		// Position camera at player's eye level
-		this.camera.position.set(
-			this.position.x,
-			this.position.y + this.eyeHeight,
-			this.position.z
-		);
-
-		// Set camera rotation using quaternions for smoother rotation
-		this.camera.quaternion.setFromEuler(
-			new THREE.Euler(this.pitch, this.rotation, 0, 'YXZ')
-		);
 	}
 
 	/**

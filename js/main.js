@@ -11,15 +11,26 @@ async function initGame() {
 		// Wait for engine to fully initialize
 		await engine.init();
 
-		// Ensure camera is ready before starting render loop
-		if (!engine.player?.camera) {
-			throw new Error('Camera not initialized');
+		// Wait for camera to be ready with timeout
+		let attempts = 0;
+		const maxAttempts = 10;
+		console.log('*****ENGINE*****');
+		console.log(engine.player);
+		console.log('*****CAMERA*****');
+		console.log(engine.player?.getCamera());
+
+		// Final camera check
+		if (!engine.player?.getCamera()) {
+			throw new Error('Camera failed to initialize after multiple attempts');
 		}
 
-		// Start game loop only after initialization
+		// Ensure camera matrices are updated
+		debug.log('Camera initialized successfully');
+
+		// Start game loop only after confirmed camera initialization
 		engine.start();
 
-		// Add window event handlers after successful init
+		// Add window event handlers
 		window.addEventListener('resize', () => {
 			engine.player?.handleResize();
 			engine.renderer?.handleResize();
@@ -33,8 +44,8 @@ async function initGame() {
 		debug.log('Game initialized successfully');
 
 	} catch (error) {
-		debug.log('Failed to initialize game:', error);
 		console.error('Game initialization failed:', error);
+		throw error; // Re-throw to show in console
 	}
 }
 

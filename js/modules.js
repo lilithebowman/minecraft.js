@@ -1,6 +1,7 @@
 export { Block } from './blocks.js';
 export { BlockMeshRenderer } from './BlockMeshRenderer.js';
 export { BlockTypes, getAllBlockTypes, getSolidBlockTypes, getLiquidBlockTypes, isSolidBlockType } from './BlockTypes.js';
+export { BlockManager } from './BlockManager.js';
 export { BoxCollider } from './physics/boxCollider.js';
 export { Chunk } from './chunk.js';
 export { Collider } from './physics/collider.js';

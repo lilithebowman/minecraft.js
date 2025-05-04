@@ -5,7 +5,8 @@ export class TextureManager {
 	constructor() {
 		this.textureSize = 256;
 		this.tileSize = 64;
-		this.textures = {};
+		// Initialize as Map instead of plain object
+		this.textures = new Map();
 		this.noiseGen = new NoiseGenerator();
 		this.initialized = false;
 	}
@@ -16,7 +17,7 @@ export class TextureManager {
 		console.log('Initializing texture manager...');
 		try {
 			const atlas = await this.createAtlas();
-			this.textures.atlas = atlas;
+			this.textures.set('atlas', atlas);
 			this.initialized = true;
 			console.log('Texture atlas created successfully');
 		} catch (error) {
@@ -34,7 +35,7 @@ export class TextureManager {
 
 		// Create a new material using the texture atlas
 		const material = new THREE.MeshStandardMaterial({
-			map: this.textures.atlas,
+			map: this.textures.get('atlas'),
 			roughness: 1.0,
 			metalness: 0.3
 		});
@@ -211,8 +212,29 @@ export class TextureManager {
 		const texture = new THREE.Texture();
 		texture.minFilter = THREE.NearestFilter;
 		texture.magFilter = THREE.NearestFilter;
-		this.textures.atlas = texture;
+		this.textures.set('atlas', texture);
 
 		return texture;
+	}
+
+	dispose() {
+		try {
+			// Dispose of all loaded textures
+			for (const [key, texture] of this.textures) {
+				if (texture && typeof texture.dispose === 'function') {
+					texture.dispose();
+				}
+			}
+
+			// Clear all references
+			this.textures.clear();
+			this.textureAtlas = null;
+			this.textureCoordinates = {};
+			this.initialized = false;
+
+			console.log('TextureManager disposed successfully');
+		} catch (error) {
+			console.error('Error disposing TextureManager:', error);
+		}
 	}
 }

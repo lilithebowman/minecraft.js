@@ -1,52 +1,64 @@
 import * as THREE from 'three';
-import { Framerate, Frustum, World, Input, Player, Renderer } from './modules.js';
+import { Framerate, Frustum, World, Input, Player, Renderer, BlockManager } from './modules.js';
 import { debug } from './debug.js';
 
 export class Engine {
 	constructor() {
-		this.fpsLimit = 60;
-		this.fpsInterval = 1000 / this.fpsLimit;
-		this.framesRendered = 0;
-		this.lastRenderTime = 0;
-		this.failedSceneError = false;
+		// Initialize block manager first
+		this.blockManager = new BlockManager();
 
+		// Initialize core components
 		this.frustum = new Frustum();
 		this.framerate = new Framerate();
 		this.worldGroup = new THREE.Group();
-		this.world = new World(this.worldGroup);
-		this.input = new Input(this);
+
+		// Create player first but DON'T create camera yet
 		this.playerStartPosition = new THREE.Vector3(0, 100, 0);
 		this.player = new Player(this.playerStartPosition);
+
+		// Create other components after player
+		this.world = new World(this.worldGroup, this.blockManager);
 		this.renderer = new Renderer(this);
+		this.input = new Input(this);
+
+		// Game state
+		this.isRunning = false;
+		this.lastTime = 0;
+		this.fpsLimit = 60;
+		this.fpsInterval = 1000 / this.fpsLimit;
 	}
 
 	async init() {
 		console.log('Initializing engine...');
 
 		try {
-			// Initialize components in order
+			// Initialize block manager first
 			await this.blockManager.initialize();
 			console.log('Block manager initialized');
 
-			// Initialize player first (creates camera)
+			// Initialize player and camera
 			await this.player.initialize();
-			console.log('Player initialized');
+			if (!this.player?.getCamera()) {
+				throw new Error('Camera initialization failed');
+			}
 
-			// Initialize world after player
+			// Force camera matrix updates
+			this.player.camera.updateProjectionMatrix();
+			this.player.camera.updateMatrixWorld();
+			console.log('Player and camera initialized');
+
+			// Initialize remaining components
 			await this.world.generateWorld();
 			console.log('World generated');
 
-			// Initialize renderer last
 			await this.renderer.initialize(this.world, this.player);
 			console.log('Renderer initialized');
 
-			// Set initial player position
-			this.player.position.y = 100;
-			this.player.updateCameraPosition();
+			// Start game loop only after everything is ready
+			this.start();
+			console.log('Engine initialized successfully');
 
-			console.log('Engine initialization complete');
 			return true;
-
 		} catch (error) {
 			console.error('Failed to initialize engine:', error);
 			throw error;
@@ -77,5 +89,34 @@ export class Engine {
 		this.world?.update(deltaTime);
 		this.framerate?.update();
 		this.frustum?.update(this.player.camera);
+	}
+
+	dispose() {
+		console.log('Disposing engine resources...');
+
+		// Stop the game loop
+		this.isRunning = false;
+
+		try {
+			// Dispose components in reverse initialization order
+			this.renderer?.dispose();
+			this.world?.dispose();
+			this.player?.dispose();
+			this.input?.destroy();
+			this.blockManager?.dispose();
+			this.frustum = null;
+
+			// Clear references
+			this.worldGroup = null;
+			this.player = null;
+			this.world = null;
+			this.renderer = null;
+			this.input = null;
+			this.blockManager = null;
+
+			console.log('Engine disposed successfully');
+		} catch (error) {
+			console.error('Error during engine disposal:', error);
+		}
 	}
 }
