@@ -174,7 +174,7 @@ export class World {
 			}
 		});
 		// Update frustum and remove chunks that are not visible
-		this.frustum.update(player);
+		this.frustum.update(player.getCamera());
 		this.visibleChunks.forEach(chunk => {
 			if (!this.frustum.isVisible(chunk)) {
 				this.visibleChunks.delete(chunk);
