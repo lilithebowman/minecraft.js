@@ -4,7 +4,7 @@ import { debug } from './debug.js';
 
 export class BlockManager {
 	constructor() {
-		this.blocks = new Map();
+		this.blocks = [];
 		this.textureManager = new TextureManager();
 	}
 
@@ -16,7 +16,7 @@ export class BlockManager {
 
 	createBlock(type, position) {
 		const block = new Block(type, position);
-		this.blocks.set(position.toString(), block);
+		this.blocks[position.toString()] = block;
 		return block;
 	}
 

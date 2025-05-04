@@ -6,6 +6,7 @@ export class World {
 	constructor(worldGroup = new THREE.Group()) {
 		this.block = new Block();
 		this.chunks = new Map();
+		this.chunkSize = 16; // Standard chunk size
 		this.noiseGen = new NoiseGenerator();
 		this.frustum = new Frustum();
 		this.renderDistance = 8; // Chunks
@@ -41,28 +42,44 @@ export class World {
 
 		this.loadingDiv = this.createChunkLoadingDisplay();
 
-		await fetch('./generateTerrain.php');
+		try {
+			// Generate chunks in render distance around origin
+			for (let x = -this.renderDistance; x < this.renderDistance; x++) {
+				for (let z = -this.renderDistance; z < this.renderDistance; z++) {
+					const chunk = new Chunk(x, z);
+					await chunk.initialize(); // Ensure chunk is properly initialized
+					this.chunks.set(`${x},${z}`, chunk);
 
-		// Check for existing chunks
-		const existingChunks = await Chunk.loadAllFromCache();
-		if (existingChunks.length > 0) {
-			for (const chunkData of existingChunks) {
-				const chunk = new Chunk(chunkData.x, chunkData.z);
-				chunk.blocks = chunkData.blocks;
-				this.chunks.set(`${chunk.x},${chunk.z}`, chunk);
+					// Update loading display
+					const totalChunks = (this.renderDistance * 2) * (this.renderDistance * 2);
+					const loadedChunks = this.chunks.size;
+					this.updateChunkLoadingDisplay(loadedChunks, totalChunks);
+				}
 			}
-			this.updateChunkLoadingDisplay(existingChunks.length, existingChunks.length);
-		}
 
-		if (this.loadingDiv) {
-			this.loadingDiv.remove();
-		}
+			// Try to load existing chunks from cache
+			const existingChunks = await Chunk.loadAllFromCache();
+			if (existingChunks.length > 0) {
+				for (const chunkData of existingChunks) {
+					const chunk = this.getOrCreateChunk(chunkData.x, chunkData.z);
+					chunk.blocks = chunkData.blocks;
+					chunk.needsUpdate = true;
+				}
+			}
 
-		console.log('World generation complete');
+			console.log(`Generated ${this.chunks.size} chunks`);
+		} catch (error) {
+			console.error('Error generating world:', error);
+			throw error;
+		} finally {
+			if (this.loadingDiv) {
+				this.loadingDiv.remove();
+			}
+		}
 	}
 
 	addBlock(x, y, z, type) {
-		const chunk = this.getOrCreateChunk(Math.floor(x / 16), Math.floor(z / 16));
+		const chunk = this.getOrCreateChunk(Math.floor(x / this.chunkSize), Math.floor(z / this.chunkSize));
 		const blockId = `${x},${y},${z}`;
 
 		// Update block manager
@@ -76,22 +93,26 @@ export class World {
 		}
 
 		// Update chunk
-		chunk.setBlock(x & 15, y, z & 15, type);
+		chunk.setBlock(x & (this.chunkSize - 1), y, z & (this.chunkSize - 1), type);
 		chunk.needsUpdate = true;
 		this.chunks.set(`${chunk.x},${chunk.z}`, chunk);
 		this.totalBlocks += chunk.size * chunk.size * chunk.height;
 	}
 
 	getOrCreateChunk(chunkX, chunkZ) {
-		let chunk = this.getChunk(chunkX, chunkZ);
+		const key = `${chunkX},${chunkZ}`;
+		let chunk = this.chunks.get(key);
+
 		if (!chunk) {
 			chunk = new Chunk(chunkX, chunkZ);
-			this.chunks.set(`${chunkX},${chunkZ}`, chunk);
-			this.chunkLoadQueue.push(chunk);
-			this.totalBlocks += chunk.size * chunk.size * chunk.height;
+			this.chunks.set(key, chunk);
+			chunk.needsUpdate = true;
+			console.log(`Created new chunk at ${chunkX}, ${chunkZ}`);
 		}
+
 		return chunk;
 	}
+
 	getChunk(chunkX, chunkZ) {
 		return this.chunks.get(`${chunkX},${chunkZ}`);
 	}
@@ -100,25 +121,20 @@ export class World {
 	}
 
 	getBlock(x, y, z) {
-		const chunk = this.getChunk(Math.floor(x / 16), Math.floor(z / 16));
-		return chunk?.getBlock(x & 15, y, z & 15);
+		const chunk = this.getChunk(Math.floor(x / this.chunkSize), Math.floor(z / this.chunkSize));
+		return chunk?.getBlock(x & (this.chunkSize - 1), y, z & (this.chunkSize - 1));
 	}
 	setBlock(x, y, z, type) {
-		const chunk = this.getOrCreateChunk(Math.floor(x / 16), Math.floor(z / 16));
-		const blockId = `${x},${y},${z}`;
+		const chunkX = Math.floor(x / this.chunkSize);
+		const chunkZ = Math.floor(z / this.chunkSize);
+		const chunk = this.getOrCreateChunk(chunkX, chunkZ);
 
-		// Update block manager
-		if (type) {
-			this.chunk.addBlock(blockId, {
-				type,
-				position: { x, y, z }
-			});
-		} else {
-			this.chunk.removeBlock(blockId);
-		}
+		// Convert to local chunk coordinates
+		const localX = x & (this.chunkSize - 1);
+		const localZ = z & (this.chunkSize - 1);
 
-		// Update chunk
-		chunk.setBlock(x & 15, y, z & 15, type);
+		// Set the block
+		chunk.setBlock(localX, y, localZ, type);
 		chunk.needsUpdate = true;
 	}
 
@@ -185,8 +201,8 @@ export class World {
 
 	getChunkDistanceToCamera(chunk, camera) {
 		const chunkCenter = {
-			x: chunk.x * 16 + 8,
-			z: chunk.z * 16 + 8
+			x: chunk.x * this.chunkSize + this.chunkSize / 2,
+			z: chunk.z * this.chunkSize + this.chunkSize / 2
 		};
 		const dx = chunkCenter.x - camera.position.x;
 		const dz = chunkCenter.z - camera.position.z;
@@ -209,8 +225,8 @@ export class World {
 						if (!blockType) continue;
 
 						// Calculate world position
-						const worldX = chunk.x * 16 + x;
-						const worldZ = chunk.z * 16 + z;
+						const worldX = chunk.x * this.chunkSize + x;
+						const worldZ = chunk.z * this.chunkSize + z;
 						const blockPosition = { x: worldX, y, z: worldZ };
 
 						// Calculate distance to player

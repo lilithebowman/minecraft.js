@@ -2,48 +2,78 @@ import * as THREE from 'three';
 import { Block, BlockTypes } from './modules.js';
 
 export class Chunk {
-	blocks = new Map();
-
 	constructor(x, z) {
 		this.x = x;
 		this.z = z;
-		this.size = 2;
-		this.height = 16;
-
-		// Create x dimension
-		for (let x = 0; x < this.size; x++) {
-			// Create y dimension
-			for (let y = 0; y < this.height; y++) {
-				// Create z dimension
-				for (let z = 0; z < this.size; z++) {
-					this.blocks.set({ x, y, z }, new Block());
-				}
-			}
-		}
-
-		this.isDirty = false;
+		this.size = 16;
+		this.height = 256;
+		this.blocks = [];
 		this.mesh = null;
+		this.isDirty = false;
+		this.needsUpdate = true;
 		this.visibleBlocks = [];
 		this.needsVisibilityUpdate = true;
+
+		// Initialize bedrock layer
 		this.initBedrock();
 	}
 
 	// Initialize bedrock layer
 	initBedrock() {
-		if (!this.blocks || this.blocks.size === 0) {
-			this.blocks = new Map();
-		}
 		// Always default the bottom to BEDROCK
 		for (let x = 0; x < this.size; x++) {
 			for (let z = 0; z < this.size; z++) {
-				this.blocks.set({ x: x, y: 0, z: z }, new Block(BlockTypes.BEDROCK), new THREE.Vector3(0, 0, 0));
+				const position = { x, y: 0, z };
+				if (!this.blocks[position.x]) {
+					this.blocks[position.x] = [];
+				}
+				if (!this.blocks[position.x][position.y]) {
+					this.blocks[position.x][position.y] = [];
+				}
+				if (!this.blocks[position.x][position.y][position.z]) {
+					this.blocks[position.x][position.y][position.z] = null;
+				}
+				// Set the block to bedrock
+				this.blocks[position.x][position.y][position.z] = new Block(BlockTypes.BEDROCK);
 			}
+		}
+	}
+
+	async initialize() {
+		try {
+			// Initialize base terrain
+			for (let x = 0; x < this.size; x++) {
+				for (let z = 0; z < this.size; z++) {
+					// Start with bedrock layer
+					this.setBlock(x, 0, z, 'bedrock');
+
+					// Add stone layer
+					for (let y = 1; y < 60; y++) {
+						this.setBlock(x, y, z, 'stone');
+					}
+
+					// Add dirt layer
+					for (let y = 60; y < 63; y++) {
+						this.setBlock(x, y, z, 'dirt');
+					}
+
+					// Add grass top layer
+					this.setBlock(x, 63, z, 'grass');
+				}
+			}
+
+			this.needsUpdate = true;
+			console.log(`Chunk ${this.x},${this.z} initialized`);
+			return true;
+		} catch (error) {
+			console.error(`Failed to initialize chunk ${this.x},${this.z}:`, error);
+			throw error;
 		}
 	}
 
 	// Add a block to this chunk
 	addBlock(x, y, z, type) {
-		this.blocks.set({ x, y, z }, type);
+		this.blocks[x][y][z] = new Block(type, { x, y, z });
 		this.isDirty = true;
 		return true;
 	}
@@ -144,21 +174,26 @@ export class Chunk {
 
 	getBlock(x, y, z) {
 		if (!this.blocks) {
-			this.blocks = new Map();
+			this.blocks = [];
 			this.initBedrock();
 			return null;
 		}
-		return this.blocks.get({ x, y, z });
+		return this.blocks[{ x, y, z }];
 	}
 
 	setBlock(x, y, z, type) {
-		if (!typeof this.blocks == Map) {
-			console.error('Blocks array is not a Map');
-			return false;
+		if (!this.blocks[x]) {
+			this.blocks[x] = [];
 		}
-		const block = this.blocks.get({ x, y, z });
+		if (!this.blocks[x][y]) {
+			this.blocks[x][y] = [];
+		}
+		if (!this.blocks[x][y][z]) {
+			this.blocks[x][y][z] = null;
+		}
+		const block = this.blocks[x][y][z];
 		if (!block) {
-			this.blocks.set({ x, y, z }, new Block(type));
+			this.blocks[x][y][z] = new Block(type, { x, y, z });
 			return;
 		}
 		block.blockType = type;
@@ -169,11 +204,11 @@ export class Chunk {
 
 	removeBlock(x, y, z) {
 		if (!this.blocks) {
-			this.blocks = new Map();
+			this.blocks = [];
 			this.initBedrock();
 			return false;
 		}
-		const block = this.blocks.get({ x, y, z });
+		const block = this.blocks[{ x, y, z }];
 		if (block) {
 			this.blocks.delete({ x, y, z });
 			this.isDirty = true;

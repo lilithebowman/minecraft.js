@@ -99,10 +99,28 @@ export class Renderer {
 
 		// Add blocks from each chunk to the world group
 		for (const chunk of chunks) {
-			if (chunk && chunk.blocks) {
-				for (const block of chunk.blocks) {
-					if (block && block.mesh) {
-						worldGroup.add(block.mesh);
+			if (chunk) {
+				for (const blockList of chunk[1].blocks) {
+					// If the blockList is not empty, add the blocks in the 3 dimensional array to the worldGroup
+					if (blockList) {
+						for (const x of blockList) {
+							for (const y of x) {
+								for (const z of y) {
+									if (z) {
+										const blockMesh = new BlockMeshRenderer(
+											this.engine,
+											this.world,
+											this.player,
+											chunk[1].blockType,
+											x,
+											y,
+											z
+										);
+										worldGroup.add(blockMesh);
+									}
+								}
+							}
+						}
 					}
 				}
 			}
