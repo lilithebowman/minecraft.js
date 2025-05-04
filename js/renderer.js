@@ -45,6 +45,8 @@ export class Renderer {
 
 		// Initialize block mesh renderer
 		this.blockMeshRenderer = new BlockMeshRenderer(this.textureManager);
+
+		this.animate();
 	}
 
 	// Handle window resizing
@@ -56,7 +58,7 @@ export class Renderer {
 	}
 
 	// Render the scene
-	render(deltaTime) {
+	populateScene(deltaTime) {
 		if (!this.engine || !this.engine.player) {
 			console.error('Engine or player is not defined in render');
 			debugger;
@@ -84,9 +86,17 @@ export class Renderer {
 			this.scene.add(mesh);
 		}
 
-		// Render the scene
-		this.threeRenderer = this.sceneDefaults.getRenderer();
-		this.threeRenderer.render(this.scene, this.player.camera);
+		return true;
+	}
+
+	// Animation loop
+	animate() {
+		requestAnimationFrame(() => this.animate());
+		if (!this.threeRenderer) {
+			this.threeRenderer = this.sceneDefaults.getRenderer();
+			console.log('Renderer not initialized, waiting...');
+		}
+		this.threeRenderer?.render(this.scene, this.engine.player.camera);
 
 		return true;
 	}

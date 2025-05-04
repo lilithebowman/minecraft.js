@@ -14,25 +14,6 @@ export class DebugLog {
             blocks: 0
         };
 
-        // Create debug axes with larger size
-        this.axesHelper = this.createDebugAxes();
-        this.axesCamera = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
-        this.axesScene = new THREE.Scene();
-        this.axesScene.add(this.axesHelper);
-
-        // Create separate renderer for axes
-        this.axesRenderer = new THREE.WebGLRenderer({ alpha: true });
-        this.axesRenderer.setSize(100, 100);
-        this.axesRenderer.setClearColor(0x000000, 0);
-
-        // Style the axes container
-        this.axesRenderer.domElement.style.position = 'fixed';
-        this.axesRenderer.domElement.style.bottom = '10px';
-        this.axesRenderer.domElement.style.right = '10px';
-        this.axesRenderer.domElement.style.zIndex = '1000';
-        this.axesRenderer.domElement.style.display = 'block';
-        document.body.appendChild(this.axesRenderer.domElement);
-
         // Override console.log
         this.originalLog = console.log;
         console.log = (...args) => {
@@ -67,20 +48,6 @@ export class DebugLog {
             border-bottom: 1px solid rgba(255, 255, 255, 0.3);
         `;
         this.container.appendChild(this.statsPanel);
-    }
-
-    createDebugAxes() {
-        const axesHelper = new THREE.AxesHelper(50);
-
-        // Set custom colors for better visibility
-        const materials = axesHelper.material;
-        if (Array.isArray(materials)) {
-            materials[0].color.setHex(0xff0000); // X axis - red
-            materials[1].color.setHex(0x00ff00); // Y axis - green
-            materials[2].color.setHex(0x0000ff); // Z axis - blue
-        }
-
-        return axesHelper;
     }
 
     createConsolePanel() {

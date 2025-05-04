@@ -36,7 +36,8 @@ export class Engine {
 		this.lastRenderTime = Date.now();
 
 		this.update(deltaTime);
-		this.renderer.render(deltaTime);
+		this.renderer.populateScene(deltaTime);
+		this.renderer.animate();
 		this.framesRendered++;
 
 		// Queue next frame

@@ -14,6 +14,8 @@
 			width: 100vw;
 			height: 100vh;
 			display: block;
+			position: relative;
+			z-index: 1;
 		}
 		.controls {
 			position: fixed;
@@ -25,7 +27,8 @@
 			z-index: 100;
 		}
 	</style>
-	<script type="importmap">
+    <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+    <script type="importmap">
     {
         "imports": {
             "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
