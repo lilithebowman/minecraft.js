@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { BlockMeshRenderer, SceneDefaults } from './modules.js';
+import { BlockMeshRenderer, Framerate, SceneDefaults } from './modules.js';
 
 export class Renderer {
 	constructor(engine) {
@@ -12,6 +12,9 @@ export class Renderer {
 		this.scene = new THREE.Scene();
 		this.worldGroup = new THREE.Group();
 		this.scene.add(this.worldGroup);
+
+		// Set up framerate
+		this.framerate = new Framerate();
 
 		// Create debug orientation cube
 		this.createDebugCube();
@@ -54,6 +57,9 @@ export class Renderer {
 			return;
 		}
 
+		// Update framerate
+		this.framerate.update();
+
 		try {
 			// Ensure we have required components
 			if (!this.world || !this.player?.camera) {
@@ -74,7 +80,9 @@ export class Renderer {
 			}
 
 			// Add blocks from chunks to the scene
-			this.updateDirtyBlocks(this.worldGroup, this.world.chunks);
+			if (this.framerate > 60) {
+				this.updateDirtyBlocks(this.worldGroup, this.world.chunks);
+			}
 
 			// Render scene
 			this.renderer.render(this.scene, this.engine.player.camera);
