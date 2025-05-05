@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { BlockMeshRenderer, Framerate, SceneDefaults } from './modules.js';
+import { debug } from './debug.js';
 
 export class Renderer {
 	constructor(engine) {
@@ -83,6 +84,11 @@ export class Renderer {
 			if (this.framerate > 60) {
 				this.updateDirtyBlocks(this.worldGroup, this.world.chunks);
 			}
+
+			// Update debug stats with objects in scene
+			debug.updateStats({
+				blocks: this.scene?.children?.length || 0
+			});
 
 			// Render scene
 			this.renderer.render(this.scene, this.engine.player.camera);
