@@ -74,7 +74,7 @@ export class Renderer {
 			}
 
 			// Add blocks from chunks to the scene
-			this.addBlocksToScene(this.worldGroup, this.world.chunks);
+			this.updateDirtyBlocks(this.worldGroup, this.world.chunks);
 
 			// Render scene
 			this.renderer.render(this.scene, this.engine.player.camera);
@@ -88,7 +88,7 @@ export class Renderer {
 		}
 	}
 
-	addBlocksToScene(worldGroup, chunks) {
+	updateDirtyBlocks(worldGroup, chunks) {
 		if (!chunks || !worldGroup) return;
 
 		// Clear previous blocks
@@ -96,9 +96,11 @@ export class Renderer {
 			worldGroup.remove(worldGroup.children[0]);
 		}
 
+		const frustum = this.engine.frustum;
+
 		// Add blocks from each chunk to the world group
 		for (const chunk of chunks) {
-			if (chunk) {
+			if (chunk && frustum.isChunkVisible(chunk)) {
 				for (const x of chunk[1].blocks) {
 					// If the blockList is not empty, add the blocks in the 3 dimensional array to the worldGroup
 					if (x) {
@@ -124,7 +126,10 @@ export class Renderer {
 										blockMesh.matrixWorldNeedsUpdate = true;
 										blockMesh.castShadow = true;
 										blockMesh.receiveShadow = true;
-										blockMesh.frustumCulled = false; // Disable frustum culling for debugging
+
+										// Enable frustum culling for better performance
+										blockMesh.frustumCulled = true;
+
 										worldGroup.add(blockMesh);
 									}
 								}
