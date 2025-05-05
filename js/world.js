@@ -284,6 +284,14 @@ export class World {
 		}
 	}
 
+	// remove chunk loading display
+	removeChunkLoadingDisplay() {
+		if (this.loadingDiv) {
+			this.loadingDiv.remove();
+			this.loadingDiv = null;
+		}
+	}
+
 	enableDebug() {
 		this.debugMode = true;
 		this.debugStats = {

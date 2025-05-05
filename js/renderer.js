@@ -81,7 +81,7 @@ export class Renderer {
 			}
 
 			// Add blocks from chunks to the scene
-			if (this.framerate > 60) {
+			if (this.framerate?.frames > 60) {
 				this.updateDirtyBlocks(this.worldGroup, this.world.chunks);
 			}
 
@@ -103,18 +103,19 @@ export class Renderer {
 	}
 
 	updateDirtyBlocks(worldGroup, chunks) {
-		if (!chunks || !worldGroup) return;
-
-		// Clear previous blocks
-		while (worldGroup.children.length > 0) {
-			worldGroup.remove(worldGroup.children[0]);
-		}
+		if (!chunks || !worldGroup) throw new Error('Invalid chunks or worldGroup');
 
 		const frustum = this.engine.frustum;
 
+		// Show chunk loading display
+		this.world.createChunkLoadingDisplay();
+
 		// Add blocks from each chunk to the world group
+		if (chunks.length === 0) {
+			console.warn('No chunks available to render');
+		}
 		for (const chunk of chunks) {
-			if (chunk && frustum.isChunkVisible(chunk)) {
+			if (chunk) {
 				for (const x of chunk[1].blocks) {
 					// If the blockList is not empty, add the blocks in the 3 dimensional array to the worldGroup
 					if (x) {
@@ -129,10 +130,12 @@ export class Renderer {
 												wireframe: true
 											})
 										);
+
+										const position = z.position;
 										blockMesh.position.set(
-											x[0] + chunk[0] * this.world.chunkSize,
-											y[0] + chunk[1] * this.world.chunkSize,
-											z[0] + chunk[2] * this.world.chunkSize
+											position.x + chunk[1].x * this.world.chunkSize,
+											position.y + this.world.chunkSize,
+											position.z + chunk[1].z * this.world.chunkSize
 										);
 										blockMesh.scale.set(0.5, 0.5, 0.5);
 										blockMesh.updateMatrix();
@@ -145,6 +148,7 @@ export class Renderer {
 										blockMesh.frustumCulled = true;
 
 										worldGroup.add(blockMesh);
+										this.world.updateChunkLoadingDisplay(z, x);
 									}
 								}
 							} else {
@@ -153,8 +157,11 @@ export class Renderer {
 						}
 					}
 				}
+			} else {
+				console.error('Chunk has no blocks:', chunk[1]);
 			}
 		}
+		this.world.removeChunkLoadingDisplay();
 	}
 
 	updateWorld() {
