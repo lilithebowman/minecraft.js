@@ -3,8 +3,8 @@ import { NoiseGenerator } from './utils/noise.js';
 
 export class TextureManager {
 	constructor() {
-		this.textureSize = 256;
-		this.tileSize = 64;
+		this.textureSize = 64;
+		this.tileSize = 16;
 		// Initialize as Map instead of plain object
 		this.textures = new Map();
 		this.noiseGen = new NoiseGenerator();

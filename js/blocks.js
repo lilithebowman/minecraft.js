@@ -1,4 +1,4 @@
-import { BlockTypes, BoxCollider } from './modules.js';
+import { BlockTypes, BoxCollider, TextureManager } from './modules.js';
 import * as THREE from 'three';
 import { debug } from './debug.js';
 
@@ -8,6 +8,7 @@ export class Block {
         this.position = position;
         this.blockType = blockType;
         this.boxCollider = new BoxCollider(this.position, 1, 1, 1);
+        this.textureManager = new TextureManager();
     }
 
     async initialize() {
@@ -26,20 +27,14 @@ export class Block {
         mesh.name = this.blockType; // Set the name of the mesh to the block type
         mesh.userData.type = this.blockType; // Store block type in userData
 
+        this.textureManager.initialize();
+
         return mesh;
     }
 
-    getMaterial(blockType) {
-        // Define materials for different block types
-        const materials = {
-            [BlockTypes.GRASS]: new THREE.MeshStandardMaterial({ color: 0x00ff00 }),
-            [BlockTypes.STONE]: new THREE.MeshStandardMaterial({ color: 0x808080 }),
-            [BlockTypes.DIRT]: new THREE.MeshStandardMaterial({ color: 0x8B4513 }),
-            [BlockTypes.WATER]: new THREE.MeshStandardMaterial({ color: 0x0000ff }),
-            [BlockTypes.SAND]: new THREE.MeshStandardMaterial({ color: 0xFFFF00 }),
-        };
-
-        return materials[blockType] || materials[BlockTypes.GRASS]; // Default to grass if type is unknown
+    getMaterial() {
+        this.material = this.textureManager.getMaterial(this.blockType);
+        return this.material; // Default to grass if type is unknown
     }
 
     getCollider() {
@@ -71,6 +66,16 @@ export class Block {
         this.blockType = blockType;
     }
 
+    getMesh() {
+        if (!this.mesh) {
+            // Create the mesh if it doesn't exist
+            this.mesh = this.getObject3D();
+        }
+
+        // Return the mesh object
+        return this.mesh;
+    }
+
     getObject3D() {
         const geometry = new THREE.BoxGeometry(1, 1, 1);
         const material = this.getMaterial(this.blockType);
@@ -86,5 +91,46 @@ export class Block {
         mesh.userData.type = this.blockType; // Store block type in userData
 
         return mesh;
+    }
+
+    dispose() {
+        // Dispose of the block's resources
+        if (this.mesh) {
+            this.mesh.geometry.dispose();
+            this.mesh.material.dispose();
+            this.mesh = null;
+        }
+    }
+
+    update() {
+        // Update the block's position or other properties if needed
+        this.boxCollider.update();
+    }
+
+    getBlockType() {
+        return this.blockType;
+    }
+
+    setBlockType(blockType) {
+        this.blockType = blockType;
+        this.material = this.getMaterial(this.blockType);
+        this.mesh.material = this.material;
+    }
+
+    getPosition() {
+        return this.position;
+    }
+
+    setPosition(position) {
+        this.position = position;
+        this.boxCollider.setPosition(position);
+    }
+
+    getCollider() {
+        return this.boxCollider;
+    }
+
+    setCollider(collider) {
+        this.boxCollider = collider;
     }
 }

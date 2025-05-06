@@ -71,7 +71,8 @@ export class DebugLog {
             FPS: ${this.stats.fps}<br>
             Position: (${Math.round(this.stats.position.x)}, ${Math.round(this.stats.position.y)}, ${Math.round(this.stats.position.z)})<br>
             Rotation: (${Math.round(this.stats.rotation.x * 100)}, ${Math.round(this.stats.rotation.y * 100)}, ${Math.round(this.stats.rotation.z * 100)})<br>
-            Blocks: ${this.stats.blocks}
+            Blocks: ${this.stats.blocks}<br>
+            Memory: ${Math.round(performance.memory.usedJSHeapSize / 1024 / 1024)} MB of ${Math.round(performance.memory.jsHeapSizeLimit / 1024 / 1024)} MB
         `;
     }
 

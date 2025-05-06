@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import { Block, BlockTypes } from './modules.js';
+import { TextureManager } from './textures.js'; // Import texture mappings
+import { debug } from './debug.js'; // Import debug module
 
 export class Chunk {
 	constructor(x, z) {
@@ -13,6 +15,7 @@ export class Chunk {
 		this.needsUpdate = true;
 		this.visibleBlocks = [];
 		this.needsVisibilityUpdate = true;
+		this.textures = new TextureManager();
 
 		// Initialize bedrock layer
 		this.initBedrock();
@@ -44,6 +47,15 @@ export class Chunk {
 			// Initialize base terrain
 			for (let x = 0; x < this.size; x++) {
 				for (let z = 0; z < this.size; z++) {
+					// Console log memory usage
+					const memoryUsage = window.performance.memory.usedJSHeapSize / (1024 * 1024);
+					console.log(`Memory usage: ${memoryUsage.toFixed(2)} MB of ${window.performance.memory.jsHeapSizeLimit / (1024 * 1024)} MB`);
+
+					// Check if chunk is already initialized
+					if (this.blocks[x] && this.blocks[x][0] && this.blocks[x][0][z]) {
+						continue; // Skip if already initialized
+					}
+
 					// Start with bedrock layer
 					this.setBlock(x, 0, z, 'bedrock');
 
@@ -63,6 +75,11 @@ export class Chunk {
 			}
 
 			this.needsUpdate = true;
+
+			debug.updateStats({
+
+			});
+
 			console.log(`Chunk ${this.x},${this.z} initialized`);
 			return true;
 		} catch (error) {
@@ -370,39 +387,6 @@ export class Chunk {
 			1, 1,  // Bottom right
 			0, 1   // Bottom left
 		];
-	}
-
-	getMesh(x, y, z) {
-		// Validate coordinates
-		if (x < 0 || x >= this.size || y < 0 || y >= this.height || z < 0 || z >= this.size) {
-			console.warn(`Invalid block coordinates: (${x}, ${y}, ${z})`);
-			return null;
-		}
-
-		// Get the block type
-		const blockType = this.getBlock(x, y, z);
-		if (!blockType) {
-			console.warn(`No block found at coordinates: (${x}, ${y}, ${z})`);
-			return null;
-		}
-
-		// Create a geometry for the block
-		const geometry = new THREE.BoxGeometry(1, 1, 1);
-
-		// Create a material for the block (this can be updated to use a texture manager)
-		const material = new THREE.MeshLambertMaterial({ color: 0x00ff00 }); // Default green color
-
-		// Create the mesh
-		const mesh = new THREE.Mesh(geometry, material);
-
-		// Set the position of the mesh in world coordinates
-		mesh.position.set(
-			this.x * this.size + x,
-			y,
-			this.z * this.size + z
-		);
-
-		return mesh;
 	}
 
 	async saveToCache() {

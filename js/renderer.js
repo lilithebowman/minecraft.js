@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { BlockMeshRenderer, Framerate, SceneDefaults } from './modules.js';
+import { Block, Framerate, SceneDefaults } from './modules.js';
 import { debug } from './debug.js';
 
 export class Renderer {
@@ -16,6 +16,7 @@ export class Renderer {
 
 		// Set up framerate
 		this.framerate = new Framerate();
+		this.block = new Block();
 
 		// Create debug orientation cube
 		this.createDebugCube();
@@ -124,17 +125,15 @@ export class Renderer {
 							if (y) {
 								for (const z of y) {
 									if (z) {
-										if (chunksProcessed > 100) {
+										debug.updateStats({
+											blocks: this.scene?.children?.length || 0
+										});
+										if (chunksProcessed > 1000) {
 											this.world.removeChunkLoadingDisplay();
 											return;
 										}
-										const blockMesh = new THREE.Mesh(
-											new THREE.BoxGeometry(1, 1, 1),
-											new THREE.MeshBasicMaterial({
-												color: 0x00ff00,
-												wireframe: true
-											})
-										);
+
+										const blockMesh = z.getMesh();
 
 										const position = z.position;
 										blockMesh.position.set(
