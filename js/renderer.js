@@ -114,6 +114,7 @@ export class Renderer {
 		if (chunks.length === 0) {
 			console.warn('No chunks available to render');
 		}
+		let chunksProcessed = 0;
 		for (const chunk of chunks) {
 			if (chunk) {
 				for (const x of chunk[1].blocks) {
@@ -123,6 +124,10 @@ export class Renderer {
 							if (y) {
 								for (const z of y) {
 									if (z) {
+										if (chunksProcessed > 100) {
+											this.world.removeChunkLoadingDisplay();
+											return;
+										}
 										const blockMesh = new THREE.Mesh(
 											new THREE.BoxGeometry(1, 1, 1),
 											new THREE.MeshBasicMaterial({
@@ -149,6 +154,7 @@ export class Renderer {
 
 										worldGroup.add(blockMesh);
 										this.world.updateChunkLoadingDisplay(z, x);
+										chunksProcessed++;
 									}
 								}
 							} else {

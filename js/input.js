@@ -137,7 +137,7 @@ export class Input {
 
 		// Handle warping to nearest block
 		if (event.code === 'Backspace') {
-			this.warpToNearestBlock();
+			this.warpToOrigin();
 		}
 	}
 
@@ -265,6 +265,18 @@ export class Input {
 				player.addForce(new THREE.Vector3(0, -1, 0));
 			}
 		}
+	}
+
+	// Warp player to the origin
+	warpToOrigin() {
+		const player = this.engine.player;
+		if (!player) return;
+
+		// Teleport player to the origin
+		player.position.set(0, 0, 0);
+		player.velocity.set(0, 0, 0); // Reset velocity to prevent momentum after warping
+		this.engine.player.isFrozen = true; // Freeze player after warping
+		console.log(`Warped to origin at ${player.position.x}, ${player.position.y}, ${player.position.z}`);
 	}
 
 	// Add this new method to the Input class
