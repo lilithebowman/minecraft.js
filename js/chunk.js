@@ -48,7 +48,7 @@ export class Chunk {
 			for (let x = 0; x < this.size; x++) {
 				for (let z = 0; z < this.size; z++) {
 					// Conditionally log memory usage if available in the browser
-					if (window.performance && window.performance.memory) {
+					if (window.performance && window.performance.memory && typeof window.performance.memory.usedJSHeapSize === 'number') {
 						const memoryUsage = window.performance.memory.usedJSHeapSize / (1024 * 1024);
 						console.log(`Memory usage: ${memoryUsage.toFixed(2)} MB of ${window.performance.memory.jsHeapSizeLimit / (1024 * 1024)} MB`);
 					}
