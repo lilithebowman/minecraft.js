@@ -11,6 +11,15 @@ export class Renderer {
 		this.sceneDefaults = new SceneDefaults(this.engine?.player);
 		this.renderer = this.sceneDefaults.getRenderer();
 		this.scene = new THREE.Scene();
+
+		// Add basic lighting
+		const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+		this.scene.add(ambientLight);
+
+		const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+		dirLight.position.set(100, 100, 50);
+		this.scene.add(dirLight);
+
 		this.worldGroup = new THREE.Group();
 		this.scene.add(this.worldGroup);
 
@@ -106,66 +115,52 @@ export class Renderer {
 	updateDirtyBlocks(worldGroup, chunks) {
 		if (!chunks || !worldGroup) throw new Error('Invalid chunks or worldGroup');
 
-		const frustum = this.engine.frustum;
-
-		// Show chunk loading display
-		this.world.createChunkLoadingDisplay();
+		// Don't show loading display every frame
+		if (chunks.size > 0 && Array.from(chunks.values()).some(chunk => chunk.isDirty)) {
+			this.world.createChunkLoadingDisplay();
+		}
 
 		// Add blocks from each chunk to the world group
-		if (chunks.length === 0) {
+		if (chunks.size === 0) {
 			console.warn('No chunks available to render');
+			this.world.removeChunkLoadingDisplay();
+			return;
 		}
+
 		let chunksProcessed = 0;
-		for (const chunk of chunks) {
-			if (chunk) {
-				for (const x of chunk[1].blocks) {
-					// If the blockList is not empty, add the blocks in the 3 dimensional array to the worldGroup
-					if (x) {
-						for (const y of x) {
-							if (y) {
-								for (const z of y) {
-									if (z) {
-										debug.updateStats({
-											blocks: this.scene?.children?.length || 0
-										});
-										if (chunksProcessed > 1000) {
-											this.world.removeChunkLoadingDisplay();
-											return;
-										}
+		const dirtyChunks = Array.from(chunks.values()).filter(chunk => chunk.isDirty);
 
-										const blockMesh = z.getMesh();
+		debug.log(`Processing ${dirtyChunks.length} dirty chunks`);
 
-										const position = z.position;
-										blockMesh.position.set(
-											position.x + chunk[1].x * this.world.chunkSize,
-											position.y + this.world.chunkSize,
-											position.z + chunk[1].z * this.world.chunkSize
-										);
-										blockMesh.scale.set(0.5, 0.5, 0.5);
-										blockMesh.updateMatrix();
-										blockMesh.matrixAutoUpdate = false;
-										blockMesh.matrixWorldNeedsUpdate = true;
-										blockMesh.castShadow = true;
-										blockMesh.receiveShadow = true;
+		// Process each dirty chunk
+		for (const chunk of dirtyChunks) {
+			// Rebuild chunk mesh if it's dirty
+			debug.log(`Rebuilding mesh for chunk ${chunk.x},${chunk.z}`);
+			chunk.rebuildMesh();
 
-										// Enable frustum culling for better performance
-										blockMesh.frustumCulled = true;
-
-										worldGroup.add(blockMesh);
-										this.world.updateChunkLoadingDisplay(z, x);
-										chunksProcessed++;
-									}
-								}
-							} else {
-								console.warn(y);
-							}
-						}
-					}
+			// Add the chunk mesh to the world group if it exists
+			if (chunk.mesh) {
+				if (!worldGroup.children.includes(chunk.mesh)) {
+					debug.log(`Adding chunk mesh ${chunk.x},${chunk.z} to scene`);
+					worldGroup.add(chunk.mesh);
 				}
+				chunksProcessed++;
 			} else {
-				console.error('Chunk has no blocks:', chunk[1]);
+				console.warn(`Chunk ${chunk.x},${chunk.z} has no mesh after rebuild`);
+			}
+
+			// Limit the number of chunks processed per frame for performance
+			if (chunksProcessed > 5) {
+				break;
 			}
 		}
+
+		if (chunksProcessed > 0) {
+			console.log(`Processed ${chunksProcessed} chunks`);
+		}
+
+		console.log(`worldGroup has ${this.worldGroup.children.length} children`);
+
 		this.world.removeChunkLoadingDisplay();
 	}
 

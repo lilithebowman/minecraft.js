@@ -43,21 +43,11 @@ export class Chunk {
 	}
 
 	async initialize() {
+		console.log(`Initializing chunk ${this.x},${this.z}...`);
 		try {
 			// Initialize base terrain
 			for (let x = 0; x < this.size; x++) {
 				for (let z = 0; z < this.size; z++) {
-					// Conditionally log memory usage if available in the browser
-					if (window.performance && window.performance.memory && typeof window.performance.memory.usedJSHeapSize === 'number') {
-						const memoryUsage = window.performance.memory.usedJSHeapSize / (1024 * 1024);
-						console.log(`Memory usage: ${memoryUsage.toFixed(2)} MB of ${window.performance.memory.jsHeapSizeLimit / (1024 * 1024)} MB`);
-					}
-
-					// Check if chunk is already initialized
-					if (this.blocks[x] && this.blocks[x][0] && this.blocks[x][0][z]) {
-						continue; // Skip if already initialized
-					}
-
 					// Start with bedrock layer
 					this.setBlock(x, 0, z, 'bedrock');
 
@@ -76,13 +66,10 @@ export class Chunk {
 				}
 			}
 
+			console.log(`Chunk ${this.x},${this.z} has ${Object.keys(this.blocks).length} x-coordinates with blocks`);
 			this.needsUpdate = true;
+			this.isDirty = true;  // Mark as dirty to ensure mesh is built
 
-			debug.updateStats({
-
-			});
-
-			console.log(`Chunk ${this.x},${this.z} initialized`);
 			return true;
 		} catch (error) {
 			console.error(`Failed to initialize chunk ${this.x},${this.z}:`, error);
@@ -197,7 +184,9 @@ export class Chunk {
 			this.initBedrock();
 			return null;
 		}
-		return this.blocks[{ x, y, z }];
+		if (!this.blocks[x]) return null;
+		if (!this.blocks[x][y]) return null;
+		return this.blocks[x][y][z];
 	}
 
 	setBlock(x, y, z, type) {
@@ -227,17 +216,20 @@ export class Chunk {
 			this.initBedrock();
 			return false;
 		}
-		const block = this.blocks[{ x, y, z }];
-		if (block) {
-			this.blocks.delete({ x, y, z });
-			this.isDirty = true;
-			return true;
+		if (!this.blocks[x] || !this.blocks[x][y] || !this.blocks[x][y][z]) {
+			return false;
 		}
-		return false;
+
+		this.blocks[x][y][z] = null;
+		this.isDirty = true;
+		return true;
 	}
 
 	rebuildMesh() {
-		if (!this.block) {
+		console.log(`Rebuilding mesh for chunk ${this.x},${this.z}`);
+
+		if (!this.blocks) {
+			console.warn(`No blocks in chunk ${this.x},${this.z}`);
 			return;
 		}
 
@@ -247,14 +239,16 @@ export class Chunk {
 		const uvs = [];
 		const indices = [];
 		let indexOffset = 0;
+		let blockCount = 0;
 
 		// For each block in the chunk
 		for (let x = 0; x < this.size; x++) {
 			for (let y = 0; y < this.height; y++) {
 				for (let z = 0; z < this.size; z++) {
-					const blockType = this.getBlock(x, y, z);
-					if (!blockType) continue; // Skip empty blocks
+					const block = this.getBlock(x, y, z);
+					if (!block) continue; // Skip empty blocks
 
+					blockCount++;
 					// Check each face
 					const faces = this.getVisibleFaces(x, y, z);
 					for (const face of faces) {
@@ -263,7 +257,7 @@ export class Chunk {
 						vertices.push(...faceVertices);
 
 						// Add face UVs based on block type
-						const faceUVs = this.getFaceUVs(blockType);
+						const faceUVs = this.getFaceUVs(block.blockType || block);
 						uvs.push(...faceUVs);
 
 						// Add face indices
@@ -277,6 +271,14 @@ export class Chunk {
 			}
 		}
 
+		console.log(`Found ${blockCount} blocks in chunk ${this.x},${this.z}, creating ${vertices.length / 3} vertices`);
+
+		if (vertices.length === 0) {
+			console.warn(`No vertices in chunk ${this.x},${this.z}`);
+			this.isDirty = false;
+			return;
+		}
+
 		// Set geometry attributes
 		geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
 		geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
@@ -288,12 +290,13 @@ export class Chunk {
 			this.mesh.geometry.dispose();
 			this.mesh.geometry = geometry;
 		} else {
-			const material = new THREE.MeshLambertMaterial();
+			const material = new THREE.MeshLambertMaterial({ color: 0xaaaaaa });
 			this.mesh = new THREE.Mesh(geometry, material);
 			this.mesh.position.set(this.x * this.size, 0, this.z * this.size);
 		}
 
 		this.isDirty = false;
+		console.log(`Mesh for chunk ${this.x},${this.z} rebuilt successfully`);
 	}
 
 	getVisibleFaces(x, y, z) {
@@ -441,21 +444,27 @@ export class Chunk {
 
 	static async loadAllFromCache() {
 		try {
+			const allChunks = [];
+
 			for (let x = -2; x < 2; x++) {
 				for (let z = -2; z < 2; z++) {
-					const response = await fetch(`cache/chunks/chunk-${x}-${z}.json`);
-					if (!response.ok) {
-						throw new Error('Failed to load chunks from cache');
+					try {
+						const response = await fetch(`cache/chunks/chunk-${x}-${z}.json`);
+						if (response.ok) {
+							const chunkData = await response.json();
+							allChunks.push({
+								x: x,
+								z: parseInt(z),
+								blocks: chunkData
+							});
+						}
+					} catch (err) {
+						console.warn(`Failed to load chunk at ${x},${z}:`, err);
 					}
-
-					const chunks = await response.json();
-					return chunks.map(chunkData => ({
-						x: parseInt(chunkData.x),
-						z: parseInt(chunkData.z),
-						blocks: chunkData.blocks
-					}));
 				}
 			}
+
+			return allChunks;
 		} catch (error) {
 			console.error('Error loading chunks from cache:', error);
 			return [];

@@ -77,7 +77,7 @@ export class DebugLog {
         `;
 
         // Only add memory info if it's available in the browser
-        if (typeof performance !== 'undefined' && performance.memory && performance.memory.usedJSHeapSize) {
+        if (window.performance && window.performance.memory && window.performance.memory.usedJSHeapSize) {
             statsHTML += `Memory: ${Math.round(performance.memory.usedJSHeapSize / 1024 / 1024)} MB of ${Math.round(performance.memory.jsHeapSizeLimit / 1024 / 1024)} MB`;
         }
 
