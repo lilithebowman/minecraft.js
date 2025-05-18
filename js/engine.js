@@ -48,7 +48,7 @@ export class Engine {
 			console.log('Player and camera initialized');
 
 			// Set player reference in world
-			this.world.player = this.player;
+			this.world.setPlayer(this.player);
 
 			// Initialize remaining components
 			await this.world.initialize();

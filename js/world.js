@@ -19,9 +19,15 @@ export class World {
 		this.visibleBlocks = [];
 		this.visibleChunks = new Set();
 		this.rotation = new THREE.Vector3(0, 0, 0);
+		this.player = null;
+		this.lastPlayerChunkX = 0;
+		this.lastPlayerChunkZ = 0;
+		this.debugMode = true;
+		this.chunkUpdateTimer = 0;
+		this.chunkUpdateCooldown = 1.0; // Update chunks once per second
+
 		this.initializeWorkers();
 		this.worldGroup = worldGroup;
-		this.debugMode = true;
 	}
 
 	initializeWorkers() {
@@ -58,8 +64,7 @@ export class World {
 	async updateChunksAroundPlayer(player) {
 		if (!player) {
 			// Use origin coordinates as fallback if no player is provided
--			return this.loadChunksInArea(0, 0, 1);
-+			return this.loadChunksInArea(0, 0, this.renderDistance);
+			return this.loadChunksInArea(0, 0, 1);
 		}
 
 		// Convert player position to chunk coordinates
@@ -67,8 +72,7 @@ export class World {
 		const chunkZ = Math.floor(player.position.z / this.chunkSize);
 
 		// Load chunks around player
--		return this.loadChunksInArea(chunkX, chunkZ, 1);
-+		return this.loadChunksInArea(chunkX, chunkZ, this.renderDistance);
+		return this.loadChunksInArea(chunkX, chunkZ, 1);
 	}
 
 	// New method to load chunks in a specific area
@@ -183,42 +187,27 @@ export class World {
 			}
 		}
 
-// In your class definition...
+		// Every 1 second, check if we need to update chunks around the player
+		this.chunkUpdateTimer += deltaTime;
+		if (this.chunkUpdateTimer > this.chunkUpdateCooldown && this.player) {
+			this.chunkUpdateTimer = 0;
 
-constructor(worldGroup = new THREE.Group()) {
-    // ... existing code ...
-    this.debugMode = true;
-    this.chunkUpdateTimer = 0;
-    this.lastPlayerChunkX = null;
-    this.lastPlayerChunkZ = null;
-    this.chunkUpdateCooldown = 1.0; // seconds between chunk updates
-}
+			// Get the player's current chunk
+			const currentChunkX = Math.floor(this.player.position.x / this.chunkSize);
+			const currentChunkZ = Math.floor(this.player.position.z / this.chunkSize);
 
-update(deltaTime) {
-    // ... existing code ...
+			// Check if player moved to a different chunk
+			if (currentChunkX !== this.lastPlayerChunkX ||
+				currentChunkZ !== this.lastPlayerChunkZ) {
 
-    // Every 1 second, check if we need to update chunks around the player
-    this.chunkUpdateTimer += deltaTime;
-    if (this.chunkUpdateTimer > this.chunkUpdateCooldown && this.player) {
-        this.chunkUpdateTimer = 0;
+				console.log(`Player moved to chunk (${currentChunkX}, ${currentChunkZ})`);
+				this.updateChunksAroundPlayer(this.player);
 
-        // Get the player's current chunk
-        const currentChunkX = Math.floor(this.player.position.x / this.chunkSize);
-        const currentChunkZ = Math.floor(this.player.position.z / this.chunkSize);
-
-        // Check if player moved to a different chunk
-        if (currentChunkX !== this.lastPlayerChunkX ||
-            currentChunkZ !== this.lastPlayerChunkZ) {
-
-            console.log(`Player moved to chunk (${currentChunkX}, ${currentChunkZ})`);
-            this.updateChunksAroundPlayer(this.player);
-
-            // Update last known player chunk
-            this.lastPlayerChunkX = currentChunkX;
-            this.lastPlayerChunkZ = currentChunkZ;
-        }
-    }
-}
+				// Update last known player chunk
+				this.lastPlayerChunkX = currentChunkX;
+				this.lastPlayerChunkZ = currentChunkZ;
+			}
+		}
 	}
 
 	// Crate a chunk loading display in the middle of the canvas
@@ -386,5 +375,23 @@ update(deltaTime) {
 		this.debugStats.loadedChunks = this.chunks.size;
 		this.debugStats.totalBlocks = this.totalBlocks;
 		debug.updateStats(this.debugStats);
+	}
+
+	// Add this method to properly set the player and initialize chunks around them
+	setPlayer(player) {
+		if (!player) {
+			console.warn('Attempted to set null player in World');
+			return;
+		}
+
+		this.player = player;
+		console.log('Player set in World, initializing chunks around player position');
+
+		// Initialize chunks around the player's current position
+		this.updateChunksAroundPlayer(player);
+
+		// Set initial last known chunk position
+		this.lastPlayerChunkX = Math.floor(player.position.x / this.chunkSize);
+		this.lastPlayerChunkZ = Math.floor(player.position.z / this.chunkSize);
 	}
 }
