@@ -92,12 +92,32 @@ export class Chunk {
 	// Dispose of the chunk
 	dispose() {
 		if (this.mesh) {
-			this.mesh.geometry.dispose();
-			this.mesh.material.dispose();
+			// Remove from parent if it has one
+			if (this.mesh.parent) {
+				this.mesh.parent.remove(this.mesh);
+			}
+
+			// Dispose of geometry and material
+			if (this.mesh.geometry) {
+				this.mesh.geometry.dispose();
+			}
+			if (this.mesh.material) {
+				if (Array.isArray(this.mesh.material)) {
+					this.mesh.material.forEach(material => material.dispose());
+				} else {
+					this.mesh.material.dispose();
+				}
+			}
+
 			this.mesh = null;
 		}
+
+		// Clear all block data
 		this.blocks = null;
 		this.isDirty = false;
+		this.visibleBlocks = [];
+
+		console.log(`Disposed chunk ${this.x},${this.z}`);
 	}
 
 	// Get all blocks in this chunk

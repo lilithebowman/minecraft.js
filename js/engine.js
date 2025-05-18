@@ -47,20 +47,18 @@ export class Engine {
 			this.player.camera.updateMatrixWorld();
 			console.log('Player and camera initialized');
 
+			// Set player reference in world
+			this.world.setPlayer(this.player);
+
 			// Initialize remaining components
-			await this.world.generateWorld();
-			console.log('World generated');
-
+			await this.world.initialize();
 			await this.renderer.initialize(this.world, this.player);
-			console.log('Renderer initialized');
 
-			// Start game loop only after everything is ready
-			this.start();
 			console.log('Engine initialized successfully');
 
 			return true;
 		} catch (error) {
-			console.error('Failed to initialize engine:', error);
+			console.error('Engine initialization failed:', error);
 			throw error;
 		}
 	}
