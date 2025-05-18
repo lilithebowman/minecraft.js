@@ -67,13 +67,21 @@ export class DebugLog {
             blocks: stats.blocks || this.stats.blocks,
             rotation: stats.rotation || this.stats.rotation
         };
-        this.statsPanel.innerHTML = `
+
+        // Build the HTML with the available stats
+        let statsHTML = `
             FPS: ${this.stats.fps}<br>
             Position: (${Math.round(this.stats.position.x)}, ${Math.round(this.stats.position.y)}, ${Math.round(this.stats.position.z)})<br>
             Rotation: (${Math.round(this.stats.rotation.x * 100)}, ${Math.round(this.stats.rotation.y * 100)}, ${Math.round(this.stats.rotation.z * 100)})<br>
             Blocks: ${this.stats.blocks}<br>
-            Memory: ${Math.round(performance.memory.usedJSHeapSize / 1024 / 1024)} MB of ${Math.round(performance.memory.jsHeapSizeLimit / 1024 / 1024)} MB
         `;
+
+        // Only add memory info if it's available in the browser
+        if (performance && performance.memory && performance.memory.usedJSHeapSize) {
+            statsHTML += `Memory: ${Math.round(performance.memory.usedJSHeapSize / 1024 / 1024)} MB of ${Math.round(performance.memory.jsHeapSizeLimit / 1024 / 1024)} MB`;
+        }
+
+        this.statsPanel.innerHTML = statsHTML;
     }
 
     log(...args) {
