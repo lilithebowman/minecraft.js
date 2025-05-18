@@ -130,18 +130,18 @@ export class Renderer {
 		let chunksProcessed = 0;
 		const dirtyChunks = Array.from(chunks.values()).filter(chunk => chunk.isDirty);
 
-		console.log(`Processing ${dirtyChunks.length} dirty chunks`);
+		debug.log(`Processing ${dirtyChunks.length} dirty chunks`);
 
 		// Process each dirty chunk
 		for (const chunk of dirtyChunks) {
 			// Rebuild chunk mesh if it's dirty
-			console.log(`Rebuilding mesh for chunk ${chunk.x},${chunk.z}`);
+			debug.log(`Rebuilding mesh for chunk ${chunk.x},${chunk.z}`);
 			chunk.rebuildMesh();
 
 			// Add the chunk mesh to the world group if it exists
 			if (chunk.mesh) {
 				if (!worldGroup.children.includes(chunk.mesh)) {
-					console.log(`Adding chunk mesh ${chunk.x},${chunk.z} to scene`);
+					debug.log(`Adding chunk mesh ${chunk.x},${chunk.z} to scene`);
 					worldGroup.add(chunk.mesh);
 				}
 				chunksProcessed++;
