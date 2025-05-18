@@ -54,12 +54,12 @@ app.post('/api/chunks/save', async (req, res) => {
 });
 
 // Generate terrain endpoint
-app.post('/api/generateTerrain', (req, res) => {
+app.post('/api/generateTerrain', async (req, res) => {
 	try {
 		const { renderDistance = 8 } = req.body;
 
 		// Clear existing chunks
-		fs.emptyDirSync(chunksDir);
+		await fs.emptyDir(chunksDir);
 
 		// Generate new chunks
 		for (let x = -renderDistance; x < renderDistance; x++) {
