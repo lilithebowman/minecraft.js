@@ -39,8 +39,8 @@ function generateChunk($chunkX, $chunkZ) {
             // Combine noise values
             $combined = ($noise1 + $noise2 + $noise3) / 1.75;
             
-            // Convert to height (between 40 and 80)
-            $height = floor(40 + $combined * 40);
+            // Convert to height using base height and multiplier
+            $height = floor(BASE_HEIGHT + $combined * HEIGHT_MULTIPLIER);
             $heightMap[$x][$z] = $height;
         }
     }
