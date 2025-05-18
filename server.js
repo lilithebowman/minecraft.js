@@ -17,15 +17,15 @@ const chunksDir = path.join(__dirname, 'cache', 'chunks');
 fs.ensureDirSync(chunksDir);
 
 // API endpoint to load all chunks
-app.get('/api/chunks', (req, res) => {
+app.get('/api/chunks', async (req, res) => {
 	try {
-		const files = fs.readdirSync(chunksDir).filter(file => file.startsWith('chunk-') && file.endsWith('.json'));
+		const files = (await fs.promises.readdir(chunksDir)).filter(file => file.startsWith('chunk-') && file.endsWith('.json'));
 
-		const chunks = files.map(file => {
+		const chunks = await Promise.all(files.map(async file => {
 			const filePath = path.join(chunksDir, file);
-			const content = fs.readFileSync(filePath, 'utf8');
+			const content = await fs.promises.readFile(filePath, 'utf8');
 			return JSON.parse(content);
-		});
+		}));
 
 		res.json(chunks);
 	} catch (error) {
