@@ -453,7 +453,7 @@ export class Chunk {
 						if (response.ok) {
 							const chunkData = await response.json();
 							allChunks.push({
-								x: parseInt(x),
+								x: x,
 								z: parseInt(z),
 								blocks: chunkData
 							});
