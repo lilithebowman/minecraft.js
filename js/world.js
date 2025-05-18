@@ -58,7 +58,8 @@ export class World {
 	async updateChunksAroundPlayer(player) {
 		if (!player) {
 			// Use origin coordinates as fallback if no player is provided
-			return this.loadChunksInArea(0, 0, 1);
+-			return this.loadChunksInArea(0, 0, 1);
++			return this.loadChunksInArea(0, 0, this.renderDistance);
 		}
 
 		// Convert player position to chunk coordinates
@@ -66,7 +67,8 @@ export class World {
 		const chunkZ = Math.floor(player.position.z / this.chunkSize);
 
 		// Load chunks around player
-		return this.loadChunksInArea(chunkX, chunkZ, 1);
+-		return this.loadChunksInArea(chunkX, chunkZ, 1);
++		return this.loadChunksInArea(chunkX, chunkZ, this.renderDistance);
 	}
 
 	// New method to load chunks in a specific area
