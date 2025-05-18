@@ -106,66 +106,42 @@ export class Renderer {
 	updateDirtyBlocks(worldGroup, chunks) {
 		if (!chunks || !worldGroup) throw new Error('Invalid chunks or worldGroup');
 
-		const frustum = this.engine.frustum;
-
 		// Show chunk loading display
 		this.world.createChunkLoadingDisplay();
 
 		// Add blocks from each chunk to the world group
-		if (chunks.length === 0) {
+		if (chunks.size === 0) {
 			console.warn('No chunks available to render');
+			this.world.removeChunkLoadingDisplay();
+			return;
 		}
+
 		let chunksProcessed = 0;
-		for (const chunk of chunks) {
-			if (chunk) {
-				for (const x of chunk[1].blocks) {
-					// If the blockList is not empty, add the blocks in the 3 dimensional array to the worldGroup
-					if (x) {
-						for (const y of x) {
-							if (y) {
-								for (const z of y) {
-									if (z) {
-										debug.updateStats({
-											blocks: this.scene?.children?.length || 0
-										});
-										if (chunksProcessed > 1000) {
-											this.world.removeChunkLoadingDisplay();
-											return;
-										}
 
-										const blockMesh = z.getMesh();
+		// Process each chunk in the map
+		for (const [key, chunk] of chunks.entries()) {
+			// Rebuild chunk mesh if it's dirty
+			if (chunk.isDirty) {
+				chunk.rebuildMesh();
 
-										const position = z.position;
-										blockMesh.position.set(
-											position.x + chunk[1].x * this.world.chunkSize,
-											position.y + this.world.chunkSize,
-											position.z + chunk[1].z * this.world.chunkSize
-										);
-										blockMesh.scale.set(0.5, 0.5, 0.5);
-										blockMesh.updateMatrix();
-										blockMesh.matrixAutoUpdate = false;
-										blockMesh.matrixWorldNeedsUpdate = true;
-										blockMesh.castShadow = true;
-										blockMesh.receiveShadow = true;
+				// Add the chunk mesh to the world group if it exists
+				if (chunk.mesh && !worldGroup.children.includes(chunk.mesh)) {
+					worldGroup.add(chunk.mesh);
+					chunksProcessed++;
 
-										// Enable frustum culling for better performance
-										blockMesh.frustumCulled = true;
-
-										worldGroup.add(blockMesh);
-										this.world.updateChunkLoadingDisplay(z, x);
-										chunksProcessed++;
-									}
-								}
-							} else {
-								console.warn(y);
-							}
-						}
-					}
+					// Update debug statistics
+					debug.updateStats({
+						blocks: this.scene?.children?.length || 0
+					});
 				}
-			} else {
-				console.error('Chunk has no blocks:', chunk[1]);
+			}
+
+			// Limit the number of chunks processed per frame for performance
+			if (chunksProcessed > 5) {
+				break;
 			}
 		}
+
 		this.world.removeChunkLoadingDisplay();
 	}
 
