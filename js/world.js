@@ -183,27 +183,42 @@ export class World {
 			}
 		}
 
-		// Every 1 second, check if we need to update chunks around the player
-		this.chunkUpdateTimer = (this.chunkUpdateTimer || 0) + deltaTime;
-		if (this.chunkUpdateTimer > 1.0 && this.player) {
-			this.chunkUpdateTimer = 0;
+// In your class definition...
 
-			// Get the player's current chunk
-			const currentChunkX = Math.floor(this.player.position.x / this.chunkSize);
-			const currentChunkZ = Math.floor(this.player.position.z / this.chunkSize);
+constructor(worldGroup = new THREE.Group()) {
+    // ... existing code ...
+    this.debugMode = true;
+    this.chunkUpdateTimer = 0;
+    this.lastPlayerChunkX = null;
+    this.lastPlayerChunkZ = null;
+    this.chunkUpdateCooldown = 1.0; // seconds between chunk updates
+}
 
-			// Check if player moved to a different chunk
-			if (currentChunkX !== this.lastPlayerChunkX ||
-				currentChunkZ !== this.lastPlayerChunkZ) {
+update(deltaTime) {
+    // ... existing code ...
 
-				console.log(`Player moved to chunk (${currentChunkX}, ${currentChunkZ})`);
-				this.updateChunksAroundPlayer(this.player);
+    // Every 1 second, check if we need to update chunks around the player
+    this.chunkUpdateTimer += deltaTime;
+    if (this.chunkUpdateTimer > this.chunkUpdateCooldown && this.player) {
+        this.chunkUpdateTimer = 0;
 
-				// Update last known player chunk
-				this.lastPlayerChunkX = currentChunkX;
-				this.lastPlayerChunkZ = currentChunkZ;
-			}
-		}
+        // Get the player's current chunk
+        const currentChunkX = Math.floor(this.player.position.x / this.chunkSize);
+        const currentChunkZ = Math.floor(this.player.position.z / this.chunkSize);
+
+        // Check if player moved to a different chunk
+        if (currentChunkX !== this.lastPlayerChunkX ||
+            currentChunkZ !== this.lastPlayerChunkZ) {
+
+            console.log(`Player moved to chunk (${currentChunkX}, ${currentChunkZ})`);
+            this.updateChunksAroundPlayer(this.player);
+
+            // Update last known player chunk
+            this.lastPlayerChunkX = currentChunkX;
+            this.lastPlayerChunkZ = currentChunkZ;
+        }
+    }
+}
 	}
 
 	// Crate a chunk loading display in the middle of the canvas
