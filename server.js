@@ -35,7 +35,7 @@ app.get('/api/chunks', async (req, res) => {
 });
 
 // API endpoint to save a chunk
-app.post('/api/chunks/save', (req, res) => {
+app.post('/api/chunks/save', async (req, res) => {
 	try {
 		const { x, z, blocks } = req.body;
 
@@ -44,7 +44,7 @@ app.post('/api/chunks/save', (req, res) => {
 		}
 
 		const filePath = path.join(chunksDir, `chunk-${x}-${z}.json`);
-		fs.writeFileSync(filePath, JSON.stringify(req.body));
+		await fs.writeFile(filePath, JSON.stringify(req.body));
 
 		res.json({ success: true });
 	} catch (error) {
