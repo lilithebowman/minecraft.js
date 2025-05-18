@@ -5,7 +5,14 @@ if (!is_dir('cache/chunks')) {
     mkdir('cache/chunks', 0755, true);
 }
 
-// Function to generate terrain using simple noise
+/**
+ * Generates a noise value for terrain generation based on the given coordinates and seed.
+ *
+ * @param float $x The x-coordinate for noise generation.
+ * @param float $z The z-coordinate for noise generation.
+ * @param int $seed An optional seed value for noise generation (default: 12345).
+ * @return float A noise value between 0 and 1.
+ */
 function generateNoise($x, $z, $seed = 12345) {
     $x = $x * 0.01;
     $z = $z * 0.01;
