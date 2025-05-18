@@ -43,6 +43,7 @@ export class Chunk {
 	}
 
 	async initialize() {
+		console.log(`Initializing chunk ${this.x},${this.z}...`);
 		try {
 			// Initialize base terrain
 			for (let x = 0; x < this.size; x++) {
@@ -65,9 +66,9 @@ export class Chunk {
 				}
 			}
 
+			console.log(`Chunk ${this.x},${this.z} has ${Object.keys(this.blocks).length} x-coordinates with blocks`);
 			this.needsUpdate = true;
 			this.isDirty = true;  // Mark as dirty to ensure mesh is built
-			this.rebuildMesh();   // Build the mesh
 
 			return true;
 		} catch (error) {
@@ -225,7 +226,10 @@ export class Chunk {
 	}
 
 	rebuildMesh() {
+		console.log(`Rebuilding mesh for chunk ${this.x},${this.z}`);
+
 		if (!this.blocks) {
+			console.warn(`No blocks in chunk ${this.x},${this.z}`);
 			return;
 		}
 
@@ -235,14 +239,16 @@ export class Chunk {
 		const uvs = [];
 		const indices = [];
 		let indexOffset = 0;
+		let blockCount = 0;
 
 		// For each block in the chunk
 		for (let x = 0; x < this.size; x++) {
 			for (let y = 0; y < this.height; y++) {
 				for (let z = 0; z < this.size; z++) {
-					const blockType = this.getBlock(x, y, z);
-					if (!blockType) continue; // Skip empty blocks
+					const block = this.getBlock(x, y, z);
+					if (!block) continue; // Skip empty blocks
 
+					blockCount++;
 					// Check each face
 					const faces = this.getVisibleFaces(x, y, z);
 					for (const face of faces) {
@@ -251,7 +257,7 @@ export class Chunk {
 						vertices.push(...faceVertices);
 
 						// Add face UVs based on block type
-						const faceUVs = this.getFaceUVs(blockType);
+						const faceUVs = this.getFaceUVs(block.blockType || block);
 						uvs.push(...faceUVs);
 
 						// Add face indices
@@ -265,6 +271,14 @@ export class Chunk {
 			}
 		}
 
+		console.log(`Found ${blockCount} blocks in chunk ${this.x},${this.z}, creating ${vertices.length / 3} vertices`);
+
+		if (vertices.length === 0) {
+			console.warn(`No vertices in chunk ${this.x},${this.z}`);
+			this.isDirty = false;
+			return;
+		}
+
 		// Set geometry attributes
 		geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
 		geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
@@ -276,12 +290,13 @@ export class Chunk {
 			this.mesh.geometry.dispose();
 			this.mesh.geometry = geometry;
 		} else {
-			const material = new THREE.MeshLambertMaterial();
+			const material = new THREE.MeshLambertMaterial({ color: 0xaaaaaa });
 			this.mesh = new THREE.Mesh(geometry, material);
 			this.mesh.position.set(this.x * this.size, 0, this.z * this.size);
 		}
 
 		this.isDirty = false;
+		console.log(`Mesh for chunk ${this.x},${this.z} rebuilt successfully`);
 	}
 
 	getVisibleFaces(x, y, z) {

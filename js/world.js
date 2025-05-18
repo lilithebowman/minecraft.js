@@ -142,7 +142,7 @@ export class World {
 		// Update chunks that need updating
 		for (const chunk of this.chunks.values()) {
 			if (chunk.needsUpdate) {
-				chunk.rebuildMesh();
+				chunk.isDirty = true;
 				chunk.needsUpdate = false;
 			}
 		}
@@ -150,6 +150,11 @@ export class World {
 
 	// Crate a chunk loading display in the middle of the canvas
 	createChunkLoadingDisplay() {
+		if (this.loadingDiv) {
+			// Don't create multiple loading divs
+			return this.loadingDiv;
+		}
+
 		this.loadingDiv = document.createElement('div');
 		this.loadingDiv.style.position = 'absolute';
 		this.loadingDiv.style.top = '50%';

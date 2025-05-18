@@ -11,6 +11,15 @@ export class Renderer {
 		this.sceneDefaults = new SceneDefaults(this.engine?.player);
 		this.renderer = this.sceneDefaults.getRenderer();
 		this.scene = new THREE.Scene();
+
+		// Add basic lighting
+		const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+		this.scene.add(ambientLight);
+
+		const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+		dirLight.position.set(100, 100, 50);
+		this.scene.add(dirLight);
+
 		this.worldGroup = new THREE.Group();
 		this.scene.add(this.worldGroup);
 
@@ -106,8 +115,10 @@ export class Renderer {
 	updateDirtyBlocks(worldGroup, chunks) {
 		if (!chunks || !worldGroup) throw new Error('Invalid chunks or worldGroup');
 
-		// Show chunk loading display
-		this.world.createChunkLoadingDisplay();
+		// Don't show loading display every frame
+		if (chunks.size > 0 && Array.from(chunks.values()).some(chunk => chunk.isDirty)) {
+			this.world.createChunkLoadingDisplay();
+		}
 
 		// Add blocks from each chunk to the world group
 		if (chunks.size === 0) {
@@ -117,23 +128,25 @@ export class Renderer {
 		}
 
 		let chunksProcessed = 0;
+		const dirtyChunks = Array.from(chunks.values()).filter(chunk => chunk.isDirty);
 
-		// Process each chunk in the map
-		for (const [key, chunk] of chunks.entries()) {
+		console.log(`Processing ${dirtyChunks.length} dirty chunks`);
+
+		// Process each dirty chunk
+		for (const chunk of dirtyChunks) {
 			// Rebuild chunk mesh if it's dirty
-			if (chunk.isDirty) {
-				chunk.rebuildMesh();
+			console.log(`Rebuilding mesh for chunk ${chunk.x},${chunk.z}`);
+			chunk.rebuildMesh();
 
-				// Add the chunk mesh to the world group if it exists
-				if (chunk.mesh && !worldGroup.children.includes(chunk.mesh)) {
+			// Add the chunk mesh to the world group if it exists
+			if (chunk.mesh) {
+				if (!worldGroup.children.includes(chunk.mesh)) {
+					console.log(`Adding chunk mesh ${chunk.x},${chunk.z} to scene`);
 					worldGroup.add(chunk.mesh);
-					chunksProcessed++;
-
-					// Update debug statistics
-					debug.updateStats({
-						blocks: this.scene?.children?.length || 0
-					});
 				}
+				chunksProcessed++;
+			} else {
+				console.warn(`Chunk ${chunk.x},${chunk.z} has no mesh after rebuild`);
 			}
 
 			// Limit the number of chunks processed per frame for performance
@@ -141,6 +154,12 @@ export class Renderer {
 				break;
 			}
 		}
+
+		if (chunksProcessed > 0) {
+			console.log(`Processed ${chunksProcessed} chunks`);
+		}
+
+		console.log(`worldGroup has ${this.worldGroup.children.length} children`);
 
 		this.world.removeChunkLoadingDisplay();
 	}
