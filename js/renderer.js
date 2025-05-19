@@ -28,7 +28,7 @@ export class Renderer {
 		this.block = new Block();
 
 		// Create debug orientation cube
-		this.createDebugCube();
+		this.createDebugCube().catch(console.error);
 	}
 
 	async initialize(world, player) {
@@ -46,11 +46,11 @@ export class Renderer {
 		}
 	}
 
-	createDebugCube() {
+	async createDebugCube() {
 		// Create a small cube
 		const geometry = new THREE.BoxGeometry(1000, 0.5, 1000);
 		const textureManager = new TextureManager();
-		textureManager.initialize();
+		await textureManager.initialize();
 		// Use a material from the texture manager
 		const material = textureManager.getMaterial('grass');
 		this.debugCube = new THREE.Mesh(geometry, material);

@@ -6,8 +6,11 @@ export class World {
 	static MAX_CACHE = 100;
 
 	constructor(worldGroup = new THREE.Group()) {
+		this.worldGroup = worldGroup;
+		this.chunks = new Map(); // Track all chunks
+		this.chunkCache = new Map();
+		this.chunkCacheEntriesOrder = []; // Initialize to avoid undefined errors
 		this.block = new Block();
-		this.chunks = new Map();
 		this.chunkSize = 16;
 		this.noiseGen = new NoiseGenerator();
 		this.frustum = new Frustum();
@@ -30,8 +33,6 @@ export class World {
 		this.memoryUsage = 0;
 		this.chunkLoadingPriorityQueue = [];
 		this.initializeWorkers();
-		this.worldGroup = worldGroup;
-		this.chunkCache = new Map();
 	}
 
 	initializeWorkers() {
@@ -109,7 +110,6 @@ export class World {
 		if (chunksToLoad.length > 0) {
 			return await this.backgroundLoadChunks(chunksToLoad);
 		}
-
 		return 0;
 	}
 
@@ -168,17 +168,29 @@ export class World {
 			}
 
 			this.chunkCache.set(key, chunk);
+			this.chunkCacheEntriesOrder.push(key);
 		}
 		return chunk;
 	}
 
+	// Get a chunk from cache or create it if it doesn't exist
 	getChunk(chunkX, chunkZ) {
-		return this.chunks.get(`${chunkX},${chunkZ}`);
+		const key = `${chunkX},${chunkZ}`;
+		const chunk = this.chunkCache.get(key);
+		if (chunk) {
+			// Move to end of order to mark as recently used
+			this.chunkCacheEntriesOrder = this.chunkCacheEntriesOrder.filter(entry => entry !== key);
+			this.chunkCacheEntriesOrder.push(key);
+		}
+		return chunk;
 	}
+
+	// Get all chunks in the world
 	getChunks() {
 		return Array.from(this.chunks.values());
 	}
 
+	// Get an individual block by its world coordinates
 	getBlock(x, y, z) {
 		const chunkX = Math.floor(x / this.chunkSize);
 		const chunkZ = Math.floor(z / this.chunkSize);
@@ -191,6 +203,8 @@ export class World {
 
 		return chunk.getBlock(localX, y, localZ);
 	}
+
+	// Set an individual block by its world coordinates
 	setBlock(x, y, z, type) {
 		const chunkX = Math.floor(x / this.chunkSize);
 		const chunkZ = Math.floor(z / this.chunkSize);
@@ -200,6 +214,7 @@ export class World {
 		chunk.setBlock(localX, y, localZ, type);
 	}
 
+	// Update chunks around the player based on their position
 	update(deltaTime) {
 		for (const chunk of this.chunks.values()) {
 			if (chunk.needsUpdate) {
@@ -331,19 +346,21 @@ export class World {
 	}
 
 	dispose() {
+		if (this.chunks.size > 0) {
+			for (const [key, chunk] of this.chunks) {
+				chunk.dispose();
+			}
+			this.chunks.clear();
+			this.chunkCache.clear();
+		}
 		this.workers.forEach(worker => worker.terminate());
 		this.workers = [];
-		this.chunks.forEach(chunk => {
-			chunk.dispose();
-		});
-		this.chunks.clear();
 		this.block = null;
 		this.noiseGen = null;
 		if (this.loadingDiv) {
 			this.loadingDiv.remove();
 			this.loadingDiv = null;
 		}
-		this.chunkCache.clear();
 	}
 
 	async initialize() {
@@ -388,7 +405,7 @@ export class World {
 		// Track update performance
 		const updateTime = performance.now() - this.stats.lastUpdateTime;
 		this.stats.performance.updateTime = updateTime;
-+		this.stats.lastUpdateTime = performance.now();
+		this.stats.lastUpdateTime = performance.now();
 		debug.updateStats(this.stats);
 	}
 
