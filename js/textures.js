@@ -68,8 +68,12 @@ export class TextureManager {
 		// Calculate UV coordinates
 		const textureCount = 4; // Total number of textures in atlas
 		const tileSize = this.tileSize;
-		const atlasWidth = this.textures.get('atlas').image.width;
-		const atlasHeight = this.textures.get('atlas').image.height;
+		const atlasWidth = this.textures.get('atlas')?.image?.width || 256; // Default to 256 if not set
+		const atlasHeight = this.textures.get('atlas')?.image?.height || 256; // Default to 256 if not set
+		if (atlasWidth <= 0 || atlasHeight <= 0) {
+			console.error('Invalid atlas dimensions:', atlasWidth, atlasHeight);
+			return material;
+		}
 
 		// Calculate UV offset based on texture position
 		const startX = (atlasWidth - (textureCount * tileSize)) / 2;

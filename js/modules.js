@@ -4,6 +4,8 @@ export { BlockTypes, getAllBlockTypes, getSolidBlockTypes, getLiquidBlockTypes, 
 export { BlockManager } from './BlockManager.js';
 export { BoxCollider } from './physics/boxCollider.js';
 export { Chunk } from './chunk.js';
+export { ChunkCache } from './chunkCache.js';
+export { ChunkLoader } from './chunkLoader.js';
 export { Collider } from './physics/collider.js';
 export { Engine } from './engine.js';
 export { Framerate } from './framerate.js';

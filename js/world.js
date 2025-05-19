@@ -1,4 +1,4 @@
-import { Block, Chunk, NoiseGenerator, Frustum, isSolidBlockType } from './modules.js';
+import { Block, Chunk, ChunkCache, ChunkLoader, NoiseGenerator, Frustum, isSolidBlockType } from './modules.js';
 import * as THREE from 'three';
 import { debug } from './debug.js';
 
@@ -7,8 +7,9 @@ export class World {
 
 	constructor(worldGroup = new THREE.Group()) {
 		this.worldGroup = worldGroup;
-		this.chunks = new Map(); // Track all chunks
-		this.chunkCache = new Map();
+		this.chunks = new Map();
+		this.chunkCache = new ChunkCache(World.MAX_CACHE);
+		this.chunkLoader = new ChunkLoader(this);
 		this.chunkCacheEntriesOrder = []; // Initialize to avoid undefined errors
 		this.block = new Block();
 		this.chunkSize = 16;
@@ -142,36 +143,18 @@ export class World {
 		chunk.setBlock(localX, y, localZ, type);
 	}
 
-	getOrCreateChunk(chunkX, chunkZ) {
-		const key = `${chunkX},${chunkZ}`;
-		let chunk = this.chunkCache.get(key);
-		if (!chunk) {
-			chunk = this.chunks.get(key);
-
-			// Check cache size and evict oldest entry if needed
-			if (this.chunkCache.size >= World.MAX_CACHE) {
-				const oldestEntry = this.chunkCacheEntriesOrder.shift();
-				if (oldestEntry) {
-					const oldestChunk = this.chunkCache.get(oldestEntry);
-					if (oldestChunk) {
-						oldestChunk.dispose();
-						this.chunkCache.delete(oldestEntry);
-					}
-				}
-			}
-
-			if (!chunk) {
-				chunk = new Chunk(chunkX, chunkZ);
-				this.chunks.set(key, chunk);
-				chunk.needsUpdate = true;
-				this.updateMemoryUsage();
-				console.log(`Created new chunk at ${chunkX}, ${chunkZ}`);
-			}
-
-			this.chunkCache.set(key, chunk);
-			this.chunkCacheEntriesOrder.push(key);
+	async getOrCreateChunk(chunkX, chunkZ) {
+		const chunkKey = `${chunkX},${chunkZ}`;
+		const chunk = this.chunkCache.getChunk(chunkKey);
+		if (chunk) {
+			this.chunkCache.updateChunk(chunkKey);
+			return chunk;
 		}
-		return chunk;
+
+		const newChunk = await this.chunkLoader.loadChunk(chunkX, chunkZ);
+		this.chunks.set(chunkKey, newChunk);
+		this.chunkCache.addChunk(chunkKey, newChunk);
+		return newChunk;
 	}
 
 	// Get a chunk from cache or create it if it doesn't exist
@@ -352,7 +335,7 @@ export class World {
 				chunk.dispose();
 			}
 			this.chunks.clear();
-			this.chunkCache.clear();
+			this.chunkCache?.clear();
 		}
 		this.workers.forEach(worker => worker.terminate());
 		this.workers = [];
