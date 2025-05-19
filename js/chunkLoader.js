@@ -53,7 +53,12 @@ export class ChunkLoader {
 	}
 
 	async unloadChunk(chunk) {
-		chunk.dispose();
-		return true;
+		try {
+			chunk.dispose();
+			return true;
+		} catch (error) {
+			console.error('Error disposing chunk:', error);
+			return false;
+		}
 	}
 }
