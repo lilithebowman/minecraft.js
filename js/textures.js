@@ -14,6 +14,12 @@ export class TextureManager {
 	async initialize() {
 		if (this.initialized) return this;
 
+		await this.loadOrCreateTexture('grass', this.createGrassTop.bind(this));
+		await this.loadOrCreateTexture('dirt', this.createDirt.bind(this));
+		await this.loadOrCreateTexture('stone', this.createStone.bind(this));
+		await this.loadOrCreateTexture('bedrock', this.createBedrock.bind(this));
+
+		// Initialize texture atlas
 		console.log('Initializing texture manager...');
 		try {
 			const atlas = await this.createAtlas();
@@ -30,7 +36,7 @@ export class TextureManager {
 	getMaterial(textureName) {
 		if (!this.initialized) {
 			console.warn('Texture atlas not loaded - call initialize() first');
-			return new THREE.MeshBasicMaterial({ color: 0xff00ff }); // Purple fallback
+			return new THREE.MeshBasicMaterial({ color: 0xff00ff }); // Magenta fallback
 		}
 
 		// Create a new material using the texture atlas
@@ -125,7 +131,7 @@ export class TextureManager {
 		return canvas;
 	}
 
-	createGrassTop(ctx) {
+	createGrassTop(ctx = document.createElement('canvas').getContext('2d')) {
 		const tile = ctx.createImageData(64, 64);
 		const data = tile.data;
 
@@ -143,7 +149,7 @@ export class TextureManager {
 		return tile;
 	}
 
-	createDirt(ctx) {
+	createDirt(ctx = document.createElement('canvas').getContext('2d')) {
 		const tile = ctx.createImageData(64, 64);
 		const data = tile.data;
 
@@ -161,7 +167,7 @@ export class TextureManager {
 		return tile;
 	}
 
-	createStone(ctx) {
+	createStone(ctx = document.createElement('canvas').getContext('2d')) {
 		const tile = ctx.createImageData(64, 64);
 		const data = tile.data;
 
@@ -180,7 +186,7 @@ export class TextureManager {
 		return tile;
 	}
 
-	createBedrock(ctx) {
+	createBedrock(ctx = document.createElement('canvas').getContext('2d')) {
 		const tile = ctx.createImageData(64, 64);
 		const data = tile.data;
 

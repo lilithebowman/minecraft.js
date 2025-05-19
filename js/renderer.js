@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Block, Framerate, SceneDefaults } from './modules.js';
+import { Block, Framerate, SceneDefaults, TextureManager } from './modules.js';
 import { debug } from './debug.js';
 
 export class Renderer {
@@ -48,11 +48,11 @@ export class Renderer {
 
 	createDebugCube() {
 		// Create a small cube
-		const geometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
-		const material = new THREE.MeshBasicMaterial({
-			color: 0xff0000,
-			wireframe: true
-		});
+		const geometry = new THREE.BoxGeometry(1000, 0.5, 1000);
+		const textureManager = new TextureManager();
+		textureManager.initialize();
+		// Use a material from the texture manager
+		const material = textureManager.getMaterial('grass');
 		this.debugCube = new THREE.Mesh(geometry, material);
 
 		// Position in bottom-right corner
