@@ -14,19 +14,19 @@ export class TextureManager {
 	async initialize() {
 		if (this.initialized) return this;
 
-    await this.loadOrCreateTexture('grass', this.createGrassTop.bind(this));
-    await this.loadOrCreateTexture('dirt', this.createDirt.bind(this));
-    await this.loadOrCreateTexture('stone', this.createStone.bind(this));
-    await this.loadOrCreateTexture('bedrock', this.createBedrock.bind(this));
+		await this.loadOrCreateTexture('grass', this.createGrassTop.bind(this));
+		await this.loadOrCreateTexture('dirt', this.createDirt.bind(this));
+		await this.loadOrCreateTexture('stone', this.createStone.bind(this));
+		await this.loadOrCreateTexture('bedrock', this.createBedrock.bind(this));
 
-    // Initialize texture atlas
-    console.log('Initializing texture manager...');
-    const atlas = await this.createAtlas([
-      { name: 'grass',   img: await this.loadOrCreateTexture('grass',   this.createGrassTop.bind(this)) },
-      { name: 'dirt',    img: await this.loadOrCreateTexture('dirt',    this.createDirt.bind(this)) },
-      { name: 'stone',   img: await this.loadOrCreateTexture('stone',   this.createStone.bind(this)) },
-      { name: 'bedrock', img: await this.loadOrCreateTexture('bedrock', this.createBedrock.bind(this)) },
-    ]);
+		// Initialize texture atlas
+		console.log('Initializing texture manager...');
+		const atlas = await this.createAtlas([
+			{ name: 'grass', img: await this.loadOrCreateTexture('grass', this.createGrassTop.bind(this)) },
+			{ name: 'dirt', img: await this.loadOrCreateTexture('dirt', this.createDirt.bind(this)) },
+			{ name: 'stone', img: await this.loadOrCreateTexture('stone', this.createStone.bind(this)) },
+			{ name: 'bedrock', img: await this.loadOrCreateTexture('bedrock', this.createBedrock.bind(this)) },
+		]);
 		try {
 			const atlas = await this.createAtlas();
 			this.textures.set('atlas', atlas);
@@ -68,8 +68,8 @@ export class TextureManager {
 		// Calculate UV coordinates
 		const textureCount = 4; // Total number of textures in atlas
 		const tileSize = this.tileSize;
-		const atlasWidth = this.textureSize;
-		const atlasHeight = 256;
+		const atlasWidth = this.textures.get('atlas').image.width;
+		const atlasHeight = this.textures.get('atlas').image.height;
 
 		// Calculate UV offset based on texture position
 		const startX = (atlasWidth - (textureCount * tileSize)) / 2;
