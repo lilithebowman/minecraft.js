@@ -15,7 +15,7 @@ export class Block {
         this.createBlock(this.blockType, this.position);
     }
 
-    createBlock(blockType, position) {
+    async createBlock(blockType, position) {
         this.blockType = blockType;
         this.position = position;
         const geometry = new THREE.BoxGeometry(1, 1, 1);
@@ -27,7 +27,7 @@ export class Block {
         mesh.name = this.blockType; // Set the name of the mesh to the block type
         mesh.userData.type = this.blockType; // Store block type in userData
 
-        this.textureManager.initialize();
+        await this.textureManager.initialize();
 
         return mesh;
     }
