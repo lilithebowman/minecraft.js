@@ -1,3 +1,5 @@
+import { NoiseGenerator, Block, Chunk } from './modules.js';
+
 export class ChunkLoader {
 	constructor(world) {
 		this.world = world;
@@ -14,6 +16,9 @@ export class ChunkLoader {
 		// Implementation from world.js
 		const noiseGen = new NoiseGenerator();
 		const blocks = [];
+		const scale = 50;
+		const amplitude = 20;
+		const baseHeight = 10;
 
 		for (let x = 0; x < 16; x++) {
 			for (let z = 0; z < 16; z++) {
