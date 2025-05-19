@@ -388,6 +388,7 @@ export class World {
 		// Track update performance
 		const updateTime = performance.now() - this.stats.lastUpdateTime;
 		this.stats.performance.updateTime = updateTime;
++		this.stats.lastUpdateTime = performance.now();
 		debug.updateStats(this.stats);
 	}
 
