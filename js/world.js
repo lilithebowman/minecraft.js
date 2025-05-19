@@ -180,8 +180,13 @@ export class World {
 	setBlock(x, y, z, type) {
 		const chunkX = Math.floor(x / this.chunkSize);
 		const chunkZ = Math.floor(z / this.chunkSize);
-		const chunk = this.getOrCreateChunk(chunkX, chunkZ);
-	} update(deltaTime) {
+		const chunk  = this.getOrCreateChunk(chunkX, chunkZ);
+		const localX = x & (this.chunkSize - 1);
+		const localZ = z & (this.chunkSize - 1);
+		chunk.setBlock(localX, y, localZ, type);
+	}
+
+	update(deltaTime) {
 		for (const chunk of this.chunks.values()) {
 			if (chunk.needsUpdate) {
 				chunk.isDirty = true;
