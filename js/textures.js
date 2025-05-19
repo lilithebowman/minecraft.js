@@ -14,13 +14,19 @@ export class TextureManager {
 	async initialize() {
 		if (this.initialized) return this;
 
-		await this.loadOrCreateTexture('grass', this.createGrassTop.bind(this));
-		await this.loadOrCreateTexture('dirt', this.createDirt.bind(this));
-		await this.loadOrCreateTexture('stone', this.createStone.bind(this));
-		await this.loadOrCreateTexture('bedrock', this.createBedrock.bind(this));
+    await this.loadOrCreateTexture('grass', this.createGrassTop.bind(this));
+    await this.loadOrCreateTexture('dirt', this.createDirt.bind(this));
+    await this.loadOrCreateTexture('stone', this.createStone.bind(this));
+    await this.loadOrCreateTexture('bedrock', this.createBedrock.bind(this));
 
-		// Initialize texture atlas
-		console.log('Initializing texture manager...');
+    // Initialize texture atlas
+    console.log('Initializing texture manager...');
+    const atlas = await this.createAtlas([
+      { name: 'grass',   img: await this.loadOrCreateTexture('grass',   this.createGrassTop.bind(this)) },
+      { name: 'dirt',    img: await this.loadOrCreateTexture('dirt',    this.createDirt.bind(this)) },
+      { name: 'stone',   img: await this.loadOrCreateTexture('stone',   this.createStone.bind(this)) },
+      { name: 'bedrock', img: await this.loadOrCreateTexture('bedrock', this.createBedrock.bind(this)) },
+    ]);
 		try {
 			const atlas = await this.createAtlas();
 			this.textures.set('atlas', atlas);
