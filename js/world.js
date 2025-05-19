@@ -3,13 +3,18 @@ import * as THREE from 'three';
 import { debug } from './debug.js';
 
 export class World {
+	static MAX_CACHE = 100;
+
 	constructor(worldGroup = new THREE.Group()) {
+		this.worldGroup = worldGroup;
+		this.chunks = new Map(); // Track all chunks
+		this.chunkCache = new Map();
+		this.chunkCacheEntriesOrder = []; // Initialize to avoid undefined errors
 		this.block = new Block();
-		this.chunks = new Map();
-		this.chunkSize = 16; // Standard chunk size
+		this.chunkSize = 16;
 		this.noiseGen = new NoiseGenerator();
 		this.frustum = new Frustum();
-		this.renderDistance = 8; // Chunks
+		this.renderDistance = 1;
 		this.chunkLoadQueue = [];
 		this.maxConcurrentLoads = 4;
 		this.loadingDiv = null;
@@ -24,10 +29,10 @@ export class World {
 		this.lastPlayerChunkZ = 0;
 		this.debugMode = true;
 		this.chunkUpdateTimer = 0;
-		this.chunkUpdateCooldown = 1.0; // Update chunks once per second
-
+		this.chunkUpdateCooldown = 1.0;
+		this.memoryUsage = 0;
+		this.chunkLoadingPriorityQueue = [];
 		this.initializeWorkers();
-		this.worldGroup = worldGroup;
 	}
 
 	initializeWorkers() {
@@ -46,7 +51,6 @@ export class World {
 		this.loadingDiv = this.createChunkLoadingDisplay();
 
 		try {
-			// Initialize with just the chunks near the player
 			await this.updateChunksAroundPlayer();
 
 			console.log(`Generated ${this.chunks.size} chunks`);
@@ -60,126 +64,159 @@ export class World {
 		}
 	}
 
-	// New method to update chunks based on player position
-	async updateChunksAroundPlayer(player) {
-		if (!player) {
-			// Use origin coordinates as fallback if no player is provided
-			return this.loadChunksInArea(0, 0, 1);
-		}
-
-		// Convert player position to chunk coordinates
-		const chunkX = Math.floor(player.position.x / this.chunkSize);
-		const chunkZ = Math.floor(player.position.z / this.chunkSize);
-
-		// Load chunks around player
-		return this.loadChunksInArea(chunkX, chunkZ, 1);
+	getChunkCoordinates(x, z) {
+		return {
+			x: Math.floor(x / this.chunkSize),
+			z: Math.floor(z / this.chunkSize)
+		};
 	}
 
-	// New method to load chunks in a specific area
+	async updateChunksAroundPlayer(player) {
+		if (!player) {
+			return 0;
+		}
+
+		const playerChunk = this.getChunkCoordinates(player.position.x, player.position.z);
+		const radius = this.renderDistance;
+		const newChunks = await this.loadChunksInArea(playerChunk.x, playerChunk.z, radius);
+
+		return newChunks;
+	}
+
 	async loadChunksInArea(centerX, centerZ, radius) {
-		console.log(`Loading chunks around (${centerX}, ${centerZ}) with radius ${radius}`);
+		const chunksToLoad = [];
+		const frustum = this.frustum;
 
-		// Keep track of which chunks should remain loaded
-		const chunksToKeep = new Set();
-		let newChunksLoaded = 0;
-
-		// Load all chunks within specified radius
 		for (let x = centerX - radius; x <= centerX + radius; x++) {
 			for (let z = centerZ - radius; z <= centerZ + radius; z++) {
 				const chunkKey = `${x},${z}`;
-				chunksToKeep.add(chunkKey);
 
-				// Skip if chunk already exists
 				if (this.chunks.has(chunkKey)) continue;
 
-				// Create and initialize new chunk
+				const chunkPosition = new THREE.Vector3(
+					x * this.chunkSize + this.chunkSize / 2,
+					0,
+					z * this.chunkSize + this.chunkSize / 2
+				);
+
+				// Pass chunk indices, not world coordinates
+				if (!frustum.isChunkVisible({ x, z })) continue;
+
+				chunksToLoad.push({ x, z, distance: Math.sqrt((x - centerX) ** 2 + (z - centerZ) ** 2) });
+			}
+		}
+
+		chunksToLoad.sort((a, b) => a.distance - b.distance);
+
+		if (chunksToLoad.length > 0) {
+			return await this.backgroundLoadChunks(chunksToLoad);
+		}
+		return 0;
+	}
+
+	async backgroundLoadChunks(chunksToLoad) {
+		let loadedChunks = 0;
+		for (const chunkData of chunksToLoad) {
+			const { x, z } = chunkData;
+			const chunkKey = `${x},${z}`;
+
+			if (!this.chunks.has(chunkKey)) {
 				const chunk = new Chunk(x, z);
 				await chunk.initialize();
 				this.chunks.set(chunkKey, chunk);
-				newChunksLoaded++;
-
-				// Update loading display if needed
-				if (this.loadingDiv) {
-					this.updateChunkLoadingDisplay(newChunksLoaded, (radius * 2 + 1) * (radius * 2 + 1));
-				}
+				this.updateMemoryUsage();
+				loadedChunks++;
 			}
 		}
 
-		// Unload chunks that are too far away
-		for (const [chunkKey, chunk] of this.chunks.entries()) {
-			if (!chunksToKeep.has(chunkKey)) {
-				// Dispose of the chunk resources
-				chunk.dispose();
-				this.chunks.delete(chunkKey);
-				console.log(`Unloaded distant chunk at ${chunkKey}`);
-			}
-		}
-
-		return newChunksLoaded;
+		return loadedChunks;
 	}
 
 	addBlock(x, y, z, type) {
-		const chunk = this.getOrCreateChunk(Math.floor(x / this.chunkSize), Math.floor(z / this.chunkSize));
-		const blockId = `${x},${y},${z}`;
-
-		// Update block manager
-		if (type) {
-			chunk.addBlock(blockId, {
-				type,
-				position: { x, y, z }
-			});
-		} else {
-			chunk.removeBlock(blockId);
-		}
-
-		// Update chunk
-		chunk.setBlock(x & (this.chunkSize - 1), y, z & (this.chunkSize - 1), type);
-		chunk.needsUpdate = true;
-		this.chunks.set(`${chunk.x},${chunk.z}`, chunk);
-		this.totalBlocks += chunk.size * chunk.size * chunk.height;
+		const chunk = this.getOrCreateChunk(
+			Math.floor(x / this.chunkSize),
+			Math.floor(z / this.chunkSize)
+		);
+		const localX = x & (this.chunkSize - 1);
+		const localZ = z & (this.chunkSize - 1);
+		chunk.setBlock(localX, y, localZ, type);
 	}
 
 	getOrCreateChunk(chunkX, chunkZ) {
 		const key = `${chunkX},${chunkZ}`;
-		let chunk = this.chunks.get(key);
-
+		let chunk = this.chunkCache.get(key);
 		if (!chunk) {
-			chunk = new Chunk(chunkX, chunkZ);
-			this.chunks.set(key, chunk);
-			chunk.needsUpdate = true;
-			console.log(`Created new chunk at ${chunkX}, ${chunkZ}`);
-		}
+			chunk = this.chunks.get(key);
 
+			// Check cache size and evict oldest entry if needed
+			if (this.chunkCache.size >= World.MAX_CACHE) {
+				const oldestEntry = this.chunkCacheEntriesOrder.shift();
+				if (oldestEntry) {
+					const oldestChunk = this.chunkCache.get(oldestEntry);
+					if (oldestChunk) {
+						oldestChunk.dispose();
+						this.chunkCache.delete(oldestEntry);
+					}
+				}
+			}
+
+			if (!chunk) {
+				chunk = new Chunk(chunkX, chunkZ);
+				this.chunks.set(key, chunk);
+				chunk.needsUpdate = true;
+				this.updateMemoryUsage();
+				console.log(`Created new chunk at ${chunkX}, ${chunkZ}`);
+			}
+
+			this.chunkCache.set(key, chunk);
+			this.chunkCacheEntriesOrder.push(key);
+		}
 		return chunk;
 	}
 
+	// Get a chunk from cache or create it if it doesn't exist
 	getChunk(chunkX, chunkZ) {
-		return this.chunks.get(`${chunkX},${chunkZ}`);
+		const key = `${chunkX},${chunkZ}`;
+		const chunk = this.chunkCache.get(key);
+		if (chunk) {
+			// Move to end of order to mark as recently used
+			this.chunkCacheEntriesOrder = this.chunkCacheEntriesOrder.filter(entry => entry !== key);
+			this.chunkCacheEntriesOrder.push(key);
+		}
+		return chunk;
 	}
+
+	// Get all chunks in the world
 	getChunks() {
 		return Array.from(this.chunks.values());
 	}
 
+	// Get an individual block by its world coordinates
 	getBlock(x, y, z) {
-		const chunk = this.getChunk(Math.floor(x / this.chunkSize), Math.floor(z / this.chunkSize));
-		return chunk?.getBlock(x & (this.chunkSize - 1), y, z & (this.chunkSize - 1));
+		const chunkX = Math.floor(x / this.chunkSize);
+		const chunkZ = Math.floor(z / this.chunkSize);
+		const chunk = this.getChunk(chunkX, chunkZ);
+
+		if (!chunk) return undefined;
+
+		const localX = x & (this.chunkSize - 1);
+		const localZ = z & (this.chunkSize - 1);
+
+		return chunk.getBlock(localX, y, localZ);
 	}
+
+	// Set an individual block by its world coordinates
 	setBlock(x, y, z, type) {
 		const chunkX = Math.floor(x / this.chunkSize);
 		const chunkZ = Math.floor(z / this.chunkSize);
 		const chunk = this.getOrCreateChunk(chunkX, chunkZ);
-
-		// Convert to local chunk coordinates
 		const localX = x & (this.chunkSize - 1);
 		const localZ = z & (this.chunkSize - 1);
-
-		// Set the block
 		chunk.setBlock(localX, y, localZ, type);
-		chunk.needsUpdate = true;
 	}
 
+	// Update chunks around the player based on their position
 	update(deltaTime) {
-		// Update chunks that need updating
 		for (const chunk of this.chunks.values()) {
 			if (chunk.needsUpdate) {
 				chunk.isDirty = true;
@@ -187,33 +224,27 @@ export class World {
 			}
 		}
 
-		// Every 1 second, check if we need to update chunks around the player
 		this.chunkUpdateTimer += deltaTime;
 		if (this.chunkUpdateTimer > this.chunkUpdateCooldown && this.player) {
 			this.chunkUpdateTimer = 0;
 
-			// Get the player's current chunk
 			const currentChunkX = Math.floor(this.player.position.x / this.chunkSize);
 			const currentChunkZ = Math.floor(this.player.position.z / this.chunkSize);
 
-			// Check if player moved to a different chunk
 			if (currentChunkX !== this.lastPlayerChunkX ||
 				currentChunkZ !== this.lastPlayerChunkZ) {
 
 				console.log(`Player moved to chunk (${currentChunkX}, ${currentChunkZ})`);
 				this.updateChunksAroundPlayer(this.player);
 
-				// Update last known player chunk
 				this.lastPlayerChunkX = currentChunkX;
 				this.lastPlayerChunkZ = currentChunkZ;
 			}
 		}
 	}
 
-	// Crate a chunk loading display in the middle of the canvas
 	createChunkLoadingDisplay() {
 		if (this.loadingDiv) {
-			// Don't create multiple loading divs
 			return this.loadingDiv;
 		}
 
@@ -235,7 +266,6 @@ export class World {
 		return this.loadingDiv;
 	}
 
-	// Update the chunk loading display
 	updateChunkLoadingDisplay(loadedChunks, totalChunks) {
 		this.loadingDiv.innerText = `Loading chunks... ${loadedChunks}/${totalChunks}`;
 		if (loadedChunks === totalChunks) {
@@ -256,10 +286,9 @@ export class World {
 				this.visibleChunks.delete(chunk);
 			}
 		});
-		// Update frustum and remove chunks that are not visible
 		this.frustum?.update(player.getCamera());
 		this.visibleChunks.forEach(chunk => {
-			if (!this.frustum.isVisible(chunk)) {
+			if (!this.frustum.isVisible(chunk) || !chunk.isOccluded(player.getCamera())) {
 				this.visibleChunks.delete(chunk);
 			}
 		});
@@ -280,23 +309,18 @@ export class World {
 		let nearestBlock = null;
 		let minDistance = Infinity;
 
-		// Iterate through all chunks
 		for (const [key, chunk] of this.chunks) {
-			// For each chunk, iterate through its blocks
 			for (let x = 0; x < chunk.size; x++) {
 				for (let y = 0; y < chunk.height; y++) {
 					for (let z = 0; z < chunk.size; z++) {
 						const blockType = chunk.getBlock(x, y, z);
 
-						// Skip empty blocks
 						if (!blockType) continue;
 
-						// Calculate world position
 						const worldX = chunk.x * this.chunkSize + x;
 						const worldZ = chunk.z * this.chunkSize + z;
 						const blockPosition = { x: worldX, y, z: worldZ };
 
-						// Calculate distance to player
 						const dx = position.x - blockPosition.x;
 						const dy = position.y - blockPosition.y;
 						const dz = position.z - blockPosition.z;
@@ -307,7 +331,6 @@ export class World {
 							nearestBlock = {
 								type: blockType,
 								position: blockPosition,
-								// Use helper function to determine if block is solid
 								isSolid: isSolidBlockType(blockType)
 							};
 						}
@@ -319,19 +342,20 @@ export class World {
 		return nearestBlock;
 	}
 
-	// get loaded chunks
 	getLoadedChunks() {
 		return this.chunks;
 	}
 
 	dispose() {
-		// Improve cleanup
+		if (this.chunks.size > 0) {
+			for (const [key, chunk] of this.chunks) {
+				chunk.dispose();
+			}
+			this.chunks.clear();
+			this.chunkCache.clear();
+		}
 		this.workers.forEach(worker => worker.terminate());
 		this.workers = [];
-		this.chunks.forEach(chunk => {
-			chunk.dispose(); // Add dispose method to Chunk class
-		});
-		this.chunks.clear();
 		this.block = null;
 		this.noiseGen = null;
 		if (this.loadingDiv) {
@@ -346,12 +370,11 @@ export class World {
 			return true;
 		} catch (error) {
 			console.error('World initialization failed:', error);
-			this.dispose(); // Clean up workers on error
+			this.dispose();
 			throw error;
 		}
 	}
 
-	// remove chunk loading display
 	removeChunkLoadingDisplay() {
 		if (this.loadingDiv) {
 			this.loadingDiv.remove();
@@ -361,23 +384,32 @@ export class World {
 
 	enableDebug() {
 		this.debugMode = true;
-		this.debugStats = {
-			loadedChunks: 0,
-			totalBlocks: 0,
+		this.stats = {
+			chunksLoaded: 0,
+			chunksVisible: 0,
+			blocksDrawn: 0,
 			lastUpdateTime: 0,
-			chunkLoadTimes: []
+			performance: {
+				updateTime: 0,
+				chunkLoadTime: 0
+			}
 		};
 	}
 
 	updateDebugStats() {
 		if (!this.debugMode) return;
 
-		this.debugStats.loadedChunks = this.chunks.size;
-		this.debugStats.totalBlocks = this.totalBlocks;
-		debug.updateStats(this.debugStats);
+		this.stats.chunksLoaded = this.chunks.size;
+		this.stats.blocksDrawn = this.countBlocks();
+		this.stats.chunksVisible = this.visibleChunks.size;
+
+		// Track update performance
+		const updateTime = performance.now() - this.stats.lastUpdateTime;
+		this.stats.performance.updateTime = updateTime;
+		this.stats.lastUpdateTime = performance.now();
+		debug.updateStats(this.stats);
 	}
 
-	// Add this method to properly set the player and initialize chunks around them
 	setPlayer(player) {
 		if (!player) {
 			console.warn('Attempted to set null player in World');
@@ -387,11 +419,87 @@ export class World {
 		this.player = player;
 		console.log('Player set in World, initializing chunks around player position');
 
-		// Initialize chunks around the player's current position
 		this.updateChunksAroundPlayer(player);
 
-		// Set initial last known chunk position
 		this.lastPlayerChunkX = Math.floor(player.position.x / this.chunkSize);
 		this.lastPlayerChunkZ = Math.floor(player.position.z / this.chunkSize);
+	}
+
+	updateVisibleChunks() {
+		const currentViewChunks = this.getChunksAroundPlayer();
+		const chunksToRemove = Array.from(this.chunks.keys()).filter(
+			chunkKey => !currentViewChunks.includes(chunkKey)
+		);
+
+		chunksToRemove.forEach(chunkKey => {
+			const chunk = this.chunks.get(chunkKey);
+			if (chunk) {
+				chunk.dispose();
+				this.chunks.delete(chunkKey);
+				this.chunkCache.delete(chunkKey);
+				this.updateMemoryUsage();
+			}
+		});
+	}
+
+	getChunksAroundPlayer() {
+		const playerChunk = this.getChunkCoordinates(this.player.position.x, this.player.position.z);
+		const radius = this.renderDistance;
+		const currentViewChunks = [];
+
+		for (let x = playerChunk.x - radius; x <= playerChunk.x + radius; x++) {
+			for (let z = playerChunk.z - radius; z <= playerChunk.z + radius; z++) {
+				currentViewChunks.push(`${x},${z}`);
+			}
+		}
+
+		return currentViewChunks;
+	}
+
+	updateMemoryUsage() {
+		let totalMemory = 0;
+		for (const chunk of this.chunks.values()) {
+			totalMemory += chunk.memoryUsed;
+		}
+		this.memoryUsage = totalMemory;
+	}
+
+	countBlocks() {
+		let blockCount = 0;
+		for (const chunk of this.chunks.values()) {
+			blockCount += chunk.countBlocks();
+		}
+		return blockCount;
+	}
+
+	// Add chunk position helper functions
+	getChunkMin(chunk) {
+		return {
+			x: chunk.x * this.chunkSize,
+			z: chunk.z * this.chunkSize
+		};
+	}
+
+	getChunkMax(chunk) {
+		return {
+			x: chunk.x * this.chunkSize + this.chunkSize,
+			z: chunk.z * this.chunkSize + this.chunkSize
+		};
+	}
+
+	// Add chunk center position
+	getChunkCenter(chunk) {
+		return {
+			x: chunk.x * this.chunkSize + this.chunkSize / 2,
+			z: chunk.z * this.chunkSize + this.chunkSize / 2
+		};
+	}
+
+	// Add position to chunk helper
+	positionToChunk(x, z) {
+		return {
+			x: Math.floor(x / this.chunkSize),
+			z: Math.floor(z / this.chunkSize)
+		};
 	}
 }
