@@ -3,6 +3,8 @@ import * as THREE from 'three';
 import { debug } from './debug.js';
 
 export class World {
+	static MAX_CACHE = 100;
+
 	constructor(worldGroup = new THREE.Group()) {
 		this.block = new Block();
 		this.chunks = new Map();
@@ -145,6 +147,18 @@ export class World {
 		if (!chunk) {
 			chunk = this.chunks.get(key);
 
+			// Check cache size and evict oldest entry if needed
+			if (this.chunkCache.size >= World.MAX_CACHE) {
+				const oldestEntry = this.chunkCacheEntriesOrder.shift();
+				if (oldestEntry) {
+					const oldestChunk = this.chunkCache.get(oldestEntry);
+					if (oldestChunk) {
+						oldestChunk.dispose();
+						this.chunkCache.delete(oldestEntry);
+					}
+				}
+			}
+
 			if (!chunk) {
 				chunk = new Chunk(chunkX, chunkZ);
 				this.chunks.set(key, chunk);
@@ -180,7 +194,7 @@ export class World {
 	setBlock(x, y, z, type) {
 		const chunkX = Math.floor(x / this.chunkSize);
 		const chunkZ = Math.floor(z / this.chunkSize);
-		const chunk  = this.getOrCreateChunk(chunkX, chunkZ);
+		const chunk = this.getOrCreateChunk(chunkX, chunkZ);
 		const localX = x & (this.chunkSize - 1);
 		const localZ = z & (this.chunkSize - 1);
 		chunk.setBlock(localX, y, localZ, type);
