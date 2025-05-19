@@ -99,7 +99,8 @@ export class World {
 					z * this.chunkSize + this.chunkSize / 2
 				);
 
-				if (!frustum.isChunkVisible(chunkPosition)) continue;
+				// Pass chunk indices, not world coordinates
+				if (!frustum.isChunkVisible({ x, z })) continue;
 
 				chunksToLoad.push({ x, z, distance: Math.sqrt((x - centerX) ** 2 + (z - centerZ) ** 2) });
 			}
@@ -435,6 +436,7 @@ export class World {
 			if (chunk) {
 				chunk.dispose();
 				this.chunks.delete(chunkKey);
+				this.chunkCache.delete(chunkKey);
 				this.updateMemoryUsage();
 			}
 		});
