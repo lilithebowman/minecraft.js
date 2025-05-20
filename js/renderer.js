@@ -130,7 +130,7 @@ export class Renderer {
 		let chunksProcessed = 0;
 		const dirtyChunks = Array.from(chunks.values()).filter(chunk => chunk.isDirty);
 
-		debug.log(`Processing ${dirtyChunks.length} dirty chunks`);
+		// debug.log(`Processing ${dirtyChunks.length} dirty chunks`);
 
 		// Process each dirty chunk
 		for (const chunk of dirtyChunks) {
@@ -159,7 +159,7 @@ export class Renderer {
 			console.log(`Processed ${chunksProcessed} chunks`);
 		}
 
-		console.log(`worldGroup has ${this.worldGroup.children.length} children`);
+		// console.log(`worldGroup has ${this.worldGroup.children.length} children`);
 
 		this.world.removeChunkLoadingDisplay();
 	}

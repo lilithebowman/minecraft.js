@@ -14,10 +14,15 @@ export class TextureManager {
 	async initialize() {
 		if (this.initialized) return this;
 
-		await this.loadOrCreateTexture('grass', this.createGrassTop.bind(this));
-		await this.loadOrCreateTexture('dirt', this.createDirt.bind(this));
-		await this.loadOrCreateTexture('stone', this.createStone.bind(this));
-		await this.loadOrCreateTexture('bedrock', this.createBedrock.bind(this));
+		const grassImageCanvas = await this.loadOrCreateTexture('grass', this.createGrassTop.bind(this));
+		const dirtImageCanvas = await this.loadOrCreateTexture('dirt', this.createDirt.bind(this));
+		const stoneImageCanvas = await this.loadOrCreateTexture('stone', this.createStone.bind(this));
+		const bedrockImageCanvas = await this.loadOrCreateTexture('bedrock', this.createBedrock.bind(this));
+
+		this.textures.set('grass', grassImageCanvas);
+		this.textures.set('dirt', dirtImageCanvas);
+		this.textures.set('stone', stoneImageCanvas);
+		this.textures.set('bedrock', bedrockImageCanvas);
 
 		// Initialize texture atlas
 		console.log('Initializing texture manager...');
@@ -36,7 +41,38 @@ export class TextureManager {
 			console.error('Failed to initialize texture manager:', error);
 			throw error;
 		}
+
+		this.createDebugDisplay();
+
 		return this;
+	}
+
+	// Create a debug display showing the individual textures all in a row at the bottom of the screen
+	createDebugDisplay() {
+		const debugCanvas = document.createElement('canvas');
+		debugCanvas.width = this.textureSize * 4;
+		debugCanvas.height = this.textureSize;
+		debugCanvas.style.position = 'absolute';
+		debugCanvas.style.bottom = '0';
+		debugCanvas.style.left = '0';
+		debugCanvas.style.zIndex = '9999';
+		debugCanvas.style.pointerEvents = 'none';
+		debugCanvas.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+		debugCanvas.style.border = '1px solid white';
+		debugCanvas.style.borderRadius = '5px';
+		debugCanvas.style.boxShadow = '0 0 10px rgba(0, 0, 0, 0.5)';
+		debugCanvas.style.fontFamily = 'monospace';
+		const ctx = debugCanvas.getContext('2d');
+
+		let xOffset = 0;
+		for (const [name, texture] of this.textures) {
+			if (texture instanceof HTMLImageElement) {
+				ctx.drawImage(texture, xOffset, 0, this.textureSize, this.textureSize);
+				xOffset += this.textureSize;
+			}
+		}
+
+		document.body.appendChild(debugCanvas);
 	}
 
 	getMaterial(textureName) {
@@ -45,11 +81,19 @@ export class TextureManager {
 			return new THREE.MeshBasicMaterial({ color: 0xff00ff }); // Magenta fallback
 		}
 
-		// Create a new material using the texture atlas
+		// Check the mesh UV coordinates
+		if (!this.textureCoordinates[textureName]) {
+			console.error('Texture coordinates not found for:', textureName);
+			return new THREE.MeshBasicMaterial({ color: 0xff00ff }); // Magenta fallback
+		}
+
+		// Create a new material NOT using the texture atlas
 		const material = new THREE.MeshStandardMaterial({
-			map: this.textures.get('atlas'),
-			roughness: 1.0,
-			metalness: 0.3
+			map: new THREE.Texture(this.textures.get(textureName)),
+			color: 0xff00ff, // Magenta fallback
+			roughness: 0.3,
+			metalness: 0.9,
+			cullFace: THREE.DoubleSide,
 		});
 
 		// Calculate UV coordinates based on texture position in atlas
@@ -68,8 +112,8 @@ export class TextureManager {
 		// Calculate UV coordinates
 		const textureCount = 4; // Total number of textures in atlas
 		const tileSize = this.tileSize;
-		const atlasWidth = this.textures.get('atlas')?.image?.width || 256; // Default to 256 if not set
-		const atlasHeight = this.textures.get('atlas')?.image?.height || 256; // Default to 256 if not set
+		const atlasWidth = tileSize * textureIndex.length();
+		const atlasHeight = tileSize;
 		if (atlasWidth <= 0 || atlasHeight <= 0) {
 			console.error('Invalid atlas dimensions:', atlasWidth, atlasHeight);
 			return material;

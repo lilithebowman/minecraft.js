@@ -222,6 +222,9 @@ export class Input {
 				: 'Keys: none';
 		}
 
+		// Player is always flying
+		this.isFlying = true;
+
 		// --- Flying and Jumping ---
 		// Handle flying (apply continuous upward force if flying and space is held)
 		if (this.isFlying && this.keys.has('Space')) {
