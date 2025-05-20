@@ -71,6 +71,11 @@ export class Player {
 	}
 
 	async initialize() {
+		// Set the player position to 512 on the vertical axis at 0,0
+		this.position = new Position(0, 512, 0);
+		this.isFrozen = true;
+		this.velocity = new Velocity();
+
 		// Create camera
 		this.camera = new THREE.PerspectiveCamera(
 			75, // FOV
