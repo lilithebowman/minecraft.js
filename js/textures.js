@@ -47,7 +47,7 @@ export class TextureManager {
 		return this;
 	}
 
-	// Create a debug display showing the indivual textures all in a row at the bottom of the screen
+	// Create a debug display showing the individual textures all in a row at the bottom of the screen
 	createDebugDisplay() {
 		const debugCanvas = document.createElement('canvas');
 		debugCanvas.width = this.textureSize * 4;
