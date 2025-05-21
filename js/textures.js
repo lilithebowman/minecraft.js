@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { NoiseGenerator } from './utils/noise.js';
-import { text } from 'body-parser';
 
 export class TextureManager {
 	constructor() {
