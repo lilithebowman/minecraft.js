@@ -160,6 +160,10 @@ export class World {
 	// Get a chunk from cache or create it if it doesn't exist
 	getChunk(chunkX, chunkZ) {
 		const key = `${chunkX},${chunkZ}`;
+		if (!this.chunkCache || this.chunkCache.size === 0 || typeof this.chunkCache.get !== 'function') {
+			console.error('Chunk cache is not initialized or invalid');
+			return undefined;
+		}
 		const chunk = this.chunkCache.get(key);
 		if (chunk) {
 			// Move to end of order to mark as recently used
@@ -335,7 +339,6 @@ export class World {
 				chunk.dispose();
 			}
 			this.chunks.clear();
-			this.chunkCache?.clear();
 		}
 		this.workers.forEach(worker => worker.terminate());
 		this.workers = [];
@@ -350,6 +353,15 @@ export class World {
 	async initialize() {
 		try {
 			await this.generateWorld();
+			// position the player at the top of the terrain
+			if (!this.player) {
+				throw new Error('Player is not defined in world');
+			}
+			let topBlock = this.getTopBlockAt(0, 0);
+			if (!topBlock) {
+				topBlock = { y: 64 }; // Default to 64 if no top block found
+			}
+			this.player?.position.set(0, topBlock.y + 1, 0);
 			return true;
 		} catch (error) {
 			console.error('World initialization failed:', error);
@@ -484,5 +496,33 @@ export class World {
 			x: Math.floor(x / this.chunkSize),
 			z: Math.floor(z / this.chunkSize)
 		};
+	}
+
+	// Get the position of the top block at the given coordinates
+	getTopBlockAt(x, z) {
+		const chunkX = Math.floor(x / this.chunkSize);
+		const chunkZ = Math.floor(z / this.chunkSize);
+		const chunk = this.getChunk(chunkX, chunkZ);
+
+		if (!chunk) return null;
+
+		const localX = x & (this.chunkSize - 1);
+		const localZ = z & (this.chunkSize - 1);
+
+		return chunk.getTopBlockAt(localX, localZ);
+	}
+
+	// Get the position of the bottom block at the given coordinates
+	getBottomBlockAt(x, z) {
+		const chunkX = Math.floor(x / this.chunkSize);
+		const chunkZ = Math.floor(z / this.chunkSize);
+		const chunk = this.getChunk(chunkX, chunkZ);
+
+		if (!chunk) return null;
+
+		const localX = x & (this.chunkSize - 1);
+		const localZ = z & (this.chunkSize - 1);
+
+		return chunk.getBottomBlockAt(localX, localZ);
 	}
 }

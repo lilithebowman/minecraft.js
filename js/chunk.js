@@ -490,4 +490,15 @@ export class Chunk {
 			return [];
 		}
 	}
+
+	// Get the top block in the chunk at the given coordinates
+	getTopBlockAt(x, z) {
+		for (let y = this.height - 1; y >= 0; y--) {
+			const block = this.getBlock(x, y, z);
+			if (block) {
+				return { x, y, z };
+			}
+		}
+		return null;
+	}
 }

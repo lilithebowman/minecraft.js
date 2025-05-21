@@ -13,7 +13,7 @@ export class Engine {
 		this.worldGroup = new THREE.Group();
 
 		// Create player first but DON'T create camera yet
-		this.playerStartPosition = new THREE.Vector3(0, 100, 0);
+		this.playerStartPosition = new THREE.Vector3(0, 64, 0);
 		this.player = new Player(this.playerStartPosition);
 
 		// Create other components after player
