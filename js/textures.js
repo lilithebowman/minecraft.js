@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { NoiseGenerator } from './utils/noise.js';
+import { text } from 'body-parser';
 
 export class TextureManager {
 	constructor() {
@@ -82,8 +83,10 @@ export class TextureManager {
 		}
 
 		// Create a new material NOT using the texture atlas
+		const texture = new THREE.Texture(this.textures.get(textureName));
+		texture.needsUpdate = true;
 		const material = new THREE.MeshStandardMaterial({
-			map: new THREE.Texture(this.textures.get(textureName)),
+			map: texture,
 			color: 0xff00ff, // Magenta fallback
 			roughness: 0.3,
 			metalness: 0.9
