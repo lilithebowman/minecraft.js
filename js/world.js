@@ -160,6 +160,10 @@ export class World {
 	// Get a chunk from cache or create it if it doesn't exist
 	getChunk(chunkX, chunkZ) {
 		const key = `${chunkX},${chunkZ}`;
+		if (!this.chunkCache || this.chunkCache.size === 0 || typeof this.chunkCache.get !== 'function') {
+			console.error('Chunk cache is not initialized or invalid');
+			return undefined;
+		}
 		const chunk = this.chunkCache.get(key);
 		if (chunk) {
 			// Move to end of order to mark as recently used
@@ -353,9 +357,9 @@ export class World {
 			if (!this.player) {
 				throw new Error('Player is not defined in world');
 			}
-			const topBlock = this.getTopBlockAt(0, 0);
+			let topBlock = this.getTopBlockAt(0, 0);
 			if (!topBlock) {
-				throw new Error('Failed to initialize player position: No top block found at (0, 0).');
+				topBlock = { y: 64 }; // Default to 64 if no top block found
 			}
 			this.player?.position.set(0, topBlock.y + 1, 0);
 			return true;
