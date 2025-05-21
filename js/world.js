@@ -358,10 +358,8 @@ export class World {
 				throw new Error('Player is not defined in world');
 			}
 			let topBlock = this.getTopBlockAt(0, 0);
-			if (!topBlock) {
-				topBlock = { y: 64 }; // Default to 64 if no top block found
-			}
-			this.player?.position.set(0, topBlock.y + 1, 0);
+
+			this.player?.position.set(0, this.getTopBlockAt(0, 0).y + 1, 0);
 			return true;
 		} catch (error) {
 			console.error('World initialization failed:', error);
