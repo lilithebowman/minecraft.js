@@ -3,7 +3,7 @@ import { OrientationCube, Position, Velocity } from './modules.js';
 import { debug } from './debug.js';
 
 export class Player {
-	constructor(position = new Position(0, 100, 0)) {
+	constructor(position = new Position(0, 100, 0), world = null) {
 		// Initialize properties
 		this.position = position;
 		this.velocity = new Velocity();
@@ -11,6 +11,7 @@ export class Player {
 		this.eyeHeight = 1.6;
 		this.rotation = 0;
 		this.pitch = 0;
+		this.world = world;
 
 		// Initialize direction vectors
 		this.forward = new THREE.Vector3(0, 0, -1);
@@ -71,8 +72,7 @@ export class Player {
 	}
 
 	async initialize() {
-		// Set the player position to 512 on the vertical axis at 0,0
-		this.position = new Position(0, 512, 0);
+		// Set the player position to top of terrain on the vertical axis at 0,0
 		this.isFrozen = true;
 		this.velocity = new Velocity();
 

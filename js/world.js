@@ -350,6 +350,11 @@ export class World {
 	async initialize() {
 		try {
 			await this.generateWorld();
+			// position the player at the top of the terrain
+			if (!this.player) {
+				throw new Error('Player is not defined in world');
+			}
+			this.player?.position.set(0, this.getTopBlockAt(0, 0).y + 1, 0);
 			return true;
 		} catch (error) {
 			console.error('World initialization failed:', error);
@@ -484,5 +489,33 @@ export class World {
 			x: Math.floor(x / this.chunkSize),
 			z: Math.floor(z / this.chunkSize)
 		};
+	}
+
+	// Get the position of the top block at the given coordinates
+	getTopBlockAt(x, z) {
+		const chunkX = Math.floor(x / this.chunkSize);
+		const chunkZ = Math.floor(z / this.chunkSize);
+		const chunk = this.getChunk(chunkX, chunkZ);
+
+		if (!chunk) return null;
+
+		const localX = x & (this.chunkSize - 1);
+		const localZ = z & (this.chunkSize - 1);
+
+		return chunk.getTopBlockAt(localX, localZ);
+	}
+
+	// Get the position of the bottom block at the given coordinates
+	getBottomBlockAt(x, z) {
+		const chunkX = Math.floor(x / this.chunkSize);
+		const chunkZ = Math.floor(z / this.chunkSize);
+		const chunk = this.getChunk(chunkX, chunkZ);
+
+		if (!chunk) return null;
+
+		const localX = x & (this.chunkSize - 1);
+		const localZ = z & (this.chunkSize - 1);
+
+		return chunk.getBottomBlockAt(localX, localZ);
 	}
 }
