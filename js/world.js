@@ -335,7 +335,6 @@ export class World {
 				chunk.dispose();
 			}
 			this.chunks.clear();
-			this.chunkCache?.clear();
 		}
 		this.workers.forEach(worker => worker.terminate());
 		this.workers = [];
