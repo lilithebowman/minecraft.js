@@ -10,7 +10,7 @@ export class Frustum {
     update(camera) {
         if (!camera?.projectionMatrix || !camera?.matrixWorldInverse) {
             if (!this.cameraReady) {
-                console.warn('Waiting for camera initialization...');
+                // console.warn('Waiting for camera initialization...');
                 this.cameraReady = false;
             }
             return false;

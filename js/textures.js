@@ -93,7 +93,6 @@ export class TextureManager {
 			color: 0xff00ff, // Magenta fallback
 			roughness: 0.3,
 			metalness: 0.9,
-			cullFace: THREE.DoubleSide,
 		});
 
 		// Calculate UV coordinates based on texture position in atlas
@@ -112,7 +111,7 @@ export class TextureManager {
 		// Calculate UV coordinates
 		const textureCount = 4; // Total number of textures in atlas
 		const tileSize = this.tileSize;
-		const atlasWidth = tileSize * textureIndex.length();
+		const atlasWidth = tileSize * 4; // Assuming 4 textures in a row
 		const atlasHeight = tileSize;
 		if (atlasWidth <= 0 || atlasHeight <= 0) {
 			console.error('Invalid atlas dimensions:', atlasWidth, atlasHeight);

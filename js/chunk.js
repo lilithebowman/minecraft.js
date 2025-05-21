@@ -310,7 +310,7 @@ export class Chunk {
 			this.mesh.geometry.dispose();
 			this.mesh.geometry = geometry;
 		} else {
-			const material = new THREE.MeshLambertMaterial({ color: 0xaaaaaa });
+			const material = new THREE.MeshLambertMaterial({ color: 0xFF00FF });
 			this.mesh = new THREE.Mesh(geometry, material);
 			this.mesh.position.set(this.x * this.size, 0, this.z * this.size);
 		}
