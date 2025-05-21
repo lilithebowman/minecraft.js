@@ -3,7 +3,7 @@ import { OrientationCube, Position, Velocity } from './modules.js';
 import { debug } from './debug.js';
 
 export class Player {
-	constructor(position = new Position(0, 100, 0), world = null) {
+	constructor(position = new Position(0, 100, 0)) {
 		// Initialize properties
 		this.position = position;
 		this.velocity = new Velocity();
@@ -11,7 +11,6 @@ export class Player {
 		this.eyeHeight = 1.6;
 		this.rotation = 0;
 		this.pitch = 0;
-		this.world = world;
 
 		// Initialize direction vectors
 		this.forward = new THREE.Vector3(0, 0, -1);
