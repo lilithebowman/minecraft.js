@@ -81,18 +81,14 @@ export class TextureManager {
 			return new THREE.MeshBasicMaterial({ color: 0xff00ff }); // Magenta fallback
 		}
 
-		// Check the mesh UV coordinates
-		if (!this.textureCoordinates[textureName]) {
-			console.error('Texture coordinates not found for:', textureName);
-			return new THREE.MeshBasicMaterial({ color: 0xff00ff }); // Magenta fallback
-		}
-
 		// Create a new material NOT using the texture atlas
+		const texture = new THREE.Texture(this.textures.get(textureName));
+		texture.needsUpdate = true;
 		const material = new THREE.MeshStandardMaterial({
-			map: new THREE.Texture(this.textures.get(textureName)),
+			map: texture,
 			color: 0xff00ff, // Magenta fallback
 			roughness: 0.3,
-			metalness: 0.9,
+			metalness: 0.9
 		});
 
 		// Calculate UV coordinates based on texture position in atlas
