@@ -78,7 +78,7 @@ export class TextureManager {
 	getMaterial(textureName) {
 		if (!this.initialized) {
 			console.warn('Texture atlas not loaded - call initialize() first');
-			return new THREE.MeshBasicMaterial({ color: 0xff00ff }); // Magenta fallback
+			return new THREE.MeshBasicMaterial({ color: 0xff00ff, wireframe: true }); // Magenta fallback
 		}
 
 		// Create a new material NOT using the texture atlas

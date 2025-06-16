@@ -19,12 +19,12 @@ export class OrientationCube {
 		// Create cube
 		const geometry = new THREE.BoxGeometry(1, 1, 1);
 		const materials = [
-			new THREE.MeshBasicMaterial({ color: 0xff0000 }), // Right - Red
-			new THREE.MeshBasicMaterial({ color: 0x00ff00 }), // Left - Green
-			new THREE.MeshBasicMaterial({ color: 0x0000ff }), // Top - Blue
-			new THREE.MeshBasicMaterial({ color: 0xffff00 }), // Bottom - Yellow
-			new THREE.MeshBasicMaterial({ color: 0xff00ff }), // Front - Purple
-			new THREE.MeshBasicMaterial({ color: 0x00ffff }), // Back - Cyan
+			new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true }), // Right - Red
+			new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true }), // Left - Green
+			new THREE.MeshBasicMaterial({ color: 0x0000ff, wireframe: true }), // Top - Blue
+			new THREE.MeshBasicMaterial({ color: 0xffff00, wireframe: true }), // Bottom - Yellow
+			new THREE.MeshBasicMaterial({ color: 0xff00ff, wireframe: true }), // Front - Purple
+			new THREE.MeshBasicMaterial({ color: 0x00ffff, wireframe: true }), // Back - Cyan
 		];
 		this.cube = new THREE.Mesh(geometry, materials);
 		this.scene.add(this.cube);
