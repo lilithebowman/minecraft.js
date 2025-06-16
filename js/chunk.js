@@ -277,7 +277,7 @@ export class Chunk {
 						vertices.push(...faceVertices);
 
 						// Add face UVs based on block type
-						const faceUVs = this.getFaceUVs(block.blockType || block);
+						const faceUVs = this.getFaceUVs(block.blockType || block.BEDROCK);
 						uvs.push(...faceUVs);
 
 						// Add face indices
@@ -310,7 +310,7 @@ export class Chunk {
 			this.mesh.geometry.dispose();
 			this.mesh.geometry = geometry;
 		} else {
-			const material = new THREE.MeshLambertMaterial({ color: 0xFF00FF });
+			const material = new THREE.MeshLambertMaterial({ color: 0xFF00FF, wireframe: true });
 			this.mesh = new THREE.Mesh(geometry, material);
 			this.mesh.position.set(this.x * this.size, 0, this.z * this.size);
 		}
