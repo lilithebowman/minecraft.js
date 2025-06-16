@@ -72,6 +72,8 @@ export class Player {
 
 	async initialize() {
 		// Set the player position to top of terrain on the vertical axis at 0,0
+		const terrainHeight = this.getTerrainHeight(0, 0);
+		this.position = new Position(0, terrainHeight, 0);
 		this.isFrozen = true;
 		this.velocity = new Velocity();
 
