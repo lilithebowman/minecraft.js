@@ -362,6 +362,10 @@ export class World {
 				topBlock = { y: 64 }; // Default to 64 if no top block found
 			}
 			this.player?.position.set(0, topBlock.y + 1, 0);
+
+			// Initialize the player height to the top terrain block if the current X,Z position
+
+
 			return true;
 		} catch (error) {
 			console.error('World initialization failed:', error);
