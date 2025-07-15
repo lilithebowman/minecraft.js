@@ -248,7 +248,12 @@ export class Chunk {
 		// Add visible blocks to fragment (limited per frame)
 		for (const [key, block] of this.blocks) {
 			if (block.type !== 'air' && blocksAdded < this.maxBlocksPerFrame) {
-				if (!block.element.parentNode) {
+				// Ensure block element is created
+				if (block.needsCreation) {
+					block.createElement();
+				}
+
+				if (block.element && !block.element.parentNode) {
 					fragment.appendChild(block.element);
 					blocksAdded++;
 
@@ -381,7 +386,12 @@ export class Chunk {
 		// Add visible blocks to fragment (limited per frame)
 		for (const [key, block] of this.blocks) {
 			if (block.type !== 'air' && blocksAdded < this.maxBlocksPerFrame) {
-				if (!block.element.parentNode) {
+				// Ensure block element is created
+				if (block.needsCreation) {
+					block.createElement();
+				}
+
+				if (block.element && !block.element.parentNode) {
 					fragment.appendChild(block.element);
 					blocksAdded++;
 
