@@ -52,14 +52,16 @@ function generateChunk($chunkX, $chunkZ) {
             
             for ($y = 0; $y < 256; $y++) {
                 // Determine block type based on height
-                if ($y == 0) {
-                    $blocks[$x][$y][$z] = "BEDROCK";
+                if ($y <= 4) {
+                    // Bedrock layers at the bottom (y=0 to y=4) - unbreakable foundation
+                    $bedrockChance = $y === 0 ? 1.0 : max(0.1, 1.0 - ($y * 0.2));
+                    $blocks[$x][$y][$z] = (rand(0, 100) / 100) < $bedrockChance ? "bedrock" : "stone";
                 } else if ($y < $height - 4) {
-                    $blocks[$x][$y][$z] = "STONE";
+                    $blocks[$x][$y][$z] = "stone";
                 } else if ($y < $height) {
-                    $blocks[$x][$y][$z] = "DIRT";
+                    $blocks[$x][$y][$z] = "dirt";
                 } else if ($y == $height) {
-                    $blocks[$x][$y][$z] = "GRASS";
+                    $blocks[$x][$y][$z] = "grass";
                 } else {
                     // Air above the surface (can be represented as null or empty)
                     $blocks[$x][$y][$z] = null;

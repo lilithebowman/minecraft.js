@@ -124,9 +124,22 @@ export class Chunk {
 	generateColumnAtOptimized(localX, localZ, height) {
 		let blocksCreated = 0;
 
-		// Generate more complete terrain layers
-		const minY = Math.max(0, height - 15); // Increased from 10 to 15
-		const maxY = Math.min(height + 3, this.height - 1); // Increased from 2 to 3
+		// Always ensure bedrock layers at the bottom (y=0 to y=4)
+		// This creates an unbreakable bottom layer like in real Minecraft
+		for (let y = 0; y <= 4; y++) {
+			// Higher chance of bedrock at lower levels
+			const bedrockChance = y === 0 ? 1.0 : Math.max(0.1, 1.0 - (y * 0.2));
+			const blockType = Math.random() < bedrockChance ? 'bedrock' : 'stone';
+
+			this.pendingBlocks.push({
+				localX, y, localZ, blockType
+			});
+			blocksCreated++;
+		}
+
+		// Generate terrain layers from bedrock up
+		const minY = Math.max(5, height - 15); // Start from 5 (above bedrock layers)
+		const maxY = Math.min(height + 3, this.height - 1);
 
 		for (let y = minY; y <= maxY; y++) {
 			let blockType = 'stone';
@@ -138,7 +151,7 @@ export class Chunk {
 			} else if (y >= height - 8) {
 				blockType = 'stone';
 			} else {
-				blockType = 'bedrock';
+				blockType = 'stone'; // Deep stone layers
 			}
 
 			this.pendingBlocks.push({

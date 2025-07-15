@@ -89,24 +89,29 @@ function createTerrainData() {
 	// This is a simplified version - in reality you'd use noise generators
 	const blocks = {};
 
-	// Create a simple terrain with a flat surface
+	// Create a simple terrain with guaranteed bedrock bottom
 	for (let x = 0; x < 16; x++) {
 		for (let z = 0; z < 16; z++) {
-			// Bedrock at y=0
-			blocks[`${x},0,${z}`] = 'BEDROCK';
+			// Bedrock layers at the bottom (y=0 to y=4) - unbreakable foundation
+			for (let y = 0; y <= 4; y++) {
+				// Higher chance of bedrock at lower levels
+				const bedrockChance = y === 0 ? 1.0 : Math.max(0.1, 1.0 - (y * 0.2));
+				const blockType = Math.random() < bedrockChance ? 'bedrock' : 'stone';
+				blocks[`${x},${y},${z}`] = blockType;
+			}
 
-			// Stone from y=1 to y=60
-			for (let y = 1; y < 60; y++) {
-				blocks[`${x},${y},${z}`] = 'STONE';
+			// Stone from y=5 to y=60
+			for (let y = 5; y < 60; y++) {
+				blocks[`${x},${y},${z}`] = 'stone';
 			}
 
 			// Dirt from y=60 to y=63
 			for (let y = 60; y < 63; y++) {
-				blocks[`${x},${y},${z}`] = 'DIRT';
+				blocks[`${x},${y},${z}`] = 'dirt';
 			}
 
 			// Grass at y=63
-			blocks[`${x},63,${z}`] = 'GRASS';
+			blocks[`${x},63,${z}`] = 'grass';
 		}
 	}
 
