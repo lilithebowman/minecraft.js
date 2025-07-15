@@ -66,37 +66,72 @@ export class Game {
 			this.hideLoadingScreen();
 			throw error;
 		}
-	}
-
-	/**
-	 * Initialize all game systems
-	 */
+	}    /**
+     * Initialize all game systems with progress tracking
+     */
 	async initializeSystems() {
+		const loadingSteps = [
+			{ name: 'Performance Monitor', weight: 5 },
+			{ name: 'World', weight: 40 },
+			{ name: 'Player', weight: 15 },
+			{ name: 'Camera', weight: 10 },
+			{ name: 'Input Manager', weight: 15 },
+			{ name: 'UI Manager', weight: 10 },
+			{ name: 'Connections', weight: 5 }
+		];
+
+		let totalProgress = 0;
+		const updateProgress = (stepProgress, stepWeight) => {
+			const progress = (totalProgress + (stepProgress * stepWeight)) / 100;
+			this.updateLoadingProgress(progress * 100);
+		};
+
 		// Initialize performance monitor
 		this.performanceMonitor = new PerformanceMonitor();
+		totalProgress += loadingSteps[0].weight;
+		updateProgress(1, 0);
 
-		// Initialize world
+		// Initialize world (this takes the longest)
 		this.world = new World(this.worldElement);
+		updateProgress(0.5, loadingSteps[1].weight);
 		await this.world.initialize();
+		totalProgress += loadingSteps[1].weight;
+		updateProgress(1, 0);
 
 		// Initialize player
 		this.player = new Player();
+		updateProgress(0.5, loadingSteps[2].weight);
 		await this.player.initialize();
+		totalProgress += loadingSteps[2].weight;
+		updateProgress(1, 0);
 
 		// Initialize camera
 		this.camera = new Camera(this.viewport);
+		updateProgress(0.5, loadingSteps[3].weight);
 		await this.camera.initialize();
+		totalProgress += loadingSteps[3].weight;
+		updateProgress(1, 0);
 
 		// Initialize input manager
 		this.inputManager = new InputManager();
+		updateProgress(0.5, loadingSteps[4].weight);
 		await this.inputManager.initialize();
+		totalProgress += loadingSteps[4].weight;
+		updateProgress(1, 0);
 
 		// Initialize UI manager
 		this.uiManager = new UIManager();
+		updateProgress(0.5, loadingSteps[5].weight);
 		await this.uiManager.initialize();
+		totalProgress += loadingSteps[5].weight;
+		updateProgress(1, 0);
 
 		// Connect input events to game systems
 		this.connectInputEvents();
+		totalProgress += loadingSteps[6].weight;
+		updateProgress(1, 0);
+
+		this.updateLoadingProgress(100);
 	}
 
 	/**
@@ -220,20 +255,22 @@ export class Game {
 
 		// Update world rendering
 		this.world.render();
-	}
-
-	/**
-	 * Update UI with current game state
-	 */
+	}    /**
+     * Update UI with current game state
+     */
 	updateUI() {
 		const playerPos = this.player.getPosition();
 		const chunkPos = this.world.getChunkCoordinates(playerPos);
+		const worldStats = this.world.getStats();
 
 		this.uiManager.update({
 			fps: this.performanceMonitor.getFPS(),
 			position: playerPos,
 			chunk: `${chunkPos.x}, ${chunkPos.z}`,
-			blockLookingAt: this.getBlockLookingAt()
+			blockLookingAt: this.getBlockLookingAt(),
+			chunksLoaded: worldStats.chunkCount,
+			loadQueue: worldStats.loadQueueSize,
+			unloadQueue: worldStats.unloadQueueSize
 		});
 	}
 
@@ -298,35 +335,49 @@ export class Game {
 		} else {
 			this.resume();
 		}
-	}
-
-	/**
-	 * Show loading screen
-	 */
+	}    /**
+     * Show loading screen with progress
+     */
 	showLoadingScreen() {
 		const loadingElement = document.createElement('div');
 		loadingElement.id = 'loading-screen';
 		loadingElement.className = 'loading-screen';
 		loadingElement.innerHTML = `
             <div>Loading Minecraft.js CSS Edition...</div>
+            <div id="loading-status">Initializing...</div>
             <div class="loading-progress">
-                <div class="loading-progress-bar" style="width: 0%"></div>
+                <div id="loading-progress-bar" class="loading-progress-bar" style="width: 0%"></div>
             </div>
         `;
 
 		document.body.appendChild(loadingElement);
+		this.loadingElement = loadingElement;
+	}
 
-		// Simulate loading progress
-		const progressBar = loadingElement.querySelector('.loading-progress-bar');
-		let progress = 0;
-		const interval = setInterval(() => {
-			progress += Math.random() * 30;
-			if (progress > 100) {
-				progress = 100;
-				clearInterval(interval);
+	/**
+	 * Update loading progress
+	 */
+	updateLoadingProgress(percent) {
+		if (this.loadingElement) {
+			const progressBar = this.loadingElement.querySelector('#loading-progress-bar');
+			const statusElement = this.loadingElement.querySelector('#loading-status');
+
+			if (progressBar) {
+				progressBar.style.width = `${Math.min(100, Math.max(0, percent))}%`;
 			}
-			progressBar.style.width = `${progress}%`;
-		}, 100);
+
+			if (statusElement) {
+				if (percent < 50) {
+					statusElement.textContent = 'Generating world...';
+				} else if (percent < 80) {
+					statusElement.textContent = 'Initializing systems...';
+				} else if (percent < 95) {
+					statusElement.textContent = 'Starting game...';
+				} else {
+					statusElement.textContent = 'Ready!';
+				}
+			}
+		}
 	}
 
 	/**

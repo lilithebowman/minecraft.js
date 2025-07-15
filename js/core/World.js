@@ -9,21 +9,25 @@ export class World {
 		this.element = element;
 		this.chunks = new Map();
 		this.chunkSize = 16;
-		this.renderDistance = 3; // Reduced for better performance
+		this.renderDistance = 2; // Further reduced for better performance
 		this.worldSeed = Math.random() * 1000000;
 
-		// Chunk management
+		// Chunk management with limits
 		this.chunkLoadQueue = [];
 		this.chunkUnloadQueue = [];
 		this.maxChunksPerFrame = 1;
+		this.maxConcurrentChunks = 9; // 3x3 grid limit
+		this.maxChunksTotal = 25; // Hard limit on total chunks
 
 		// World generation parameters
-		this.seaLevel = 32;
-		this.maxHeight = 128;
+		this.seaLevel = 24; // Reduced
+		this.maxHeight = 64; // Reduced
 
 		// Performance tracking
 		this.lastChunkUpdate = 0;
-		this.chunkUpdateInterval = 100; // ms
+		this.chunkUpdateInterval = 200; // Increased interval
+		this.isGenerating = false;
+		this.generationQueue = [];
 	}
 
 	/**
@@ -45,26 +49,31 @@ export class World {
 	}
 
 	/**
-	 * Generate initial chunks around spawn point
+	 * Generate initial chunks around spawn point with parallelization
 	 */
 	async generateInitialChunks() {
 		const spawnChunkX = 0;
 		const spawnChunkZ = 0;
-		const initialRadius = 2;
+		const initialRadius = 1; // Reduced from 2
 
-		console.log('Generating initial chunks...');
+		console.log('Generating initial chunks (optimized)...');
 
+		// Generate chunks in parallel batches
+		const chunkPromises = [];
 		for (let x = spawnChunkX - initialRadius; x <= spawnChunkX + initialRadius; x++) {
 			for (let z = spawnChunkZ - initialRadius; z <= spawnChunkZ + initialRadius; z++) {
-				await this.loadChunk(x, z);
+				chunkPromises.push(this.loadChunk(x, z));
 			}
 		}
+
+		// Wait for all chunks to be generated
+		await Promise.all(chunkPromises);
 
 		console.log(`Generated ${this.chunks.size} initial chunks`);
 	}
 
 	/**
-	 * Update world based on player position
+	 * Update world based on player position (optimized)
 	 */
 	update(player, deltaTime) {
 		const now = performance.now();
@@ -77,27 +86,42 @@ export class World {
 		const playerPos = player.getPosition();
 		const playerChunk = this.getChunkCoordinates(playerPos);
 
-		// Load chunks around player
-		this.updateChunkLoading(playerChunk);
+		// Only update if player moved to a different chunk
+		if (!this.lastPlayerChunk ||
+			this.lastPlayerChunk.x !== playerChunk.x ||
+			this.lastPlayerChunk.z !== playerChunk.z) {
+
+			// Load chunks around player
+			this.updateChunkLoadingOptimized(playerChunk);
+		}
 
 		// Process chunk loading/unloading queues
 		this.processChunkQueues();
 
-		// Update existing chunks
-		this.updateChunks();
+		// Update existing chunks (limited)
+		this.updateChunksOptimized();
 
 		this.lastChunkUpdate = now;
+		this.lastPlayerChunk = playerChunk;
 	}
 
 	/**
-	 * Update chunk loading around player
+	 * Update chunk loading around player (optimized)
 	 */
-	updateChunkLoading(playerChunk) {
+	updateChunkLoadingOptimized(playerChunk) {
 		const { x: centerX, z: centerZ } = playerChunk;
 
-		// Queue chunks for loading
+		// Early exit if we have too many chunks
+		if (this.chunks.size >= this.maxChunksTotal) {
+			return;
+		}
+
+		// Queue chunks for loading (limited)
+		let queuedChunks = 0;
 		for (let x = centerX - this.renderDistance; x <= centerX + this.renderDistance; x++) {
 			for (let z = centerZ - this.renderDistance; z <= centerZ + this.renderDistance; z++) {
+				if (queuedChunks >= this.maxConcurrentChunks) break;
+
 				const chunkKey = `${x},${z}`;
 
 				if (!this.chunks.has(chunkKey)) {
@@ -105,13 +129,14 @@ export class World {
 
 					if (distance <= this.renderDistance) {
 						this.chunkLoadQueue.push({ x, z, distance });
+						queuedChunks++;
 					}
 				}
 			}
 		}
 
-		// Queue distant chunks for unloading
-		const unloadDistance = this.renderDistance + 1;
+		// Queue distant chunks for unloading (aggressive)
+		const unloadDistance = this.renderDistance + 0.5;
 		for (const [chunkKey, chunk] of this.chunks) {
 			const [x, z] = chunkKey.split(',').map(Number);
 			const distance = Math.sqrt((x - centerX) ** 2 + (z - centerZ) ** 2);
@@ -126,28 +151,46 @@ export class World {
 	}
 
 	/**
-	 * Process chunk loading and unloading queues
+	 * Process chunk loading and unloading queues (optimized)
 	 */
 	processChunkQueues() {
-		// Process chunk loading
-		let chunksLoaded = 0;
-		while (this.chunkLoadQueue.length > 0 && chunksLoaded < this.maxChunksPerFrame) {
-			const { x, z } = this.chunkLoadQueue.shift();
-			this.loadChunk(x, z);
-			chunksLoaded++;
-		}
-
-		// Process chunk unloading
+		// Process chunk unloading first (to free memory)
 		let chunksUnloaded = 0;
 		while (this.chunkUnloadQueue.length > 0 && chunksUnloaded < this.maxChunksPerFrame) {
 			const chunk = this.chunkUnloadQueue.shift();
 			this.unloadChunk(chunk);
 			chunksUnloaded++;
 		}
+
+		// Process chunk loading (if not already generating)
+		if (!this.isGenerating && this.chunkLoadQueue.length > 0) {
+			const { x, z } = this.chunkLoadQueue.shift();
+			this.loadChunkAsync(x, z);
+		}
 	}
 
 	/**
-	 * Load a chunk at the given coordinates
+	 * Load a chunk asynchronously
+	 */
+	async loadChunkAsync(x, z) {
+		const chunkKey = `${x},${z}`;
+
+		if (this.chunks.has(chunkKey) || this.isGenerating) {
+			return;
+		}
+
+		this.isGenerating = true;
+
+		try {
+			const chunk = await this.loadChunk(x, z);
+			return chunk;
+		} finally {
+			this.isGenerating = false;
+		}
+	}
+
+	/**
+	 * Load a chunk at the given coordinates (optimized)
 	 */
 	async loadChunk(x, z) {
 		const chunkKey = `${x},${z}`;
@@ -156,24 +199,42 @@ export class World {
 			return this.chunks.get(chunkKey);
 		}
 
-		console.log(`Loading chunk at ${x}, ${z}`);
+		// Check chunk limit
+		if (this.chunks.size >= this.maxChunksTotal) {
+			console.warn('Chunk limit reached, skipping chunk generation');
+			return null;
+		}
+
+		console.log(`Loading chunk at ${x}, ${z} (optimized)`);
 
 		// Create new chunk
 		const chunk = new Chunk(x, z, this.chunkSize);
 
-		// Generate terrain
-		chunk.generate(this.worldSeed);
+		// Generate terrain asynchronously
+		await chunk.generate(this.worldSeed);
 
 		// Add to DOM
 		chunk.addToDOM(this.element);
-
-		// Update chunk rendering
-		chunk.update();
 
 		// Store chunk
 		this.chunks.set(chunkKey, chunk);
 
 		return chunk;
+	}
+
+	/**
+	 * Update existing chunks (optimized)
+	 */
+	updateChunksOptimized() {
+		let chunksUpdated = 0;
+		const maxUpdatesPerFrame = 3;
+
+		for (const chunk of this.chunks.values()) {
+			if (chunksUpdated >= maxUpdatesPerFrame) break;
+
+			chunk.update();
+			chunksUpdated++;
+		}
 	}
 
 	/**
@@ -194,9 +255,7 @@ export class World {
 	 * Update all loaded chunks
 	 */
 	updateChunks() {
-		for (const chunk of this.chunks.values()) {
-			chunk.update();
-		}
+		this.updateChunksOptimized();
 	}
 
 	/**

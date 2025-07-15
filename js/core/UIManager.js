@@ -35,11 +35,9 @@ export class UIManager {
 		this.setupEventListeners();
 
 		console.log('UI manager initialized');
-	}
-
-	/**
-	 * Set up debug panel elements
-	 */
+	}    /**
+     * Set up debug panel elements
+     */
 	setupDebugPanel() {
 		if (!this.debugPanel) {
 			console.warn('Debug panel element not found');
@@ -76,6 +74,11 @@ export class UIManager {
 			this.blockInfo.id = 'block-info';
 			this.debugPanel.appendChild(this.blockInfo);
 		}
+
+		// Add performance stats
+		this.performanceInfo = document.createElement('div');
+		this.performanceInfo.id = 'performance-info';
+		this.debugPanel.appendChild(this.performanceInfo);
 	}
 
 	/**
@@ -141,6 +144,18 @@ export class UIManager {
 
 		if (this.blockInfo) {
 			this.blockInfo.textContent = `Looking at: ${this.stats.blockLookingAt}`;
+		}
+
+		// Update performance info
+		if (this.performanceInfo) {
+			const memoryUsage = performance.memory ? (performance.memory.usedJSHeapSize / 1024 / 1024).toFixed(1) : 'N/A';
+			const domNodes = document.getElementsByClassName('block').length;
+			this.performanceInfo.innerHTML = `
+				<div>Memory: ${memoryUsage} MB</div>
+				<div>DOM Nodes: ${domNodes}</div>
+				<div>Chunks: ${this.stats.chunkCount || 0}</div>
+				<div>Blocks: ${this.stats.blockCount || 0}</div>
+			`;
 		}
 	}
 

@@ -12,6 +12,7 @@ export class Block {
 		this.faces = [];
 		this.isVisible = true;
 		this.isHighlighted = false;
+		this.isInDOM = false;
 
 		// Block size in CSS pixels
 		this.size = 32;
@@ -19,13 +20,16 @@ export class Block {
 		// Face names for cube
 		this.faceNames = ['front', 'back', 'left', 'right', 'top', 'bottom'];
 
-		this.createElement();
+		// Lazy creation - only create when needed
+		this.needsCreation = true;
 	}
 
 	/**
-	 * Create the DOM element for this block
+	 * Create the DOM element for this block (lazy)
 	 */
 	createElement() {
+		if (!this.needsCreation) return;
+
 		this.element = document.createElement('div');
 		this.element.className = `block block-${this.type}`;
 
@@ -37,21 +41,28 @@ export class Block {
 
 		// Store reference to this block instance
 		this.element._blockInstance = this;
+
+		this.needsCreation = false;
 	}
 
 	/**
-	 * Create the 6 faces of the cube
+	 * Create the 6 faces of the cube (optimized)
 	 */
 	createFaces() {
 		this.faces = [];
+
+		// Create faces in a more efficient way
+		const fragment = document.createDocumentFragment();
 
 		this.faceNames.forEach(faceName => {
 			const face = document.createElement('div');
 			face.className = `block-face face-${faceName}`;
 			face.dataset.face = faceName;
-			this.element.appendChild(face);
+			fragment.appendChild(face);
 			this.faces.push(face);
 		});
+
+		this.element.appendChild(fragment);
 	}
 
 	/**
@@ -135,23 +146,30 @@ export class Block {
 			const faceName = this.faceNames[index];
 			face.style.display = faceVisibility[faceName] ? 'block' : 'none';
 		});
-	}
-
-	/**
-	 * Add this block to a parent DOM element
-	 */
+	}    /**
+     * Add this block to a parent DOM element (optimized)
+     */
 	addToDOM(parent) {
-		if (this.element && parent && !this.element.parentNode) {
+		if (!parent || this.isInDOM) return;
+
+		// Create element if needed
+		if (this.needsCreation) {
+			this.createElement();
+		}
+
+		if (this.element && !this.element.parentNode) {
 			parent.appendChild(this.element);
+			this.isInDOM = true;
 		}
 	}
 
 	/**
-	 * Remove this block from DOM
+	 * Remove this block from DOM (optimized)
 	 */
 	removeFromDOM() {
 		if (this.element && this.element.parentNode) {
 			this.element.parentNode.removeChild(this.element);
+			this.isInDOM = false;
 		}
 	}
 

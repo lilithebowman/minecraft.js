@@ -9,7 +9,7 @@ export class Chunk {
 		this.x = x;
 		this.z = z;
 		this.size = size;
-		this.height = 128; // Reduced from 256 for better performance
+		this.height = 64; // Further reduced for better performance
 
 		this.element = null;
 		this.blocks = new Map();
@@ -17,9 +17,12 @@ export class Chunk {
 		this.isVisible = true;
 		this.isDirty = false;
 
-		// Performance optimization
+		// Performance optimization limits
 		this.lastUpdateTime = 0;
-		this.updateThreshold = 16; // ms between updates
+		this.updateThreshold = 32; // ms between updates (increased)
+		this.maxBlocksPerFrame = 50; // Limit DOM operations per frame
+		this.maxBlocksPerChunk = 1000; // Hard limit on blocks per chunk
+		this.pendingBlocks = []; // Queue for batched block creation
 
 		this.createElement();
 	}
@@ -38,59 +41,132 @@ export class Chunk {
 	}
 
 	/**
-	 * Generate terrain for this chunk
+	 * Generate terrain for this chunk with performance limits
 	 */
-	generate(seed = 12345) {
+	async generate(seed = 12345) {
 		if (this.isGenerated) return;
 
-		console.log(`Generating chunk at ${this.x}, ${this.z}`);
+		console.log(`Generating chunk at ${this.x}, ${this.z} (optimized)`);
 
 		// Clear existing blocks
 		this.blocks.clear();
+		this.pendingBlocks = [];
 
-		// Generate terrain
-		this.generateTerrain(seed);
+		// Generate terrain with limits
+		await this.generateTerrainOptimized(seed);
 
 		this.isGenerated = true;
 		this.isDirty = true;
 	}
 
 	/**
-	 * Generate terrain using improved noise
+	 * Generate terrain using optimized approach with limits
 	 */
-	generateTerrain(seed) {
-		const baseHeight = 32;
-		const maxVariation = 16;
+	async generateTerrainOptimized(seed) {
+		const baseHeight = 24; // Reduced base height
+		const maxVariation = 8; // Reduced variation
+		let blocksCreated = 0;
 
-		for (let localX = 0; localX < this.size; localX++) {
-			for (let localZ = 0; localZ < this.size; localZ++) {
+		// Generate in smaller batches to avoid blocking
+		for (let localX = 0; localX < this.size && blocksCreated < this.maxBlocksPerChunk; localX++) {
+			for (let localZ = 0; localZ < this.size && blocksCreated < this.maxBlocksPerChunk; localZ++) {
 				const worldX = this.x * this.size + localX;
 				const worldZ = this.z * this.size + localZ;
 
-				// Generate height using multiple octaves of noise
-				const height = this.generateHeightAt(worldX, worldZ, seed);
+				// Generate height using simplified noise
+				const height = this.generateHeightAtOptimized(worldX, worldZ, seed);
 
-				// Place blocks based on height
-				this.generateColumnAt(localX, localZ, height);
+				// Generate column with limits
+				const columnBlocks = this.generateColumnAtOptimized(localX, localZ, height);
+				blocksCreated += columnBlocks;
+
+				// Yield control periodically to prevent blocking
+				if (blocksCreated % 100 === 0) {
+					await new Promise(resolve => setTimeout(resolve, 0));
+				}
 			}
 		}
+
+		console.log(`Generated ${blocksCreated} blocks for chunk ${this.x}, ${this.z}`);
 	}
 
 	/**
-	 * Generate height at world coordinates using noise
+	 * Optimized height generation
 	 */
-	generateHeightAt(worldX, worldZ, seed) {
-		const baseHeight = 32;
-		const maxVariation = 16;
+	generateHeightAtOptimized(worldX, worldZ, seed) {
+		const baseHeight = 24;
+		const maxVariation = 8;
 
-		// Multiple octaves of noise for more realistic terrain
-		const noise1 = this.noise(worldX * 0.01, worldZ * 0.01, seed);
-		const noise2 = this.noise(worldX * 0.02, worldZ * 0.02, seed + 1000) * 0.5;
-		const noise3 = this.noise(worldX * 0.04, worldZ * 0.04, seed + 2000) * 0.25;
+		// Single noise octave for performance
+		const noise = this.noise(worldX * 0.02, worldZ * 0.02, seed);
+		return Math.floor(baseHeight + noise * maxVariation);
+	}
 
-		const combinedNoise = (noise1 + noise2 + noise3) / 1.75;
+	/**
+	 * Generate a column of blocks with limits
+	 */
+	generateColumnAtOptimized(localX, localZ, height) {
+		let blocksCreated = 0;
 
-		return Math.floor(baseHeight + combinedNoise * maxVariation);
+		// Only generate surface and near-surface blocks
+		const minY = Math.max(0, height - 5);
+		const maxY = Math.min(height + 1, this.height - 1);
+
+		for (let y = minY; y <= maxY; y++) {
+			let blockType = 'stone';
+
+			if (y === height) {
+				blockType = 'grass';
+			} else if (y >= height - 2) {
+				blockType = 'dirt';
+			}
+
+			this.pendingBlocks.push({
+				localX, y, localZ, blockType
+			});
+			blocksCreated++;
+		}
+
+		// Occasionally add trees (reduced frequency)
+		if (Math.random() < 0.005 && blocksCreated < this.maxBlocksPerChunk - 10) {
+			blocksCreated += this.generateTreeAtOptimized(localX, localZ, height + 1);
+		}
+
+		return blocksCreated;
+	}
+
+	/**
+	 * Generate a simple tree with limits
+	 */
+	generateTreeAtOptimized(localX, localZ, baseY) {
+		const treeHeight = 3 + Math.floor(Math.random() * 2); // Smaller trees
+		let blocksCreated = 0;
+
+		// Tree trunk
+		for (let y = 0; y < treeHeight && blocksCreated < 20; y++) {
+			this.pendingBlocks.push({
+				localX, y: baseY + y, localZ, blockType: 'wood'
+			});
+			blocksCreated++;
+		}
+
+		// Simplified leaves
+		const leafTop = baseY + treeHeight;
+		for (let x = -1; x <= 1 && blocksCreated < 20; x++) {
+			for (let z = -1; z <= 1 && blocksCreated < 20; z++) {
+				const leafX = localX + x;
+				const leafZ = localZ + z;
+
+				if (this.isValidPosition(leafX, leafTop, leafZ)) {
+					this.pendingBlocks.push({
+						localX: leafX, y: leafTop, localZ: leafZ, blockType: 'leaves'
+					});
+					blocksCreated++;
+				}
+			}
+		}
+
+		return blocksCreated;
 	}
 
 	/**
@@ -102,66 +178,7 @@ export class Chunk {
 	}
 
 	/**
-	 * Generate a column of blocks at local coordinates
-	 */
-	generateColumnAt(localX, localZ, height) {
-		// Bedrock layer
-		this.setBlock(localX, 0, localZ, 'stone');
-
-		// Stone layer
-		for (let y = 1; y < height - 4; y++) {
-			this.setBlock(localX, y, localZ, 'stone');
-		}
-
-		// Dirt layer
-		for (let y = Math.max(1, height - 4); y < height; y++) {
-			this.setBlock(localX, y, localZ, 'dirt');
-		}
-
-		// Grass on top
-		if (height > 0) {
-			this.setBlock(localX, height, localZ, 'grass');
-		}
-
-		// Add some variety
-		if (Math.random() < 0.01) {
-			// Occasional trees
-			this.generateTreeAt(localX, localZ, height + 1);
-		}
-	}
-
-	/**
-	 * Generate a simple tree at local coordinates
-	 */
-	generateTreeAt(localX, localZ, baseY) {
-		const treeHeight = 4 + Math.floor(Math.random() * 3);
-
-		// Tree trunk
-		for (let y = 0; y < treeHeight; y++) {
-			this.setBlock(localX, baseY + y, localZ, 'wood');
-		}
-
-		// Tree leaves
-		const leafTop = baseY + treeHeight;
-		for (let x = -2; x <= 2; x++) {
-			for (let z = -2; z <= 2; z++) {
-				for (let y = 0; y < 3; y++) {
-					if (Math.abs(x) + Math.abs(z) + y < 4) {
-						const leafX = localX + x;
-						const leafZ = localZ + z;
-						const leafY = leafTop + y;
-
-						if (this.isValidPosition(leafX, leafY, leafZ)) {
-							this.setBlock(leafX, leafY, leafZ, 'leaves');
-						}
-					}
-				}
-			}
-		}
-	}
-
-	/**
-	 * Set a block at local coordinates
+	 * Set a block at local coordinates (optimized)
 	 */
 	setBlock(localX, localY, localZ, type) {
 		if (!this.isValidPosition(localX, localY, localZ)) return;
@@ -174,12 +191,79 @@ export class Chunk {
 			const block = this.blocks.get(key);
 			block.setType(type);
 		} else {
-			// Create new block
+			// Create new block (but don't add to DOM yet)
 			const block = new Block(worldX, localY, this.z * this.size + localZ, type);
 			this.blocks.set(key, block);
 		}
 
 		this.isDirty = true;
+	}
+
+	/**
+	 * Update chunk rendering with batched DOM operations
+	 */
+	update() {
+		if (!this.isDirty) return;
+
+		const now = performance.now();
+		if (now - this.lastUpdateTime < this.updateThreshold) return;
+
+		// Process pending blocks in batches
+		this.processPendingBlocks();
+
+		// Update DOM representation
+		this.updateDOMBatched();
+
+		this.isDirty = false;
+		this.lastUpdateTime = now;
+	}
+
+	/**
+	 * Process pending blocks in batches
+	 */
+	processPendingBlocks() {
+		const batchSize = Math.min(this.maxBlocksPerFrame, this.pendingBlocks.length);
+		const batch = this.pendingBlocks.splice(0, batchSize);
+
+		for (const blockData of batch) {
+			this.setBlock(blockData.localX, blockData.y, blockData.localZ, blockData.blockType);
+		}
+
+		// If there are still pending blocks, mark as dirty for next frame
+		if (this.pendingBlocks.length > 0) {
+			this.isDirty = true;
+		}
+	}
+
+	/**
+	 * Update DOM representation with batching
+	 */
+	updateDOMBatched() {
+		if (!this.element) return;
+
+		// Create document fragment for batched DOM operations
+		const fragment = document.createDocumentFragment();
+		let blocksAdded = 0;
+
+		// Add visible blocks to fragment (limited per frame)
+		for (const [key, block] of this.blocks) {
+			if (block.type !== 'air' && blocksAdded < this.maxBlocksPerFrame) {
+				if (!block.element.parentNode) {
+					fragment.appendChild(block.element);
+					blocksAdded++;
+
+					// Optimize faces based on neighbors
+					const [localX, localY, localZ] = key.split(',').map(Number);
+					const neighbors = this.getNeighbors(localX, localY, localZ);
+					block.optimizeFaces(neighbors);
+				}
+			}
+		}
+
+		// Add fragment to DOM in one operation
+		if (fragment.children.length > 0) {
+			this.element.appendChild(fragment);
+		}
 	}
 
 	/**
@@ -249,7 +333,7 @@ export class Chunk {
 	}
 
 	/**
-	 * Update chunk rendering
+	 * Update chunk rendering with batched DOM operations
 	 */
 	update() {
 		if (!this.isDirty) return;
@@ -257,30 +341,61 @@ export class Chunk {
 		const now = performance.now();
 		if (now - this.lastUpdateTime < this.updateThreshold) return;
 
-		this.updateDOM();
+		// Process pending blocks in batches
+		this.processPendingBlocks();
+
+		// Update DOM representation
+		this.updateDOMBatched();
+
 		this.isDirty = false;
 		this.lastUpdateTime = now;
 	}
 
 	/**
-	 * Update DOM representation
+	 * Process pending blocks in batches
 	 */
-	updateDOM() {
+	processPendingBlocks() {
+		const batchSize = Math.min(this.maxBlocksPerFrame, this.pendingBlocks.length);
+		const batch = this.pendingBlocks.splice(0, batchSize);
+
+		for (const blockData of batch) {
+			this.setBlock(blockData.localX, blockData.y, blockData.localZ, blockData.blockType);
+		}
+
+		// If there are still pending blocks, mark as dirty for next frame
+		if (this.pendingBlocks.length > 0) {
+			this.isDirty = true;
+		}
+	}
+
+	/**
+	 * Update DOM representation with batching
+	 */
+	updateDOMBatched() {
 		if (!this.element) return;
 
-		// Clear existing blocks from DOM
-		this.element.innerHTML = '';
+		// Create document fragment for batched DOM operations
+		const fragment = document.createDocumentFragment();
+		let blocksAdded = 0;
 
-		// Add visible blocks to DOM
+		// Add visible blocks to fragment (limited per frame)
 		for (const [key, block] of this.blocks) {
-			if (block.type !== 'air') {
-				block.addToDOM(this.element);
+			if (block.type !== 'air' && blocksAdded < this.maxBlocksPerFrame) {
+				if (!block.element.parentNode) {
+					fragment.appendChild(block.element);
+					blocksAdded++;
 
-				// Optimize faces based on neighbors
-				const [localX, localY, localZ] = key.split(',').map(Number);
-				const neighbors = this.getNeighbors(localX, localY, localZ);
-				block.optimizeFaces(neighbors);
+					// Optimize faces based on neighbors
+					const [localX, localY, localZ] = key.split(',').map(Number);
+					const neighbors = this.getNeighbors(localX, localY, localZ);
+					block.optimizeFaces(neighbors);
+				}
 			}
+		}
+
+		// Add fragment to DOM in one operation
+		if (fragment.children.length > 0) {
+			this.element.appendChild(fragment);
 		}
 	}
 
