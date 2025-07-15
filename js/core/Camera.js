@@ -1,6 +1,8 @@
 export class Camera {
 	constructor(viewport) {
 		this.viewport = viewport;
+
+		// Camera is always at center of viewport
 		this.position = { x: 0, y: 0, z: 0 };
 		this.rotation = { x: 0, y: 0 };
 		this.fov = 75;
@@ -8,6 +10,9 @@ export class Camera {
 		// Camera settings
 		this.perspective = 1000;
 		this.scale = 1;
+
+		// Block scale for world transformation
+		this.blockScale = 32; // CSS pixels per block
 
 		this.updatePerspective();
 	}
@@ -18,13 +23,8 @@ export class Camera {
 	}
 
 	update(player) {
-		// Get camera position from player
-		const cameraPos = player.getCameraPosition();
+		// Get rotation from player (camera follows player's look direction)
 		const rotation = player.getRotation();
-
-		this.position.x = cameraPos.x;
-		this.position.y = cameraPos.y;
-		this.position.z = cameraPos.z;
 
 		this.rotation.x = rotation.x;
 		this.rotation.y = rotation.y;
@@ -33,38 +33,48 @@ export class Camera {
 	applyTransform(worldElement) {
 		if (!worldElement) return;
 
-		// Calculate the transform matrix
-		const transform = this.calculateTransform();
+		// Get player position (this is what we need to transform the world around)
+		const playerPos = this.getPlayerPosition();
+
+		// Calculate the transform matrix to move world around stationary camera
+		const transform = this.calculateWorldTransform(playerPos);
 
 		// Apply transform to world element
 		worldElement.style.transform = transform;
 	}
 
-	calculateTransform() {
-		// Convert world coordinates to screen coordinates
+	calculateWorldTransform(playerPos) {
+		// Center of screen (where camera always is)
 		const screenX = window.innerWidth / 2;
 		const screenY = window.innerHeight / 2;
 
-		// Scale factor for blocks
-		const blockScale = 20;
-
-		// Build transform string
+		// Build transform string - order matters!
 		let transform = '';
 
-		// Translate to center of screen
+		// 1. Translate to center of screen
 		transform += `translate3d(${screenX}px, ${screenY}px, 0) `;
 
-		// Apply camera rotation (invert for world rotation)
+		// 2. Apply camera rotation (invert for world rotation)
 		transform += `rotateX(${-this.rotation.x}rad) `;
 		transform += `rotateY(${-this.rotation.y}rad) `;
 
-		// Apply camera position (invert for world position)
-		transform += `translate3d(${-this.position.x * blockScale}px, ${this.position.y * blockScale}px, ${this.position.z * blockScale}px) `;
+		// 3. Apply world position (invert player position to move world)
+		// Note: Y is inverted because CSS Y-axis points down, but world Y-axis points up
+		transform += `translate3d(${-playerPos.x * this.blockScale}px, ${-playerPos.y * this.blockScale}px, ${-playerPos.z * this.blockScale}px) `;
 
-		// Apply scale
+		// 4. Apply scale
 		transform += `scale3d(${this.scale}, ${this.scale}, ${this.scale})`;
 
 		return transform;
+	}
+
+	// Store player position for world transformation
+	setPlayerPosition(playerPos) {
+		this.playerPosition = playerPos;
+	}
+
+	getPlayerPosition() {
+		return this.playerPosition || { x: 0, y: 0, z: 0 };
 	}
 
 	updatePerspective() {

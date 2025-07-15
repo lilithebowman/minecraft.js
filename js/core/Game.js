@@ -239,6 +239,9 @@ export class Game {
 		// Update camera based on player
 		this.camera.update(this.player);
 
+		// Pass player position to camera for world transformation
+		this.camera.setPlayerPosition(this.player.getPosition());
+
 		// Update world around player
 		this.world.update(this.player, deltaTime);
 
@@ -250,7 +253,7 @@ export class Game {
 	 * Render the game
 	 */
 	render() {
-		// Apply camera transform to world
+		// Apply camera transform to world (moves world around stationary camera)
 		this.camera.applyTransform(this.worldElement);
 
 		// Update world rendering

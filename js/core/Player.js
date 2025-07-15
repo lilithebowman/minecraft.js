@@ -49,6 +49,58 @@ export class Player {
 		this.updateGroundCheck();
 	}
 
+	// Movement methods
+	move(direction) {
+		this.inputState[direction] = true;
+	}
+
+	stopMove(direction) {
+		this.inputState[direction] = false;
+	}
+
+	look(delta) {
+		// Apply mouse sensitivity
+		this.rotation.x += delta.y * this.mouseSensitivity;
+		this.rotation.y += delta.x * this.mouseSensitivity;
+
+		// Clamp pitch to prevent camera flipping
+		this.rotation.x = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, this.rotation.x));
+	}
+
+	jump() {
+		if (this.isGrounded && !this.isJumping) {
+			this.velocity.y = this.jumpForce;
+			this.isJumping = true;
+			this.isGrounded = false;
+		}
+	}
+
+	sprint(state) {
+		this.inputState.sprint = state;
+	}
+
+	sneak(state) {
+		this.inputState.sneak = state;
+	}
+
+	// Getters for camera system
+	getPosition() {
+		return this.position;
+	}
+
+	getCameraPosition() {
+		// Camera is at eye level
+		return {
+			x: this.position.x,
+			y: this.position.y + this.eyeHeight,
+			z: this.position.z
+		};
+	}
+
+	getRotation() {
+		return this.rotation;
+	}
+
 	updateMovement(deltaTime) {
 		const moveVector = new Vector3(0, 0, 0);
 

@@ -83,7 +83,18 @@ export class Chunk {
 		const maxVariation = 8; // Reduced variation
 		let blocksCreated = 0;
 
-		// Generate in smaller batches to avoid blocking
+		// First, generate bedrock layer for the entire chunk
+		for (let localX = 0; localX < this.size; localX++) {
+			for (let localZ = 0; localZ < this.size; localZ++) {
+				// Always add bedrock at y=0
+				this.pendingBlocks.push({
+					localX, y: 0, localZ, blockType: 'bedrock'
+				});
+				blocksCreated++;
+			}
+		}
+
+		// Then generate terrain with limits
 		for (let localX = 0; localX < this.size && blocksCreated < this.maxBlocksPerChunk; localX++) {
 			for (let localZ = 0; localZ < this.size && blocksCreated < this.maxBlocksPerChunk; localZ++) {
 				const worldX = this.x * this.size + localX;
@@ -92,7 +103,7 @@ export class Chunk {
 				// Generate height using simplified noise
 				const height = this.generateHeightAtOptimized(worldX, worldZ, seed);
 
-				// Generate column with limits
+				// Generate column with limits (starting from y=1 to avoid overwriting bedrock)
 				const columnBlocks = this.generateColumnAtOptimized(localX, localZ, height);
 				blocksCreated += columnBlocks;
 
