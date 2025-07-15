@@ -5,11 +5,12 @@ import { Block } from './Block.js';
  * Manages block generation, rendering, and optimization
  */
 export class Chunk {
-	constructor(x, z, size = 16) {
+	constructor(x, z, size = 16, performanceMonitor = null) {
 		this.x = x;
 		this.z = z;
 		this.size = size;
 		this.height = 64; // Further reduced for better performance
+		this.performanceMonitor = performanceMonitor;
 
 		this.element = null;
 		this.blocks = new Map();
@@ -17,14 +18,29 @@ export class Chunk {
 		this.isVisible = true;
 		this.isDirty = false;
 
-		// Performance optimization limits
+		// Dynamic performance optimization limits
 		this.lastUpdateTime = 0;
-		this.updateThreshold = 32; // ms between updates (increased)
-		this.maxBlocksPerFrame = 50; // Limit DOM operations per frame
-		this.maxBlocksPerChunk = 1000; // Hard limit on blocks per chunk
+		this.updateDynamicLimits();
 		this.pendingBlocks = []; // Queue for batched block creation
 
 		this.createElement();
+	}
+
+	/**
+	 * Update performance limits based on current FPS
+	 */
+	updateDynamicLimits() {
+		if (this.performanceMonitor) {
+			const limits = this.performanceMonitor.getBlockLimits();
+			this.updateThreshold = limits.updateThreshold;
+			this.maxBlocksPerFrame = limits.maxBlocksPerFrame;
+			this.maxBlocksPerChunk = limits.maxBlocksPerChunk;
+		} else {
+			// Fallback to static limits
+			this.updateThreshold = 8; // Decreased from 16
+			this.maxBlocksPerFrame = 400; // Increased from 200
+			this.maxBlocksPerChunk = 6000; // Increased from 4000
+		}
 	}
 
 	/**
@@ -108,17 +124,21 @@ export class Chunk {
 	generateColumnAtOptimized(localX, localZ, height) {
 		let blocksCreated = 0;
 
-		// Only generate surface and near-surface blocks
-		const minY = Math.max(0, height - 5);
-		const maxY = Math.min(height + 1, this.height - 1);
+		// Generate more complete terrain layers
+		const minY = Math.max(0, height - 15); // Increased from 10 to 15
+		const maxY = Math.min(height + 3, this.height - 1); // Increased from 2 to 3
 
 		for (let y = minY; y <= maxY; y++) {
 			let blockType = 'stone';
 
 			if (y === height) {
 				blockType = 'grass';
-			} else if (y >= height - 2) {
+			} else if (y >= height - 3) {
 				blockType = 'dirt';
+			} else if (y >= height - 8) {
+				blockType = 'stone';
+			} else {
+				blockType = 'bedrock';
 			}
 
 			this.pendingBlocks.push({
@@ -127,8 +147,8 @@ export class Chunk {
 			blocksCreated++;
 		}
 
-		// Occasionally add trees (reduced frequency)
-		if (Math.random() < 0.005 && blocksCreated < this.maxBlocksPerChunk - 10) {
+		// Occasionally add trees (increased frequency for better landscape)
+		if (Math.random() < 0.03 && blocksCreated < this.maxBlocksPerChunk - 30) {
 			blocksCreated += this.generateTreeAtOptimized(localX, localZ, height + 1);
 		}
 
@@ -208,6 +228,9 @@ export class Chunk {
 		const now = performance.now();
 		if (now - this.lastUpdateTime < this.updateThreshold) return;
 
+		// Update dynamic limits based on current performance
+		this.updateDynamicLimits();
+
 		// Process pending blocks in batches
 		this.processPendingBlocks();
 
@@ -247,12 +270,13 @@ export class Chunk {
 
 		// Add visible blocks to fragment (limited per frame)
 		for (const [key, block] of this.blocks) {
-			if (block.type !== 'air' && blocksAdded < this.maxBlocksPerFrame) {
+			if (block && block.type !== 'air' && blocksAdded < this.maxBlocksPerFrame) {
 				// Ensure block element is created
 				if (block.needsCreation) {
 					block.createElement();
 				}
 
+				// Check if block element exists and is not already in DOM
 				if (block.element && !block.element.parentNode) {
 					fragment.appendChild(block.element);
 					blocksAdded++;
@@ -260,7 +284,9 @@ export class Chunk {
 					// Optimize faces based on neighbors
 					const [localX, localY, localZ] = key.split(',').map(Number);
 					const neighbors = this.getNeighbors(localX, localY, localZ);
-					block.optimizeFaces(neighbors);
+					if (block.optimizeFaces && neighbors) {
+						block.optimizeFaces(neighbors);
+					}
 				}
 			}
 		}
@@ -335,78 +361,6 @@ export class Chunk {
 			top: this.getBlock(localX, localY + 1, localZ),
 			bottom: this.getBlock(localX, localY - 1, localZ)
 		};
-	}
-
-	/**
-	 * Update chunk rendering with batched DOM operations
-	 */
-	update() {
-		if (!this.isDirty) return;
-
-		const now = performance.now();
-		if (now - this.lastUpdateTime < this.updateThreshold) return;
-
-		// Process pending blocks in batches
-		this.processPendingBlocks();
-
-		// Update DOM representation
-		this.updateDOMBatched();
-
-		this.isDirty = false;
-		this.lastUpdateTime = now;
-	}
-
-	/**
-	 * Process pending blocks in batches
-	 */
-	processPendingBlocks() {
-		const batchSize = Math.min(this.maxBlocksPerFrame, this.pendingBlocks.length);
-		const batch = this.pendingBlocks.splice(0, batchSize);
-
-		for (const blockData of batch) {
-			this.setBlock(blockData.localX, blockData.y, blockData.localZ, blockData.blockType);
-		}
-
-		// If there are still pending blocks, mark as dirty for next frame
-		if (this.pendingBlocks.length > 0) {
-			this.isDirty = true;
-		}
-	}
-
-	/**
-	 * Update DOM representation with batching
-	 */
-	updateDOMBatched() {
-		if (!this.element) return;
-
-		// Create document fragment for batched DOM operations
-		const fragment = document.createDocumentFragment();
-		let blocksAdded = 0;
-
-		// Add visible blocks to fragment (limited per frame)
-		for (const [key, block] of this.blocks) {
-			if (block.type !== 'air' && blocksAdded < this.maxBlocksPerFrame) {
-				// Ensure block element is created
-				if (block.needsCreation) {
-					block.createElement();
-				}
-
-				if (block.element && !block.element.parentNode) {
-					fragment.appendChild(block.element);
-					blocksAdded++;
-
-					// Optimize faces based on neighbors
-					const [localX, localY, localZ] = key.split(',').map(Number);
-					const neighbors = this.getNeighbors(localX, localY, localZ);
-					block.optimizeFaces(neighbors);
-				}
-			}
-		}
-
-		// Add fragment to DOM in one operation
-		if (fragment.children.length > 0) {
-			this.element.appendChild(fragment);
-		}
 	}
 
 	/**

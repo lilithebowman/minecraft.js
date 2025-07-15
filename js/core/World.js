@@ -5,19 +5,18 @@ import { Vector3 } from '../utils/Vector3.js';
  * World class - Manages chunks and world generation
  */
 export class World {
-	constructor(element) {
+	constructor(element, performanceMonitor = null) {
 		this.element = element;
+		this.performanceMonitor = performanceMonitor;
 		this.chunks = new Map();
 		this.chunkSize = 16;
-		this.renderDistance = 2; // Further reduced for better performance
+		this.renderDistance = 4; // Increased from 3 to 4
 		this.worldSeed = Math.random() * 1000000;
 
-		// Chunk management with limits
+		// Dynamic chunk management limits
 		this.chunkLoadQueue = [];
 		this.chunkUnloadQueue = [];
-		this.maxChunksPerFrame = 1;
-		this.maxConcurrentChunks = 9; // 3x3 grid limit
-		this.maxChunksTotal = 25; // Hard limit on total chunks
+		this.updateDynamicLimits();
 
 		// World generation parameters
 		this.seaLevel = 24; // Reduced
@@ -25,9 +24,26 @@ export class World {
 
 		// Performance tracking
 		this.lastChunkUpdate = 0;
-		this.chunkUpdateInterval = 200; // Increased interval
+		this.chunkUpdateInterval = 50; // Decreased from 100 to 50
 		this.isGenerating = false;
 		this.generationQueue = [];
+	}
+
+	/**
+	 * Update dynamic limits based on performance
+	 */
+	updateDynamicLimits() {
+		if (this.performanceMonitor) {
+			const limits = this.performanceMonitor.getBlockLimits();
+			this.maxChunksPerFrame = Math.max(2, Math.floor(limits.maxBlocksPerFrame / 100)); // Increased min from 1 to 2
+			this.maxConcurrentChunks = limits.maxChunks;
+			this.maxChunksTotal = Math.floor(limits.maxChunks * 1.5);
+		} else {
+			// Fallback to static limits
+			this.maxChunksPerFrame = 3; // Increased from 2 to 3
+			this.maxConcurrentChunks = 49; // Increased from 25
+			this.maxChunksTotal = 81; // Increased from 49
+		}
 	}
 
 	/**
@@ -54,7 +70,7 @@ export class World {
 	async generateInitialChunks() {
 		const spawnChunkX = 0;
 		const spawnChunkZ = 0;
-		const initialRadius = 1; // Reduced from 2
+		const initialRadius = 2; // Increased from 1 to 2
 
 		console.log('Generating initial chunks (optimized)...');
 
@@ -207,8 +223,8 @@ export class World {
 
 		console.log(`Loading chunk at ${x}, ${z} (optimized)`);
 
-		// Create new chunk
-		const chunk = new Chunk(x, z, this.chunkSize);
+		// Create new chunk with performance monitor
+		const chunk = new Chunk(x, z, this.chunkSize, this.performanceMonitor);
 
 		// Generate terrain asynchronously
 		await chunk.generate(this.worldSeed);
@@ -226,8 +242,11 @@ export class World {
 	 * Update existing chunks (optimized)
 	 */
 	updateChunksOptimized() {
+		// Update dynamic limits based on current performance
+		this.updateDynamicLimits();
+
 		let chunksUpdated = 0;
-		const maxUpdatesPerFrame = 3;
+		const maxUpdatesPerFrame = Math.max(1, Math.floor(this.maxChunksPerFrame * 1.5));
 
 		for (const chunk of this.chunks.values()) {
 			if (chunksUpdated >= maxUpdatesPerFrame) break;
@@ -352,8 +371,14 @@ export class World {
 	 * Get world statistics
 	 */
 	getStats() {
+		let totalBlocks = 0;
+		for (const chunk of this.chunks.values()) {
+			totalBlocks += chunk.getBlockCount();
+		}
+
 		return {
 			chunkCount: this.chunks.size,
+			blockCount: totalBlocks,
 			loadQueueSize: this.chunkLoadQueue.length,
 			unloadQueueSize: this.chunkUnloadQueue.length,
 			renderDistance: this.renderDistance,

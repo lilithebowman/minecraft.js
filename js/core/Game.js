@@ -92,7 +92,7 @@ export class Game {
 		updateProgress(1, 0);
 
 		// Initialize world (this takes the longest)
-		this.world = new World(this.worldElement);
+		this.world = new World(this.worldElement, this.performanceMonitor);
 		updateProgress(0.5, loadingSteps[1].weight);
 		await this.world.initialize();
 		totalProgress += loadingSteps[1].weight;
@@ -262,15 +262,19 @@ export class Game {
 		const playerPos = this.player.getPosition();
 		const chunkPos = this.world.getChunkCoordinates(playerPos);
 		const worldStats = this.world.getStats();
+		const perfMetrics = this.performanceMonitor.getMetrics();
 
 		this.uiManager.update({
-			fps: this.performanceMonitor.getFPS(),
+			fps: perfMetrics.fps,
 			position: playerPos,
 			chunk: `${chunkPos.x}, ${chunkPos.z}`,
 			blockLookingAt: this.getBlockLookingAt(),
-			chunksLoaded: worldStats.chunkCount,
+			chunkCount: worldStats.chunkCount,
+			blockCount: worldStats.blockCount,
 			loadQueue: worldStats.loadQueueSize,
-			unloadQueue: worldStats.unloadQueueSize
+			unloadQueue: worldStats.unloadQueueSize,
+			performanceLevel: perfMetrics.performanceLevel,
+			blockLimits: perfMetrics.blockLimits
 		});
 	}
 

@@ -122,7 +122,6 @@ export class UIManager {
 		this.stats = { ...this.stats, ...newStats };
 		this.updateDebugPanel();
 	}
-
 	/**
 	 * Update debug panel content
 	 */
@@ -150,9 +149,16 @@ export class UIManager {
 		if (this.performanceInfo) {
 			const memoryUsage = performance.memory ? (performance.memory.usedJSHeapSize / 1024 / 1024).toFixed(1) : 'N/A';
 			const domNodes = document.getElementsByClassName('block').length;
+			const perfLevel = this.stats.performanceLevel ? this.stats.performanceLevel.toFixed(2) : 'N/A';
+			const blockLimits = this.stats.blockLimits || {};
+
 			this.performanceInfo.innerHTML = `
 				<div>Memory: ${memoryUsage} MB</div>
 				<div>DOM Nodes: ${domNodes}</div>
+				<div>Performance Level: ${perfLevel}</div>
+				<div>Blocks/Frame: ${blockLimits.maxBlocksPerFrame || 'N/A'}</div>
+				<div>Blocks/Chunk: ${blockLimits.maxBlocksPerChunk || 'N/A'}</div>
+				<div>Max Chunks: ${blockLimits.maxChunks || 'N/A'}</div>
 				<div>Chunks: ${this.stats.chunkCount || 0}</div>
 				<div>Blocks: ${this.stats.blockCount || 0}</div>
 			`;
