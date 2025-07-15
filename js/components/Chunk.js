@@ -305,12 +305,12 @@ export class Chunk {
 					fragment.appendChild(block.element);
 					blocksAdded++;
 
-					// Optimize faces based on neighbors
-					const [localX, localY, localZ] = key.split(',').map(Number);
-					const neighbors = this.getNeighbors(localX, localY, localZ);
-					if (block.optimizeFaces && neighbors) {
-						block.optimizeFaces(neighbors);
-					}
+					// Face culling disabled - skip optimization
+					// const [localX, localY, localZ] = key.split(',').map(Number);
+					// const neighbors = this.getNeighbors(localX, localY, localZ);
+					// if (block.optimizeFaces && neighbors) {
+					// 	block.optimizeFaces(neighbors);
+					// }
 				}
 			}
 		}
@@ -480,5 +480,38 @@ export class Chunk {
 		// Remove from DOM
 		this.removeFromDOM();
 		this.element = null;
+	}
+
+	/**
+	 * Get blocks by distance from a player position
+	 */
+	getBlocksByDistance(playerPosition) {
+		const blocksWithDistance = [];
+
+		for (const [blockKey, block] of this.blocks) {
+			// Calculate world position of block
+			const worldX = this.x * this.size + block.x;
+			const worldY = block.y;
+			const worldZ = this.z * this.size + block.z;
+
+			// Calculate 3D distance from player
+			const dx = worldX - playerPosition.x;
+			const dy = worldY - playerPosition.y;
+			const dz = worldZ - playerPosition.z;
+			const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+			blocksWithDistance.push({
+				block: block,
+				distance: distance,
+				worldX: worldX,
+				worldY: worldY,
+				worldZ: worldZ
+			});
+		}
+
+		// Sort by distance (closest first)
+		blocksWithDistance.sort((a, b) => a.distance - b.distance);
+
+		return blocksWithDistance;
 	}
 }

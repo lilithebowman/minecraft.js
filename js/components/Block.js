@@ -129,22 +129,14 @@ export class Block {
 
 	/**
 	 * Optimize rendering by hiding faces that are covered by neighbors
+	 * Note: Face culling disabled - all faces are always visible
 	 */
 	optimizeFaces(neighbors) {
 		if (!this.element || !this.faces.length) return;
 
-		const faceVisibility = {
-			front: !neighbors.front || neighbors.front.isTransparent(),
-			back: !neighbors.back || neighbors.back.isTransparent(),
-			left: !neighbors.left || neighbors.left.isTransparent(),
-			right: !neighbors.right || neighbors.right.isTransparent(),
-			top: !neighbors.top || neighbors.top.isTransparent(),
-			bottom: !neighbors.bottom || neighbors.bottom.isTransparent()
-		};
-
+		// Face culling disabled - show all faces
 		this.faces.forEach((face, index) => {
-			const faceName = this.faceNames[index];
-			face.style.display = faceVisibility[faceName] ? 'block' : 'none';
+			face.style.display = 'block';
 		});
 	}    /**
      * Add this block to a parent DOM element (optimized)

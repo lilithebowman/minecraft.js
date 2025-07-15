@@ -1,4 +1,5 @@
 import { Chunk } from '../components/Chunk.js';
+import { InfinitePlane } from '../components/InfinitePlane.js';
 import { Vector3 } from '../utils/Vector3.js';
 
 /**
@@ -27,6 +28,12 @@ export class World {
 		this.chunkUpdateInterval = 50; // Decreased from 100 to 50
 		this.isGenerating = false;
 		this.generationQueue = [];
+
+		// Create infinite plane at y=0
+		this.infinitePlane = new InfinitePlane(0);
+		this.infinitePlane.setVisible(true);
+		// Add the plane to the world element
+		this.element.appendChild(this.infinitePlane.element);
 	}
 
 	/**
@@ -280,9 +287,85 @@ export class World {
 	/**
 	 * Render the world
 	 */
-	render() {
-		// Chunks handle their own rendering through CSS transforms
-		// This method is here for future enhancements
+	render(playerPosition) {
+		console.log('World.render called with playerPosition:', playerPosition);
+
+		// Ensure we have a valid player position
+		if (!playerPosition || typeof playerPosition.x === 'undefined' || typeof playerPosition.z === 'undefined') {
+			console.warn('Invalid player position provided to World.render:', playerPosition);
+			return;
+		}
+
+		// Render blocks by distance from player
+		this.renderBlocksByDistance(playerPosition);
+
+		// Update infinite plane position relative to player
+		if (this.infinitePlane) {
+			this.infinitePlane.update(playerPosition.x, playerPosition.z);
+		}
+
+		// Update performance metrics
+		this.updatePerformanceMetrics();
+	}
+
+	/**
+	 * Render blocks by distance from player
+	 */
+	renderBlocksByDistance(playerPosition) {
+		console.log('Rendering blocks by distance from player:', playerPosition);
+
+		// Get all blocks from all loaded chunks
+		const allBlocks = [];
+
+		for (const chunk of this.chunks.values()) {
+			const chunkBlocks = chunk.getBlocksByDistance(playerPosition);
+			allBlocks.push(...chunkBlocks);
+		}
+
+		// Sort all blocks by distance from player
+		allBlocks.sort((a, b) => a.distance - b.distance);
+
+		// Render blocks in order of distance (closest first)
+		// Only render a limited number for performance
+		const maxBlocksToRender = 1000; // Limit to prevent performance issues
+		const blocksToRender = allBlocks.slice(0, maxBlocksToRender);
+
+		console.log(`Rendering ${blocksToRender.length} blocks out of ${allBlocks.length} total blocks`);
+
+		// Update block visibility/opacity based on distance
+		blocksToRender.forEach((blockInfo, index) => {
+			const block = blockInfo.block;
+			const distance = blockInfo.distance;
+
+			// Calculate opacity based on distance (closer blocks are more opaque)
+			const maxDistance = 50; // Maximum distance for opacity calculation
+			const opacity = Math.max(0.1, 1 - (distance / maxDistance));
+
+			// Update block element if it exists
+			if (block.element) {
+				block.element.style.opacity = opacity;
+				block.element.style.zIndex = Math.floor(1000 - distance); // Closer blocks render on top
+			}
+		});
+
+		// Hide blocks that are too far away
+		const hiddenBlocks = allBlocks.slice(maxBlocksToRender);
+		hiddenBlocks.forEach(blockInfo => {
+			const block = blockInfo.block;
+			if (block.element) {
+				block.element.style.opacity = 0;
+			}
+		});
+	}
+
+	/**
+	 * Update performance metrics
+	 */
+	updatePerformanceMetrics() {
+		// Update performance metrics if monitor is available
+		if (this.performanceMonitor) {
+			this.performanceMonitor.update();
+		}
 	}
 
 	/**
@@ -444,5 +527,21 @@ export class World {
 		}
 
 		console.log('World disposed');
+	}
+
+	/**
+	 * Clean up all resources (including infinite plane)
+	 */
+	destroy() {
+		// Clean up all chunks
+		for (const chunk of this.chunks.values()) {
+			chunk.destroy();
+		}
+		this.chunks.clear();
+
+		// Clean up infinite plane
+		if (this.infinitePlane) {
+			this.infinitePlane.destroy();
+		}
 	}
 }

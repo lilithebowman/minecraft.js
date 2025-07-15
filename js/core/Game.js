@@ -233,14 +233,14 @@ export class Game {
 		// Update input
 		this.inputManager.update(deltaTime);
 
-		// Update player
-		this.player.update(deltaTime);
+		// Update player (pass world reference for terrain collision)
+		this.player.update(deltaTime, this.world);
 
 		// Update camera based on player
 		this.camera.update(this.player);
 
-		// Pass player position to camera for world transformation
-		this.camera.setPlayerPosition(this.player.getPosition());
+		// Pass player's camera position to camera for world transformation (eye level, not feet)
+		this.camera.setPlayerPosition(this.player.getCameraPosition());
 
 		// Update world around player
 		this.world.update(this.player, deltaTime);
@@ -257,7 +257,7 @@ export class Game {
 		this.camera.applyTransform(this.worldElement);
 
 		// Update world rendering
-		this.world.render();
+		this.world.render(this.player.getPosition());
 	}    /**
      * Update UI with current game state
      */

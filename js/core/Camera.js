@@ -49,17 +49,21 @@ export class Camera {
 		const screenY = window.innerHeight / 2;
 
 		// Build transform string - order matters!
+		// CSS transforms are applied in reverse order (right to left)
+		// So the order here will be: translate3d(-playerPos) → rotateY → rotateX → translate3d(screenCenter)
 		let transform = '';
 
-		// 1. Translate to center of screen
+		// 1. Translate to center of screen (applied last)
 		transform += `translate3d(${screenX}px, ${screenY}px, 0) `;
 
-		// 2. Apply camera rotation (invert for world rotation)
+		// 2. Apply camera rotation (applied second-to-last)
+		// Invert rotations to move world opposite to camera look direction
 		transform += `rotateX(${-this.rotation.x}rad) `;
 		transform += `rotateY(${-this.rotation.y}rad) `;
 
-		// 3. Apply world position (invert player position to move world)
-		// Note: Y is inverted because CSS Y-axis points down, but world Y-axis points up
+		// 3. Translate world opposite to player position (applied first)
+		// This moves the world so that the player position becomes the origin
+		// Y is NOT inverted - we want the world to move opposite to player Y
 		transform += `translate3d(${-playerPos.x * this.blockScale}px, ${-playerPos.y * this.blockScale}px, ${-playerPos.z * this.blockScale}px) `;
 
 		// 4. Apply scale

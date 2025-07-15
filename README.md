@@ -9,7 +9,7 @@ A modern, clean implementation of a Minecraft-like game built entirely with **CS
 - **Chunk-based world generation** with infinite terrain
 - **Smooth player movement** with physics simulation
 - **Block placement/destruction** with animations
-- **Performance optimized** with face culling and LOD
+- **Performance optimized** with LOD (face culling disabled)
 - **Responsive design** that works on different screen sizes
 - **Modern ES6+ JavaScript** with modules and clean code
 
@@ -57,7 +57,7 @@ A modern, clean implementation of a Minecraft-like game built entirely with **CS
 
 - **`Block.js`** - Individual block component with CSS cube faces
 - **`Chunk.js`** - 16x16x128 chunk of blocks with optimization
-- **Face culling** - Hidden faces are not rendered
+- **Face culling** - Disabled (all faces are rendered)
 - **Block types** - Grass, dirt, stone, wood, leaves, water, sand
 
 ### CSS 3D System
@@ -80,7 +80,7 @@ Instead of WebGL/Three.js, we use:
 ## 📱 Performance
 
 - **Chunk-based rendering** - Only visible chunks are processed
-- **Face culling** - Hidden block faces are not rendered
+- **Face culling** - Disabled (all block faces are rendered)
 - **Update throttling** - Limits updates for better performance
 - **Efficient DOM manipulation** - Minimal reflows and repaints
 - **Memory management** - Proper cleanup of unused chunks

@@ -39,14 +39,14 @@ export class Player {
 	}
 
 	findSpawnPosition() {
-		// For now, just spawn at a safe height
-		this.position.set(0, 65, 0);
+		// Spawn at a height that allows the player to fall and land on terrain
+		this.position.set(0, 80, 0); // Increased height so player falls
 	}
 
-	update(deltaTime) {
+	update(deltaTime, world = null) {
 		this.updateMovement(deltaTime);
-		this.updatePhysics(deltaTime);
-		this.updateGroundCheck();
+		this.updatePhysics(deltaTime, world);
+		this.updateGroundCheck(world);
 	}
 
 	// Movement methods
@@ -141,24 +141,45 @@ export class Player {
 		}
 	}
 
-	updatePhysics(deltaTime) {
+	updatePhysics(deltaTime, world = null) {
 		// Apply gravity
 		this.velocity.y += this.gravity * deltaTime;
 
 		// Apply velocity to position
 		this.position.add(this.velocity.clone().multiplyScalar(deltaTime));
 
-		// Simple ground collision (we'll improve this later)
-		if (this.position.y < 32) {
-			this.position.y = 32;
-			this.velocity.y = 0;
-			this.isGrounded = true;
+		// Ground collision using world terrain height
+		if (world) {
+			const terrainHeight = world.getHeightAt(this.position.x, this.position.z);
+			const groundLevel = terrainHeight + 1; // Add 1 block height for player feet
+
+			if (this.position.y <= groundLevel) {
+				this.position.y = groundLevel;
+				this.velocity.y = 0;
+				this.isGrounded = true;
+			} else {
+				this.isGrounded = false;
+			}
+		} else {
+			// Fallback to simple ground collision
+			if (this.position.y < 32) {
+				this.position.y = 32;
+				this.velocity.y = 0;
+				this.isGrounded = true;
+			}
 		}
 	}
 
-	updateGroundCheck() {
-		// Simple ground check - we'll improve this with proper collision later
-		this.isGrounded = this.position.y <= 32.1;
+	updateGroundCheck(world = null) {
+		// Ground check using world terrain height
+		if (world) {
+			const terrainHeight = world.getHeightAt(this.position.x, this.position.z);
+			const groundLevel = terrainHeight + 1; // Add 1 block height for player feet
+			this.isGrounded = this.position.y <= groundLevel + 0.1; // Small threshold for floating point precision
+		} else {
+			// Fallback to simple ground check
+			this.isGrounded = this.position.y <= 32.1;
+		}
 	}
 
 	move(direction) {
