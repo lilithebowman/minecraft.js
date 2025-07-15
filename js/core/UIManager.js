@@ -35,48 +35,51 @@ export class UIManager {
 		this.setupEventListeners();
 
 		console.log('UI manager initialized');
-	}
-
-	/**
-	 * Set up debug panel elements
-	 */
-	setupDebugPanel() {
-		if (!this.debugPanel) {
-			console.warn('Debug panel element not found');
-			return;
-		}
-
-		// Get references to debug elements
-		this.fpsCounter = document.getElementById('fps-counter');
-		this.positionInfo = document.getElementById('position-info');
-		this.chunkInfo = document.getElementById('chunk-info');
-		this.blockInfo = document.getElementById('block-info');
-
-		// Create elements if they don't exist
-		if (!this.fpsCounter) {
-			this.fpsCounter = document.createElement('div');
-			this.fpsCounter.id = 'fps-counter';
-			this.debugPanel.appendChild(this.fpsCounter);
-		}
-
-		if (!this.positionInfo) {
-			this.positionInfo = document.createElement('div');
-			this.positionInfo.id = 'position-info';
-			this.debugPanel.appendChild(this.positionInfo);
-		}
-
-		if (!this.chunkInfo) {
-			this.chunkInfo = document.createElement('div');
-			this.chunkInfo.id = 'chunk-info';
-			this.debugPanel.appendChild(this.chunkInfo);
-		}
-
-		if (!this.blockInfo) {
-			this.blockInfo = document.createElement('div');
-			this.blockInfo.id = 'block-info';
-			this.debugPanel.appendChild(this.blockInfo);
-		}
-	}
+	}    /**
+     * Set up debug panel elements
+     */
+    setupDebugPanel() {
+        if (!this.debugPanel) {
+            console.warn('Debug panel element not found');
+            return;
+        }
+        
+        // Get references to debug elements
+        this.fpsCounter = document.getElementById('fps-counter');
+        this.positionInfo = document.getElementById('position-info');
+        this.chunkInfo = document.getElementById('chunk-info');
+        this.blockInfo = document.getElementById('block-info');
+        
+        // Create elements if they don't exist
+        if (!this.fpsCounter) {
+            this.fpsCounter = document.createElement('div');
+            this.fpsCounter.id = 'fps-counter';
+            this.debugPanel.appendChild(this.fpsCounter);
+        }
+        
+        if (!this.positionInfo) {
+            this.positionInfo = document.createElement('div');
+            this.positionInfo.id = 'position-info';
+            this.debugPanel.appendChild(this.positionInfo);
+        }
+        
+        if (!this.chunkInfo) {
+            this.chunkInfo = document.createElement('div');
+            this.chunkInfo.id = 'chunk-info';
+            this.debugPanel.appendChild(this.chunkInfo);
+        }
+        
+        if (!this.blockInfo) {
+            this.blockInfo = document.createElement('div');
+            this.blockInfo.id = 'block-info';
+            this.debugPanel.appendChild(this.blockInfo);
+        }
+        
+        // Add performance stats
+        this.performanceInfo = document.createElement('div');
+        this.performanceInfo.id = 'performance-info';
+        this.debugPanel.appendChild(this.performanceInfo);
+    }
 
 	/**
 	 * Set up crosshair
