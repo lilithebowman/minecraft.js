@@ -1,41 +1,122 @@
-import { Engine } from './modules.js';
-import { debug } from './debug.js';
+import { Game } from './core/Game.js';
 
-async function initGame() {
-	try {
-		debug.log('Starting game initialization...');
+/**
+ * Main entry point for the Minecraft.js CSS Edition
+ */
+class MinecraftApp {
+	constructor() {
+		this.game = null;
+		this.isInitialized = false;
+	}
 
-		// Create engine
-		const engine = new Engine();
+	/**
+	 * Initialize the application
+	 */
+	async init() {
+		if (this.isInitialized) return;
 
-		// Wait for engine to fully initialize
-		engine.init();
+		try {
+			console.log('Initializing Minecraft.js CSS Edition...');
 
-		console.log('*****ENGINE*****');
-		console.log(engine?.player);
-		console.log('*****CAMERA*****');
-		console.log(engine?.player?.getCamera());
+			// Create game instance
+			this.game = new Game();
 
-		// Start game loop only after confirmed camera initialization
-		engine?.start();
+			// Start the game
+			await this.game.start();
 
-		// Add window event handlers
-		window.addEventListener('resize', () => {
-			engine?.player?.handleResize();
+			// Set up global error handling
+			this.setupErrorHandling();
+
+			// Make game available globally for debugging
+			window.game = this.game;
+
+			this.isInitialized = true;
+			console.log('Minecraft.js CSS Edition initialized successfully!');
+
+		} catch (error) {
+			console.error('Failed to initialize Minecraft.js:', error);
+			this.showError('Failed to initialize game. Please refresh the page.');
+		}
+	}
+
+	/**
+	 * Set up global error handling
+	 */
+	setupErrorHandling() {
+		window.addEventListener('error', (event) => {
+			console.error('Global error:', event.error);
+			this.showError('An error occurred. Check the console for details.');
 		});
 
-		// Handle cleanup on page unload
-		window.addEventListener('beforeunload', () => {
-			engine?.dispose();
+		window.addEventListener('unhandledrejection', (event) => {
+			console.error('Unhandled promise rejection:', event.reason);
+			this.showError('An unexpected error occurred.');
 		});
+	}
 
-		debug.log('Game initialized successfully');
+	/**
+	 * Show error message to user
+	 */
+	showError(message) {
+		const errorElement = document.createElement('div');
+		errorElement.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 0, 0, 0.9);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 16px;
+            z-index: 10000;
+            text-align: center;
+            max-width: 400px;
+        `;
+		errorElement.textContent = message;
+		document.body.appendChild(errorElement);
 
-	} catch (error) {
-		console.error('Game initialization failed:', error);
-		throw error; // Re-throw to show in console
+		// Remove error after 5 seconds
+		setTimeout(() => {
+			if (errorElement.parentNode) {
+				errorElement.parentNode.removeChild(errorElement);
+			}
+		}, 5000);
+	}
+
+	/**
+	 * Clean up resources
+	 */
+	dispose() {
+		if (this.game) {
+			this.game.dispose();
+			this.game = null;
+		}
+		this.isInitialized = false;
 	}
 }
 
-// Start the game when the DOM is ready
-document.addEventListener('DOMContentLoaded', initGame);
+// Initialize the app when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+	const app = new MinecraftApp();
+	app.init();
+
+	// Make app available globally
+	window.app = app;
+
+	// Handle page unload
+	window.addEventListener('beforeunload', () => {
+		app.dispose();
+	});
+});
+
+// Handle visibility change for performance
+document.addEventListener('visibilitychange', () => {
+	if (window.game) {
+		if (document.hidden) {
+			window.game.pause();
+		} else {
+			window.game.resume();
+		}
+	}
+});

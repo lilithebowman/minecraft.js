@@ -1,12 +1,26 @@
 {
   "name": "minecraft.js",
-  "version": "1.0.0",
-  "description": "A Minecraft-like game built with JavaScript and Three.js",
+  "version": "2.0.0",
+  "description": "A Minecraft-like game built with modern JavaScript and CSS transforms - no Three.js required!",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "build": "echo 'No build process required - pure CSS and JavaScript!'",
+    "test": "echo 'No tests specified' && exit 0"
   },
+  "keywords": [
+    "minecraft",
+    "game",
+    "javascript",
+    "css",
+    "3d",
+    "transforms",
+    "voxel",
+    "block"
+  ],
+  "author": "Minecraft.js Team",
+  "license": "MIT",
   "dependencies": {
     "body-parser": "^1.20.2",
     "cors": "^2.8.5",
@@ -18,5 +32,13 @@
   },
   "engines": {
     "node": ">=16.0.0"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/minecraft.js"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/minecraft.js/issues"
+  },
+  "homepage": "https://github.com/your-username/minecraft.js#readme"
 }
