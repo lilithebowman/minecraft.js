@@ -48,6 +48,9 @@ export class Game {
 			// Initialize systems
 			await this.initializeSystems();
 
+			// Add player sphere to world
+			this.createPlayerSphere();
+
 			// Set up event listeners
 			this.setupEventListeners();
 
@@ -66,9 +69,45 @@ export class Game {
 			this.hideLoadingScreen();
 			throw error;
 		}
-	}    /**
-     * Initialize all game systems with progress tracking
-     */
+	}
+
+	/**
+	 * Create a red sphere to represent the player position
+	 */
+	createPlayerSphere() {
+		if (!this.worldElement) return;
+		const sphere = document.createElement('div');
+		sphere.className = 'player-sphere';
+		sphere.style.position = 'absolute';
+		sphere.style.width = '32px';
+		sphere.style.height = '32px';
+		sphere.style.borderRadius = '50%';
+		sphere.style.background = 'red';
+		sphere.style.boxShadow = '0 0 16px 4px rgba(255,0,0,0.5)';
+		sphere.style.transformStyle = 'preserve-3d';
+		sphere.style.zIndex = '10';
+		this.worldElement.appendChild(sphere);
+		this.playerSphere = sphere;
+	}
+
+	/**
+	 * Update the player sphere's position in the world
+	 */
+	updatePlayerSphere() {
+		if (!this.playerSphere || !this.player) return;
+		const pos = this.player.getCameraPosition();
+		// Convert world coordinates to CSS 3D transform
+		// The sphere should be centered at the player's position
+		const blockScale = this.camera ? this.camera.blockScale : 32;
+		const x = pos.x * blockScale - 16;
+		const y = pos.y * blockScale - 16;
+		const z = pos.z * blockScale - 16;
+		this.playerSphere.style.transform = `translate3d(${x}px, ${y}px, ${z}px)`;
+	}
+
+	/**
+	 * Initialize all game systems with progress tracking
+	 */
 	async initializeSystems() {
 		const loadingSteps = [
 			{ name: 'Performance Monitor', weight: 5 },
@@ -258,6 +297,9 @@ export class Game {
 
 		// Update world rendering
 		this.world.render(this.player.getPosition());
+
+		// Update player sphere position
+		this.updatePlayerSphere();
 	}    /**
      * Update UI with current game state
      */

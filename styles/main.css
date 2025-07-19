@@ -56,6 +56,19 @@ body {
 	border: 1px solid rgba(0, 0, 0, 0.8);
 }
 
+/* Player Sphere (Red Ball for Player Position) */
+.player-sphere {
+	position: absolute;
+	width: 32px;
+	height: 32px;
+	border-radius: 50%;
+	background: red;
+	box-shadow: 0 0 16px 4px rgba(255, 0, 0, 0.5);
+	z-index: 10;
+	pointer-events: none;
+	transform-style: preserve-3d;
+}
+
 /* Face positioning for cube */
 .face-front {
 	transform: translateZ(16px);
