@@ -4,14 +4,15 @@ import { Camera } from './Camera.js';
 import { InputManager } from './InputManager.js';
 import { UIManager } from './UIManager.js';
 import { PerformanceMonitor } from '../utils/PerformanceMonitor.js';
+import { getMinimalScene } from './MinimalScene.js';
 
 /**
  * Main Game class - Orchestrates all game systems
  */
 export class Game {
-	constructor() {
-		this.viewport = document.getElementById('viewport');
-		this.worldElement = document.getElementById('world');
+	constructor(canvas) {
+		this.canvas = canvas;
+		this.webglRenderer = null;
 
 		this.isRunning = false;
 		this.isPaused = false;
@@ -40,7 +41,7 @@ export class Game {
 		if (this.isRunning) return;
 
 		try {
-			console.log('Starting Minecraft.js CSS Edition...');
+			console.log('Starting Minecraft.js WebGL Edition...');
 
 			// Show loading screen
 			this.showLoadingScreen();
@@ -48,8 +49,8 @@ export class Game {
 			// Initialize systems
 			await this.initializeSystems();
 
-			// Add player sphere to world
-			this.createPlayerSphere();
+			// Initialize WebGL renderer
+			this.webglRenderer = new (await import('./WebGLRenderer.js')).default(this.canvas);
 
 			// Set up event listeners
 			this.setupEventListeners();
@@ -140,7 +141,7 @@ export class Game {
 		// Initialize player
 		this.player = new Player();
 		updateProgress(0.5, loadingSteps[2].weight);
-		await this.player.initialize();
+		await this.player.initialize(this.world); // Pass world for spawn
 		totalProgress += loadingSteps[2].weight;
 		updateProgress(1, 0);
 
@@ -292,17 +293,12 @@ export class Game {
 	 * Render the game
 	 */
 	render() {
-		// Apply camera transform to world (moves world around stationary camera)
-		this.camera.applyTransform(this.worldElement);
-
-		// Update world rendering
-		this.world.render(this.player.getPosition());
-
-		// Update player sphere position
-		this.updatePlayerSphere();
+		// Minimal scene: only player sphere and floor
+		const { blocks, player } = getMinimalScene();
+		this.webglRenderer.renderWorld(blocks, player);
 	}    /**
-     * Update UI with current game state
-     */
+	 * Update UI with current game state
+	 */
 	updateUI() {
 		const playerPos = this.player.getPosition();
 		const chunkPos = this.world.getChunkCoordinates(playerPos);
@@ -385,19 +381,19 @@ export class Game {
 			this.resume();
 		}
 	}    /**
-     * Show loading screen with progress
-     */
+	 * Show loading screen with progress
+	 */
 	showLoadingScreen() {
 		const loadingElement = document.createElement('div');
 		loadingElement.id = 'loading-screen';
 		loadingElement.className = 'loading-screen';
 		loadingElement.innerHTML = `
-            <div>Loading Minecraft.js CSS Edition...</div>
-            <div id="loading-status">Initializing...</div>
-            <div class="loading-progress">
-                <div id="loading-progress-bar" class="loading-progress-bar" style="width: 0%"></div>
-            </div>
-        `;
+			<div>Loading Minecraft.js CSS Edition...</div>
+			<div id="loading-status">Initializing...</div>
+			<div class="loading-progress">
+				<div id="loading-progress-bar" class="loading-progress-bar" style="width: 0%"></div>
+			</div>
+		`;
 
 		document.body.appendChild(loadingElement);
 		this.loadingElement = loadingElement;

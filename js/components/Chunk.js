@@ -46,14 +46,19 @@ export class Chunk {
 	/**
 	 * Create the DOM element for this chunk
 	 */
-	createElement() {
-		this.element = document.createElement('div');
-		this.element.className = 'chunk';
-		this.element.style.position = 'absolute';
-		this.element.style.transformStyle = 'preserve-3d';
-
-		// Store reference to this chunk instance
-		this.element._chunkInstance = this;
+	// No DOM element creation needed for WebGL
+	createElement() { }
+	/**
+	 * Get all blocks in this chunk for WebGL rendering
+	 */
+	getRenderableBlocks() {
+		const blocks = [];
+		for (const block of this.blocks.values()) {
+			if (block.type !== 'air') {
+				blocks.push({ x: block.x, y: block.y, z: block.z, type: block.type });
+			}
+		}
+		return blocks;
 	}
 
 	/**

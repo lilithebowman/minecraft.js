@@ -8,99 +8,25 @@ export class Block {
 		this.y = y;
 		this.z = z;
 		this.type = type;
-		this.element = null;
-		this.faces = [];
-		this.isVisible = true;
-		this.isHighlighted = false;
-		this.isInDOM = false;
-
-		// Block size in CSS pixels
-		this.size = 32;
-
-		// Face names for cube
-		this.faceNames = ['front', 'back', 'left', 'right', 'top', 'bottom'];
-
-		// Lazy creation - only create when needed
-		this.needsCreation = true;
 	}
 
-	/**
-	 * Create the DOM element for this block (lazy)
-	 */
-	createElement() {
-		if (!this.needsCreation) return;
+	// No DOM element creation needed for WebGL
+	createElement() { }
 
-		this.element = document.createElement('div');
-		this.element.className = `block block-${this.type}`;
+	// No face creation needed for WebGL
+	createFaces() { }
 
-		// Set 3D position
-		this.updatePosition();
+	// No position update needed for WebGL
+	updatePosition() { }
 
-		// Create the 6 faces of the cube
-		this.createFaces();
-
-		// Store reference to this block instance
-		this.element._blockInstance = this;
-
-		this.needsCreation = false;
-	}
-
-	/**
-	 * Create the 6 faces of the cube (optimized)
-	 */
-	createFaces() {
-		this.faces = [];
-
-		// Create faces in a more efficient way
-		const fragment = document.createDocumentFragment();
-
-		this.faceNames.forEach(faceName => {
-			const face = document.createElement('div');
-			face.className = `block-face face-${faceName}`;
-			face.dataset.face = faceName;
-			fragment.appendChild(face);
-			this.faces.push(face);
-		});
-
-		this.element.appendChild(fragment);
-	}
-
-	/**
-	 * Update the 3D position of this block
-	 */
-	updatePosition() {
-		if (!this.element) return;
-
-		const pixelX = this.x * this.size;
-		const pixelY = -this.y * this.size; // Negative because CSS Y is inverted
-		const pixelZ = this.z * this.size;
-
-		this.element.style.transform = `translate3d(${pixelX}px, ${pixelY}px, ${pixelZ}px)`;
-	}
-
-	/**
-	 * Change the block type
-	 */
 	setType(newType) {
-		if (this.type === newType) return;
-
 		this.type = newType;
-		if (this.element) {
-			this.element.className = `block block-${this.type}`;
-			if (this.isHighlighted) {
-				this.element.classList.add('block-highlighted');
-			}
-		}
 	}
 
-	/**
-	 * Set block position
-	 */
 	setPosition(x, y, z) {
 		this.x = x;
 		this.y = y;
 		this.z = z;
-		this.updatePosition();
 	}
 
 	/**
@@ -133,14 +59,21 @@ export class Block {
 	 */
 	optimizeFaces(neighbors) {
 		if (!this.element || !this.faces.length) return;
-
-		// Face culling disabled - show all faces
-		this.faces.forEach((face, index) => {
+		// Always show all faces
+		this.faces.forEach(face => {
 			face.style.display = 'block';
+			// Only air blocks should be fully transparent
+			if (this.type === 'air') {
+				face.style.opacity = '0';
+			} else {
+				face.style.opacity = '1';
+			}
 		});
-	}    /**
-     * Add this block to a parent DOM element (optimized)
-     */
+	}
+
+	/**
+	 * Add this block to a parent DOM element (optimized)
+	 */
 	addToDOM(parent) {
 		if (!parent || this.isInDOM) return;
 

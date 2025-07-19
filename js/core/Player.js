@@ -32,15 +32,15 @@ export class Player {
 		this.mouseSensitivity = 0.002;
 	}
 
-	initialize() {
+	async initialize(world) {
 		console.log('Initializing player...');
-		// Find a good spawn position
-		this.findSpawnPosition();
-	}
-
-	findSpawnPosition() {
-		// Spawn at a height that allows the player to fall and land on terrain
-		this.position.set(0, 80, 0); // Increased height so player falls
+		// Find a good spawn position using world terrain height
+		if (world && typeof world.getHeightAt === 'function') {
+			const terrainHeight = world.getHeightAt(0, 0);
+			this.position.set(0, terrainHeight + 1, 0); // Stand on top of terrain
+		} else {
+			this.position.set(0, 32, 0); // Fallback
+		}
 	}
 
 	update(deltaTime, world = null) {

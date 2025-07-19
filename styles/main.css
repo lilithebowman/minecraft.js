@@ -21,190 +21,7 @@ body {
 	height: 100%;
 }
 
-/* 3D Viewport */
-.viewport {
-	position: absolute;
-	width: 100%;
-	height: 100%;
-	perspective: 1000px;
-	perspective-origin: center center;
-	transform-style: preserve-3d;
-}
-
-.world {
-	position: absolute;
-	width: 100%;
-	height: 100%;
-	transform-style: preserve-3d;
-	transform-origin: 0 0;
-}
-
-/* Block Components */
-.block {
-	position: absolute;
-	width: 32px;
-	height: 32px;
-	transform-style: preserve-3d;
-	transform-origin: center center center;
-}
-
-.block-face {
-	position: absolute;
-	width: 32px;
-	height: 32px;
-	backface-visibility: visible;
-	border: 1px solid rgba(0, 0, 0, 0.8);
-}
-
-/* Player Sphere (Red Ball for Player Position) */
-.player-sphere {
-	position: absolute;
-	width: 32px;
-	height: 32px;
-	border-radius: 50%;
-	background: red;
-	box-shadow: 0 0 16px 4px rgba(255, 0, 0, 0.5);
-	z-index: 10;
-	pointer-events: none;
-	transform-style: preserve-3d;
-}
-
-/* Face positioning for cube */
-.face-front {
-	transform: translateZ(16px);
-}
-
-.face-back {
-	transform: translateZ(-16px) rotateY(180deg);
-}
-
-.face-right {
-	transform: rotateY(90deg) translateZ(16px);
-}
-
-.face-left {
-	transform: rotateY(-90deg) translateZ(16px);
-}
-
-.face-top {
-	transform: rotateX(90deg) translateZ(16px);
-}
-
-.face-bottom {
-	transform: rotateX(-90deg) translateZ(16px);
-}
-
-/* Block Types */
-.block-grass .face-top {
-	background:
-		linear-gradient(45deg, #7CBD3A 25%, transparent 25%, transparent 50%, #7CBD3A 50%, #7CBD3A 75%, transparent 75%),
-		linear-gradient(45deg, #8BC34A 25%, transparent 25%, transparent 50%, #8BC34A 50%, #8BC34A 75%, transparent 75%);
-	background-size: 4px 4px;
-	background-position: 0 0, 2px 2px;
-	background-color: #7CBD3A;
-}
-
-.block-grass .face-front,
-.block-grass .face-back,
-.block-grass .face-left,
-.block-grass .face-right {
-	background:
-		linear-gradient(to bottom, #7CBD3A 0%, #7CBD3A 25%, #8B4513 25%, #8B4513 100%),
-		linear-gradient(45deg, rgba(0, 0, 0, 0.1) 25%, transparent 25%, transparent 50%, rgba(0, 0, 0, 0.1) 50%, rgba(0, 0, 0, 0.1) 75%, transparent 75%);
-	background-size: 32px 32px, 2px 2px;
-}
-
-.block-grass .face-bottom {
-	background:
-		linear-gradient(45deg, #654321 25%, transparent 25%, transparent 50%, #654321 50%, #654321 75%, transparent 75%),
-		linear-gradient(45deg, #8B4513 25%, transparent 25%, transparent 50%, #8B4513 50%, #8B4513 75%, transparent 75%);
-	background-size: 4px 4px;
-	background-position: 0 0, 2px 2px;
-	background-color: #654321;
-}
-
-.block-dirt .block-face {
-	background:
-		linear-gradient(45deg, #654321 25%, transparent 25%, transparent 50%, #654321 50%, #654321 75%, transparent 75%),
-		linear-gradient(45deg, #8B4513 25%, transparent 25%, transparent 50%, #8B4513 50%, #8B4513 75%, transparent 75%);
-	background-size: 4px 4px;
-	background-position: 0 0, 2px 2px;
-	background-color: #654321;
-}
-
-.block-stone .block-face {
-	background:
-		linear-gradient(45deg, #696969 25%, transparent 25%, transparent 50%, #696969 50%, #696969 75%, transparent 75%),
-		linear-gradient(45deg, #808080 25%, transparent 25%, transparent 50%, #808080 50%, #808080 75%, transparent 75%);
-	background-size: 3px 3px;
-	background-position: 0 0, 1.5px 1.5px;
-	background-color: #696969;
-}
-
-.block-wood .block-face {
-	background:
-		linear-gradient(45deg, #DEB887 25%, transparent 25%, transparent 50%, #DEB887 50%, #DEB887 75%, transparent 75%),
-		linear-gradient(45deg, #D2691E 25%, transparent 25%, transparent 50%, #D2691E 50%, #D2691E 75%, transparent 75%);
-	background-size: 6px 6px;
-	background-position: 0 0, 3px 3px;
-	background-color: #DEB887;
-}
-
-.block-wood .face-top,
-.block-wood .face-bottom {
-	background:
-		radial-gradient(circle at center, #8B4513 2px, transparent 2px),
-		linear-gradient(45deg, #DEB887 25%, transparent 25%, transparent 50%, #DEB887 50%, #DEB887 75%, transparent 75%);
-	background-size: 8px 8px, 4px 4px;
-	background-color: #D2691E;
-}
-
-.block-leaves .block-face {
-	background:
-		linear-gradient(45deg, #228B22 25%, transparent 25%, transparent 50%, #228B22 50%, #228B22 75%, transparent 75%),
-		linear-gradient(45deg, #32CD32 25%, transparent 25%, transparent 50%, #32CD32 50%, #32CD32 75%, transparent 75%);
-	background-size: 3px 3px;
-	background-position: 0 0, 1.5px 1.5px;
-	background-color: #228B22;
-	opacity: 0.9;
-}
-
-.block-water .block-face {
-	background:
-		linear-gradient(45deg, #4169E1 25%, transparent 25%, transparent 50%, #4169E1 50%, #4169E1 75%, transparent 75%),
-		linear-gradient(45deg, #6495ED 25%, transparent 25%, transparent 50%, #6495ED 50%, #6495ED 75%, transparent 75%);
-	background-size: 8px 8px;
-	background-position: 0 0, 4px 4px;
-	background-color: #4169E1;
-	opacity: 0.7;
-}
-
-.block-sand .block-face {
-	background:
-		linear-gradient(45deg, #F4A460 25%, transparent 25%, transparent 50%, #F4A460 50%, #F4A460 75%, transparent 75%),
-		linear-gradient(45deg, #DEB887 25%, transparent 25%, transparent 50%, #DEB887 50%, #DEB887 75%, transparent 75%);
-	background-size: 2px 2px;
-	background-position: 0 0, 1px 1px;
-	background-color: #F4A460;
-}
-
-/* Infinite Plane Component */
-.infinite-plane {
-	position: absolute;
-	transform-style: preserve-3d;
-	pointer-events: none;
-	/* Allow clicks to pass through */
-	z-index: -1;
-	/* Behind other elements */
-	backface-visibility: visible;
-	/* We should always see this plane */
-}
-
-/* Chunk container */
-.chunk {
-	position: absolute;
-	transform-style: preserve-3d;
-}
+/* ...existing code... */
 
 /* UI Components */
 .ui {
@@ -396,23 +213,23 @@ body {
 	}
 
 	.face-back {
-		transform: translateZ(-12px) rotateY(180deg);
+		transform: rotate3d(0, 1, 0, 180deg) translateZ(12px);
 	}
 
 	.face-right {
-		transform: rotateY(90deg) translateZ(12px);
+		transform: rotate3d(0, 1, 0, 90deg) translateZ(12px);
 	}
 
 	.face-left {
-		transform: rotateY(-90deg) translateZ(12px);
+		transform: rotate3d(0, 1, 0, -90deg) translateZ(12px);
 	}
 
 	.face-top {
-		transform: rotateX(90deg) translateZ(12px);
+		transform: rotate3d(1, 0, 0, -90deg) translateZ(12px);
 	}
 
 	.face-bottom {
-		transform: rotateX(-90deg) translateZ(12px);
+		transform: rotate3d(1, 0, 0, 90deg) translateZ(12px);
 	}
 
 	.debug-panel {
