@@ -11,7 +11,7 @@ export class World {
 		this.performanceMonitor = performanceMonitor;
 		this.chunks = new Map();
 		this.chunkSize = 16;
-		this.renderDistance = 4; // Increased from 3 to 4
+		this.renderDistance = 4;
 		this.worldSeed = Math.random() * 1000000;
 
 		// Dynamic chunk management limits
@@ -20,20 +20,25 @@ export class World {
 		this.updateDynamicLimits();
 
 		// World generation parameters
-		this.seaLevel = 24; // Reduced
-		this.maxHeight = 64; // Reduced
+		this.seaLevel = 24;
+		this.maxHeight = 64;
 
 		// Performance tracking
 		this.lastChunkUpdate = 0;
-		this.chunkUpdateInterval = 50; // Decreased from 100 to 50
+		this.chunkUpdateInterval = 50;
 		this.isGenerating = false;
 		this.generationQueue = [];
-
-		// Create infinite plane at y=0
-		this.infinitePlane = new InfinitePlane(0);
-		this.infinitePlane.setVisible(true);
-		// Add the plane to the world element
-		this.element.appendChild(this.infinitePlane.element);
+		// No DOM infinite plane
+	}
+	/**
+	 * Get all blocks in all loaded chunks for WebGL rendering
+	 */
+	getRenderableBlocks() {
+		const blocks = [];
+		for (const chunk of this.chunks.values()) {
+			blocks.push(...chunk.getRenderableBlocks());
+		}
+		return blocks;
 	}
 
 	/**

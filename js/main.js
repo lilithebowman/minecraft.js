@@ -16,10 +16,14 @@ class MinecraftApp {
 		if (this.isInitialized) return;
 
 		try {
-			console.log('Initializing Minecraft.js CSS Edition...');
+			console.log('Initializing Minecraft.js WebGL Edition...');
 
-			// Create game instance
-			this.game = new Game();
+			// Get the WebGL canvas
+			const canvas = document.getElementById('webgl-canvas');
+			if (!canvas) throw new Error('WebGL canvas not found');
+
+			// Create game instance with canvas
+			this.game = new Game(canvas);
 
 			// Start the game
 			await this.game.start();
@@ -31,7 +35,7 @@ class MinecraftApp {
 			window.game = this.game;
 
 			this.isInitialized = true;
-			console.log('Minecraft.js CSS Edition initialized successfully!');
+			console.log('Minecraft.js WebGL Edition initialized successfully!');
 
 		} catch (error) {
 			console.error('Failed to initialize Minecraft.js:', error);
@@ -60,19 +64,19 @@ class MinecraftApp {
 	showError(message) {
 		const errorElement = document.createElement('div');
 		errorElement.style.cssText = `
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(255, 0, 0, 0.9);
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
-            font-size: 16px;
-            z-index: 10000;
-            text-align: center;
-            max-width: 400px;
-        `;
+			position: fixed;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+			background: rgba(255, 0, 0, 0.9);
+			color: white;
+			padding: 20px;
+			border-radius: 10px;
+			font-size: 16px;
+			z-index: 10000;
+			text-align: center;
+			max-width: 400px;
+		`;
 		errorElement.textContent = message;
 		document.body.appendChild(errorElement);
 
