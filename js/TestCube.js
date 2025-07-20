@@ -8,6 +8,9 @@ class TestCube {
 		this.gl = gl;
 		this.atlasTexture = atlasTexture;
 		this.atlasLayout = atlasLayout;
+		this.angleX = 0;
+		this.angleY = 0;
+		this.angleZ = 0;
 		this.initBuffers();
 		this.initShaders();
 	}
@@ -59,18 +62,18 @@ class TestCube {
 		this.positionBuffer = gl.createBuffer();
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
 		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-			// Front
-			-1, -1, 1, 1, -1, 1, 1, 1, 1, -1, 1, 1,
-			// Back
-			-1, -1, -1, -1, 1, -1, 1, 1, -1, 1, -1, -1,
-			// Top
-			-1, 1, 1, 1, 1, 1, 1, 1, -1, -1, 1, -1,
-			// Bottom
-			-1, -1, 1, -1, -1, -1, 1, -1, -1, 1, -1, 1,
-			// Right
-			1, -1, 1, 1, -1, -1, 1, 1, -1, 1, 1, 1,
-			// Left
-			-1, -1, 1, -1, 1, 1, -1, 1, -1, -1, -1, -1
+		   // Front
+		   -1, -1, 1, 1, -1, 1, 1, 1, 1, -1, 1, 1,
+		   // Back
+		   -1, -1, -1, -1, 1, -1, 1, 1, -1, 1, -1, -1,
+		   // Top
+		   -1, 1, 1, 1, 1, 1, 1, 1, -1, -1, 1, -1,
+		   // Bottom
+		   -1, -1, 1, -1, -1, -1, 1, -1, -1, 1, -1, 1,
+		   // Right
+		   1, -1, 1, 1, -1, -1, 1, 1, -1, 1, 1, 1,
+		   // Left
+		   -1, -1, 1, -1, 1, 1, -1, 1, -1, -1, -1, -1
 		]), gl.STATIC_DRAW);
 		this.uvBuffer = gl.createBuffer();
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.uvBuffer);
@@ -84,24 +87,24 @@ class TestCube {
 		const gl = this.gl;
 		// Vertex shader
 		const vsSource = `
-      attribute vec3 aPosition;
-      attribute vec2 aUV;
-      uniform mat4 uMVP;
-      varying vec2 vUV;
-      void main() {
-        vUV = aUV;
-        gl_Position = uMVP * vec4(aPosition, 1.0);
-      }
-    `;
+	  attribute vec3 aPosition;
+	  attribute vec2 aUV;
+	  uniform mat4 uMVP;
+	  varying vec2 vUV;
+	  void main() {
+		vUV = aUV;
+		gl_Position = uMVP * vec4(aPosition, 1.0);
+	  }
+	`;
 		// Fragment shader
 		const fsSource = `
-      precision mediump float;
-      varying vec2 vUV;
-      uniform sampler2D uTexture;
-      void main() {
-        gl_FragColor = texture2D(uTexture, vUV);
-      }
-    `;
+	  precision mediump float;
+	  varying vec2 vUV;
+	  uniform sampler2D uTexture;
+	  void main() {
+		gl_FragColor = texture2D(uTexture, vUV);
+	  }
+	`;
 		// Compile shaders
 		const vs = gl.createShader(gl.VERTEX_SHADER);
 		gl.shaderSource(vs, vsSource);
@@ -119,6 +122,22 @@ class TestCube {
 		this.aUV = gl.getAttribLocation(this.program, 'aUV');
 		this.uMVP = gl.getUniformLocation(this.program, 'uMVP');
 		this.uTexture = gl.getUniformLocation(this.program, 'uTexture');
+	}
+
+	update() {
+		this.angleX += 0.013;
+		this.angleY += 0.021;
+		this.angleZ += 0.017;
+	}
+
+	getModelMatrix(renderer) {
+		// Compose rotation matrices for all 3 axes
+		var rotX = renderer.rotationMatrixX(this.angleX);
+		var rotY = renderer.rotationMatrixY(this.angleY);
+		var rotZ = renderer.rotationMatrixZ(this.angleZ);
+		var rotation = renderer.multiplyMatrices(rotZ, renderer.multiplyMatrices(rotY, rotX));
+		var translation = renderer.translationMatrix(0, 1, -10);
+		return renderer.multiplyMatrices(translation, rotation);
 	}
 
 	draw(mvpMatrix) {

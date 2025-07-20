@@ -61,29 +61,8 @@ class WebGLRenderer {
 	}
 
 	render() {
-		// Clear the color buffer
-		this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
-		if (!this.scene) {
-			return;
-		}
-		// Setup MVP matrix
-		var fov = Math.PI / 3; // 60 degrees for stronger perspective
-		var aspect = this.canvas.width / this.canvas.height;
-		var near = 0.1;
-		var far = 100;
-		var perspective = this.perspectiveMatrix(fov, aspect, near, far);
-		var view = this.lookAtMatrix([0, 0, 5], [0, 0, 0], [0, 1, 0]);
-		// Compose rotation matrices for all 3 axes
-		var rotX = this.rotationMatrixX(this.angleX);
-		var rotY = this.rotationMatrixY(this.angleY);
-		var rotZ = this.rotationMatrixZ(this.angleZ);
-		// Combine rotations: Z * Y * X
-		var rotation = this.multiplyMatrices(rotZ, this.multiplyMatrices(rotY, rotX));
-		var translation = this.translationMatrix(0, 1, -10); // Move cube forward
-		var modelTrans = this.multiplyMatrices(translation, rotation);
-		// Correct MVP multiplication order: projection * view * model
-		var mvp = this.multiplyMatrices(perspective, this.multiplyMatrices(view, modelTrans));
-		this.scene.draw(mvp);
+		this.scene.update(this);
+		this.scene.draw(this);
 	}
 
 	translationMatrix(x, y, z) {
