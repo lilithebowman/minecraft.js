@@ -25,7 +25,9 @@ class WebGLRenderer {
 		this.init();
 		this.gl.enable(this.gl.DEPTH_TEST);
 		this.animate = this.animate.bind(this);
-		this.angle = 0;
+		this.angleX = 0;
+		this.angleY = 0;
+		this.angleZ = 0;
 		this.scene = null;
 		this.textureLoader = new TextureLoader(this.gl);
 		this.initScene().then(() => {
@@ -71,13 +73,32 @@ class WebGLRenderer {
 		var far = 100;
 		var perspective = this.perspectiveMatrix(fov, aspect, near, far);
 		var view = this.lookAtMatrix([0, 0, 5], [0, 0, 0], [0, 1, 0]);
-		var model = this.rotationMatrixY(this.angle);
-		var mvp = this.multiplyMatrices(perspective, this.multiplyMatrices(view, model));
+		// Compose rotation matrices for all 3 axes
+		var rotX = this.rotationMatrixX(this.angleX);
+		var rotY = this.rotationMatrixY(this.angleY);
+		var rotZ = this.rotationMatrixZ(this.angleZ);
+		// Combine rotations: Z * Y * X
+		var rotation = this.multiplyMatrices(rotZ, this.multiplyMatrices(rotY, rotX));
+		var translation = this.translationMatrix(0, 1, -10); // Move cube forward
+		var modelTrans = this.multiplyMatrices(translation, rotation);
+		// Correct MVP multiplication order: projection * view * model
+		var mvp = this.multiplyMatrices(perspective, this.multiplyMatrices(view, modelTrans));
 		this.scene.draw(mvp);
 	}
 
+	translationMatrix(x, y, z) {
+		var out = new Float32Array(16);
+		out[0] = 1; out[4] = 0; out[8] = 0; out[12] = x;
+		out[1] = 0; out[5] = 1; out[9] = 0; out[13] = y;
+		out[2] = 0; out[6] = 0; out[10] = 1; out[14] = z;
+		out[3] = 0; out[7] = 0; out[11] = 0; out[15] = 1;
+		return out;
+	}
+
 	animate() {
-		this.angle += 0.01;
+		this.angleX += 0.013;
+		this.angleY += 0.021;
+		this.angleZ += 0.017;
 		this.render();
 		requestAnimationFrame(this.animate);
 	}
@@ -116,6 +137,16 @@ class WebGLRenderer {
 		]);
 	}
 
+	rotationMatrixX(angle) {
+		var c = Math.cos(angle), s = Math.sin(angle);
+		return new Float32Array([
+			1, 0, 0, 0,
+			0, c, -s, 0,
+			0, s, c, 0,
+			0, 0, 0, 1
+		]);
+	}
+
 	rotationMatrixY(angle) {
 		var c = Math.cos(angle), s = Math.sin(angle);
 		return new Float32Array([
@@ -126,14 +157,24 @@ class WebGLRenderer {
 		]);
 	}
 
+	rotationMatrixZ(angle) {
+		var c = Math.cos(angle), s = Math.sin(angle);
+		return new Float32Array([
+			c, -s, 0, 0,
+			s, c, 0, 0,
+			0, 0, 1, 0,
+			0, 0, 0, 1
+		]);
+	}
+
 	multiplyMatrices(a, b) {
-		// Multiplies two 4x4 matrices
+		// Multiplies two 4x4 matrices in column-major order
 		var out = new Float32Array(16);
-		for (var i = 0; i < 4; ++i) {
-			for (var j = 0; j < 4; ++j) {
-				out[i * 4 + j] = 0;
+		for (var col = 0; col < 4; ++col) {
+			for (var row = 0; row < 4; ++row) {
+				out[col * 4 + row] = 0;
 				for (var k = 0; k < 4; ++k) {
-					out[i * 4 + j] += a[i * 4 + k] * b[k * 4 + j];
+					out[col * 4 + row] += a[k * 4 + row] * b[col * 4 + k];
 				}
 			}
 		}
