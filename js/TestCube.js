@@ -62,18 +62,18 @@ class TestCube {
 		this.positionBuffer = gl.createBuffer();
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
 		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-		   // Front
-		   -1, -1, 1, 1, -1, 1, 1, 1, 1, -1, 1, 1,
-		   // Back
-		   -1, -1, -1, -1, 1, -1, 1, 1, -1, 1, -1, -1,
-		   // Top
-		   -1, 1, 1, 1, 1, 1, 1, 1, -1, -1, 1, -1,
-		   // Bottom
-		   -1, -1, 1, -1, -1, -1, 1, -1, -1, 1, -1, 1,
-		   // Right
-		   1, -1, 1, 1, -1, -1, 1, 1, -1, 1, 1, 1,
-		   // Left
-		   -1, -1, 1, -1, 1, 1, -1, 1, -1, -1, -1, -1
+			// Front
+			-1, -1, 1, 1, -1, 1, 1, 1, 1, -1, 1, 1,
+			// Back
+			-1, -1, -1, -1, 1, -1, 1, 1, -1, 1, -1, -1,
+			// Top
+			-1, 1, 1, 1, 1, 1, 1, 1, -1, -1, 1, -1,
+			// Bottom
+			-1, -1, 1, -1, -1, -1, 1, -1, -1, 1, -1, 1,
+			// Right
+			1, -1, 1, 1, -1, -1, 1, 1, -1, 1, 1, 1,
+			// Left
+			-1, -1, 1, -1, 1, 1, -1, 1, -1, -1, -1, -1
 		]), gl.STATIC_DRAW);
 		this.uvBuffer = gl.createBuffer();
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.uvBuffer);
