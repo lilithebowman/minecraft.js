@@ -25,19 +25,28 @@
 		import buildGrassAtlas from './js/buildGrass.js';
 		import TextureAtlasBuilder from './js/TextureAtlasBuilder.js';
 
-		async function run() {
-			// Create a WebGL context
-			const canvas = document.createElement('canvas');
-			canvas.width = 192;
-			canvas.height = 128;
-			const gl = canvas.getContext('webgl');
-			if (!gl) {
-				document.body.innerHTML += '<p>WebGL not supported.</p>';
-				return;
-			}
-			// Build the atlas
-			const atlasTexture = await buildGrassAtlas(gl);
-			// Display the atlas using 2D canvas
+async function run() {
+    // Create a WebGL context
+    const canvas = document.createElement('canvas');
+    canvas.width = 192;
+    canvas.height = 128;
+    const gl = canvas.getContext('webgl');
+    if (!gl) {
+        document.body.innerHTML += '<p>WebGL not supported.</p>';
+        return;
+    }
+    try {
+        // Build the atlas
+        const atlasTexture = await buildGrassAtlas(gl);
+        // Display the atlas using 2D canvas
+    } finally {
+        // Clean up WebGL context
+        const loseContext = gl.getExtension('WEBGL_lose_context');
+        if (loseContext) {
+            loseContext.loseContext();
+        }
+    }
+}
 			// Get the atlas canvas from TextureAtlasBuilder
 			// We'll need to modify TextureAtlasBuilder to expose the canvas
 			// For now, re-build the atlas on the preview canvas
