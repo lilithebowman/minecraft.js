@@ -1,41 +1,28 @@
-import { Engine } from './modules.js';
-import { debug } from './debug.js';
+// The main module for the WebGL renderer
 
-async function initGame() {
+// WebGL Renderer Scaffold
+import WebGLRenderer from './WebGLRenderer.js';
+
+// Initialize renderer when DOM is ready
+let renderer = null;
+
+window.addEventListener('DOMContentLoaded', () => {
 	try {
-		debug.log('Starting game initialization...');
-
-		// Create engine
-		const engine = new Engine();
-
-		// Wait for engine to fully initialize
-		engine.init();
-
-		console.log('*****ENGINE*****');
-		console.log(engine?.player);
-		console.log('*****CAMERA*****');
-		console.log(engine?.player?.getCamera());
-
-		// Start game loop only after confirmed camera initialization
-		engine?.start();
-
-		// Add window event handlers
-		window.addEventListener('resize', () => {
-			engine?.player?.handleResize();
-		});
-
-		// Handle cleanup on page unload
-		window.addEventListener('beforeunload', () => {
-			engine?.dispose();
-		});
-
-		debug.log('Game initialized successfully');
-
+		renderer = new WebGLRenderer();
+		// Store reference if needed for debugging, but avoid global scope
+		if (window.DEBUG_MODE) {
+			window.__debugRenderer = renderer;
+		}
 	} catch (error) {
-		console.error('Game initialization failed:', error);
-		throw error; // Re-throw to show in console
+		console.error('Failed to initialize WebGL renderer:', error);
+		// Display user-friendly error message
+		document.body.innerHTML = '<div class="error">WebGL is not supported or failed to initialize. Please use a modern browser.</div>';
 	}
-}
+});
 
-// Start the game when the DOM is ready
-document.addEventListener('DOMContentLoaded', initGame);
+// Cleanup on page unload
+window.addEventListener('beforeunload', () => {
+	if (renderer && renderer.destroy) {
+		renderer.destroy();
+	}
+});

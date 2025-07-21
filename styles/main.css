@@ -1,0 +1,249 @@
+/* Modern CSS-based Minecraft.js Styles */
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+body {
+	font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+	overflow: hidden;
+	background: linear-gradient(180deg, #87CEEB 0%, #E0F6FF 100%);
+	user-select: none;
+	cursor: none;
+}
+
+#game-container {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+}
+
+/* ...existing code... */
+
+/* UI Components */
+.ui {
+	position: fixed;
+	inset: 0;
+	z-index: 1000;
+}
+
+.crosshair {
+	pointer-events: none;
+}
+
+.crosshair {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	width: 24px;
+	height: 24px;
+	pointer-events: none;
+}
+
+.crosshair::before,
+.crosshair::after {
+	content: '';
+	position: absolute;
+	background: rgba(255, 255, 255, 0.9);
+	box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+}
+
+.crosshair::before {
+	top: 50%;
+	left: 8px;
+	width: 8px;
+	height: 2px;
+	transform: translateY(-50%);
+}
+
+.crosshair::after {
+	top: 8px;
+	left: 50%;
+	width: 2px;
+	height: 8px;
+	transform: translateX(-50%);
+}
+
+/* Debug Panel */
+.debug-panel {
+	position: fixed;
+	top: 10px;
+	left: 10px;
+	background: rgba(0, 0, 0, 0.8);
+	color: #ffffff;
+	padding: 12px;
+	border-radius: 8px;
+	font-size: 14px;
+	line-height: 1.6;
+	pointer-events: auto;
+	font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+	backdrop-filter: blur(10px);
+}
+
+.debug-panel div {
+	margin-bottom: 4px;
+}
+
+.debug-panel div:last-child {
+	margin-bottom: 0;
+}
+
+/* Controls Info */
+.controls-info {
+	position: fixed;
+	bottom: 10px;
+	right: 10px;
+	background: rgba(0, 0, 0, 0.8);
+	color: #ffffff;
+	padding: 12px;
+	border-radius: 8px;
+	font-size: 12px;
+	line-height: 1.4;
+	pointer-events: auto;
+	font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+	backdrop-filter: blur(10px);
+}
+
+.controls-info div {
+	margin-bottom: 2px;
+}
+
+.controls-info div:last-child {
+	margin-bottom: 0;
+}
+
+/* Block Interactions */
+.block-highlighted {
+	box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8);
+}
+
+.block-breaking {
+	animation: blockBreak 0.5s ease-in-out;
+}
+
+@keyframes blockBreak {
+	0% {
+		opacity: 1;
+		transform: scale(1);
+	}
+
+	50% {
+		opacity: 0.5;
+		transform: scale(0.9);
+	}
+
+	100% {
+		opacity: 0;
+		transform: scale(0.7);
+	}
+}
+
+.block-placing {
+	animation: blockPlace 0.3s ease-out;
+}
+
+@keyframes blockPlace {
+	0% {
+		opacity: 0;
+		transform: scale(0.5);
+	}
+
+	50% {
+		opacity: 0.8;
+		transform: scale(1.1);
+	}
+
+	100% {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
+/* Loading Screen */
+.loading-screen {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background: rgba(0, 0, 0, 0.9);
+	color: white;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	font-size: 24px;
+	z-index: 2000;
+}
+
+.loading-progress {
+	width: 300px;
+	height: 20px;
+	background: rgba(255, 255, 255, 0.2);
+	border-radius: 10px;
+	margin-top: 20px;
+	overflow: hidden;
+}
+
+.loading-progress-bar {
+	height: 100%;
+	background: linear-gradient(90deg, #4CAF50, #8BC34A);
+	border-radius: 10px;
+	transition: width 0.3s ease;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+	.block {
+		width: 24px;
+		height: 24px;
+	}
+
+	.block-face {
+		width: 24px;
+		height: 24px;
+	}
+
+	.face-front {
+		transform: translateZ(12px);
+	}
+
+	.face-back {
+		transform: rotate3d(0, 1, 0, 180deg) translateZ(12px);
+	}
+
+	.face-right {
+		transform: rotate3d(0, 1, 0, 90deg) translateZ(12px);
+	}
+
+	.face-left {
+		transform: rotate3d(0, 1, 0, -90deg) translateZ(12px);
+	}
+
+	.face-top {
+		transform: rotate3d(1, 0, 0, -90deg) translateZ(12px);
+	}
+
+	.face-bottom {
+		transform: rotate3d(1, 0, 0, 90deg) translateZ(12px);
+	}
+
+	.debug-panel {
+		font-size: 12px;
+		padding: 8px;
+	}
+
+	.controls-info {
+		font-size: 10px;
+		padding: 8px;
+	}
+}
+
+/* Hidden state for toggleable elements */
+.hidden {
+	display: none !important;
+}
