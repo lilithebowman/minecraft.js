@@ -47,10 +47,11 @@ async buildAtlas(imageInfos, atlasWidth, atlasHeight, cellWidth, cellHeight) {
 }
 
 	loadImage(url) {
-		return new Promise((resolve) => {
+		return new Promise((resolve, reject) => {
 			const img = new Image();
-			img.src = url;
+			img.onerror = () => reject(new Error(`Failed to load image: ${url}`));
 			img.onload = () => resolve(img);
+			img.src = url;
 		});
 	}
 }
