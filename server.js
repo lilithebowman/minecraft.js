@@ -84,7 +84,10 @@ app.post('/api/generateTerrain', async (req, res) => {
 	}
 });
 
-// Helper function to create terrain data for a chunk
+/**
+ * Generates a flat Minecraft-like terrain chunk with layered bedrock, stone, dirt, and grass blocks.
+ * @return {Object} An object mapping `"x,y,z"` coordinate strings to block type strings for a 16x16x64 chunk.
+ */
 function createTerrainData() {
 	// This is a simplified version - in reality you'd use noise generators
 	const blocks = {};

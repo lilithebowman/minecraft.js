@@ -1,6 +1,12 @@
 // buildGrass.js - Script to generate a grass block atlas
 import TextureAtlasBuilder from './TextureAtlasBuilder.js';
 
+/**
+ * Assembles and returns a WebGL texture atlas for a grass block using a 3x2 grid of 64x64 pixel cells.
+ *
+ * The atlas combines grass side, top, and bottom textures into a single image for efficient rendering.
+ * @returns {Promise<WebGLTexture>} A promise that resolves to the generated atlas texture.
+ */
 async function buildGrassAtlas(gl) {
 	// 3x2 grid: [side, top, bottom]
 	// left, right, front, back: mc_grass_side.png
