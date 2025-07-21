@@ -1,10 +1,17 @@
 // Cube.js - WebGL Cube class
 
 class Cube {
-	constructor(gl) {
-		this.gl = gl;
-		this.initBuffers();
-		this.initShaders();
+	class Cube {
+		constructor(gl) {
+			if (!gl || !(gl instanceof WebGLRenderingContext)) {
+				throw new Error('Valid WebGL context required');
+			}
+			this.gl = gl;
+			this.initBuffers();
+			this.initShaders();
+		}
+
+		// … rest of class …
 	}
 
 	initBuffers() {
