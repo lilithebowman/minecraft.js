@@ -67,8 +67,30 @@ async function run() {
 					const i = new Image();
 					i.src = info.url;
 					i.onload = () => res(i);
+					i.onerror = () => {
+						console.error(`Failed to load texture: ${info.url}`);
+						// Create placeholder or skip
+						res(null);
+					};
 				});
-				previewCtx.drawImage(img, info.x * cellSize, info.y * cellSize, cellSize, cellSize);
+				if (img) {
+					previewCtx.drawImage(
+						img,
+						info.x * cellSize,
+						info.y * cellSize,
+						cellSize,
+						cellSize
+					);
+				} else {
+					// Draw placeholder for failed textures
+					previewCtx.fillStyle = '#ff00ff';
+					previewCtx.fillRect(
+						info.x * cellSize,
+						info.y * cellSize,
+						cellSize,
+						cellSize
+					);
+				}
 			}
 		}
 		run();
