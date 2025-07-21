@@ -25,9 +25,11 @@ A modular WebGL demo inspired by Minecraft block rendering.
 
 ## How to Run
 
-1. Open `index.html` in a browser to view the demo.
-2. To generate the grass atlas, run `js/buildGrass.js` with Node.js.
+1. Start a local web server (e.g., `npm start` or `python -m http.server`)
+2. Open `http://localhost:3000` (or your server's port) in a modern browser
+3. To generate the grass atlas, open `buildGrass.html` in the browser
 
+Note: ES modules require a web server and cannot be run from `file://` URLs.
 ## Current Status
 
 - Renders a single animated cube with correct texture mapping and perspective.
