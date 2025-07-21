@@ -80,13 +80,9 @@ class WebGLRenderer {
 		return out;
 	}
 
-	animate() {
-		this.angleX += 0.013;
-		this.angleY += 0.021;
-		this.angleZ += 0.017;
-		this.render();
-		requestAnimationFrame(this.animate);
-	}
+// In the constructor (remove unused angle props)
+this.animate = this.animate.bind(this);
+this.scene = null;
 
 	// Matrix helpers
 	perspectiveMatrix(fov, aspect, near, far) {
