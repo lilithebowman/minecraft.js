@@ -32,6 +32,9 @@ class WebGLRenderer {
 		this.textureLoader = new TextureLoader(this.gl);
 		this.initScene().then(() => {
 			requestAnimationFrame(this.animate);
+		}).catch((error) => {
+			console.error('Failed to initialize the scene:', error);
+			// Optionally, display an error message to the user or take other recovery actions
 		});
 	}
 
