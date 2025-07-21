@@ -35,10 +35,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-username/minecraft.js"
+    "url": "https://github.com/lilithebowman/minecraft.js"
   },
   "bugs": {
-    "url": "https://github.com/your-username/minecraft.js/issues"
+    "url": "https://github.com/lilithebowman/minecraft.js/issues"
   },
-  "homepage": "https://github.com/your-username/minecraft.js#readme"
+  "homepage": "https://github.com/lilithebowman/minecraft.js#readme"
 }
