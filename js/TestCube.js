@@ -18,18 +18,11 @@ class TestCube {
 	initBuffers() {
 		const gl = this.gl;
 		// Vertex positions for a cube
-		const positions = [
-			// Front
-			-1, -1, 1,
-			1, -1, 1,
-			1, 1, 1,
-			-1, 1, 1,
-			// Back
-			-1, -1, -1,
-			-1, 1, -1,
-			1, 1, -1,
-			1, -1, -1,
-		];
+initBuffers() {
+	const gl = this.gl;
+	// UVs for each face, using atlasLayout
+	// …rest of buffer initialization…
+}
 		// UVs for each face, using atlasLayout
 		const s = this.atlasLayout.side;
 		const t = this.atlasLayout.top;
