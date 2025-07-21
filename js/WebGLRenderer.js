@@ -51,7 +51,10 @@ class WebGLRenderer {
 
 	async initScene() {
 		// Load the atlas texture using TextureLoader
-		const atlasTexture = await this.textureLoader.loadTexture('textures/mc_grass_atlas.png');
+		const textureManifest = {
+			atlas: 'textures/mc_grass_atlas.png'
+		};
+		const atlasTexture = await this.textureLoader.loadTexture(textureManifest.atlas);
 		// Atlas layout: assumes 3x2 grid (side, top, bottom)
 		// Each cell: [u0,v0,u1,v1] (minU,minV,maxU,maxV)
 		const cellW = 1 / 3, cellH = 1 / 2;
