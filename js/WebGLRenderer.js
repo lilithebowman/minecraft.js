@@ -16,7 +16,7 @@ class WebGLRenderer {
 			this.canvas.style.height = '100%';
 			document.body.appendChild(this.canvas);
 		}
-		this.gl = this.canvas.getContext('webgl') || this.canvas.getContext('experimental-webgl');
+		this.gl = this.canvas.getContext('webgl');
 		if (!this.gl) {
 			throw new Error('WebGL not supported');
 		}
