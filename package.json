@@ -1,7 +1,7 @@
 {
   "name": "minecraft.js",
   "version": "2.0.0",
-  "description": "A Minecraft-like game built with modern JavaScript and CSS transforms - no Three.js required!",
+  "description": "A Minecraft-like game built with modern JavaScript and WebGL - no Three.js required!",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
