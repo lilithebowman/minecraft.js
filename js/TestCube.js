@@ -102,14 +102,25 @@ initBuffers() {
 		const vs = gl.createShader(gl.VERTEX_SHADER);
 		gl.shaderSource(vs, vsSource);
 		gl.compileShader(vs);
+		if (!gl.getShaderParameter(vs, gl.COMPILE_STATUS)) {
+			throw new Error('Vertex shader compilation failed: ' + gl.getShaderInfoLog(vs));
+		}
+
 		const fs = gl.createShader(gl.FRAGMENT_SHADER);
 		gl.shaderSource(fs, fsSource);
 		gl.compileShader(fs);
+		if (!gl.getShaderParameter(fs, gl.COMPILE_STATUS)) {
+			throw new Error('Fragment shader compilation failed: ' + gl.getShaderInfoLog(fs));
+		}
+
 		// Link program
 		this.program = gl.createProgram();
 		gl.attachShader(this.program, vs);
 		gl.attachShader(this.program, fs);
 		gl.linkProgram(this.program);
+		if (!gl.getProgramParameter(this.program, gl.LINK_STATUS)) {
+			throw new Error('Program linking failed: ' + gl.getProgramInfoLog(this.program));
+		}
 		// Get attribute/uniform locations
 		this.aPosition = gl.getAttribLocation(this.program, 'aPosition');
 		this.aUV = gl.getAttribLocation(this.program, 'aUV');
